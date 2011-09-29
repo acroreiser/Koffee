@@ -434,35 +434,6 @@ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
 	writel_relaxed(1, base + GIC_CPU_CTRL);
 }
 
-#ifdef CONFIG_OF
-static int gic_irq_domain_dt_translate(struct irq_domain *d,
-				       struct device_node *controller,
-				       const u32 *intspec, unsigned int intsize,
-				       unsigned long *out_hwirq, unsigned int *out_type)
-{
-	if (d->of_node != controller)
-		return -EINVAL;
-	if (intsize < 3)
-		return -EINVAL;
-
-	/* Get the interrupt number and add 16 to skip over SGIs */
-	*out_hwirq = intspec[1] + 16;
-
-	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
-	if (!intspec[0])
-		*out_hwirq += 16;
-
-	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
-	return 0;
-}
-#endif
-
-const struct irq_domain_ops gic_irq_domain_ops = {
-#ifdef CONFIG_OF
-	.dt_translate = gic_irq_domain_dt_translate,
-#endif
-};
-
 #ifdef CONFIG_CPU_PM
 /*
  * Saves the GIC distributor registers during suspend or idle.  Must be called
@@ -646,6 +617,35 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
 {
 }
 #endif
+
+#ifdef CONFIG_OF
+static int gic_irq_domain_dt_translate(struct irq_domain *d,
+				       struct device_node *controller,
+				       const u32 *intspec, unsigned int intsize,
+				       unsigned long *out_hwirq, unsigned int *out_type)
+{
+	if (d->of_node != controller)
+		return -EINVAL;
+	if (intsize < 3)
+		return -EINVAL;
+
+	/* Get the interrupt number and add 16 to skip over SGIs */
+	*out_hwirq = intspec[1] + 16;
+
+	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
+	if (!intspec[0])
+		*out_hwirq += 16;
+
+	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
+	return 0;
+}
+#endif
+
+const struct irq_domain_ops gic_irq_domain_ops = {
+#ifdef CONFIG_OF
+	.dt_translate = gic_irq_domain_dt_translate,
+#endif
+};
 
 void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 			   void __iomem *dist_base, void __iomem *cpu_base,
