@@ -691,11 +691,12 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	 */
 	domain->hwirq_base = 32;
 	if (gic_nr == 0) {
-		domain->hwirq_base = 16;
-		if (irq_start > 0)
-			irq_start = (irq_start & ~31) + 16;
-	} else
-		domain->hwirq_base = 32;
+		if ((irq_start & 31) > 0) {
+			domain->hwirq_base = 16;
+			if (irq_start != -1)
+				irq_start = (irq_start & ~31) + 16;
+		}
+	}
 
 	/*
 	 * Find out how many interrupts are supported.
