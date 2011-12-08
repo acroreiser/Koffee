@@ -45,8 +45,6 @@ struct mct_clock_event_device {
 	char name[10];
 };
 
-static DEFINE_PER_CPU(struct mct_clock_event_device, percpu_mct_tick);
-
 static void exynos4_mct_write(unsigned int value, void *addr)
 {
 	void __iomem *stat_addr;
@@ -285,6 +283,9 @@ static void exynos4_clockevent_init(void)
 }
 
 #ifdef CONFIG_LOCAL_TIMERS
+
+static DEFINE_PER_CPU(struct mct_clock_event_device, percpu_mct_tick);
+
 /* Clock event handling */
 static void exynos4_mct_tick_stop(struct mct_clock_event_device *mevt)
 {
@@ -484,6 +485,7 @@ static void __init exynos4_timer_resources(void)
 
 	clk_rate = clk_get_rate(mct_clk);
 
+#ifdef CONFIG_LOCAL_TIMERS
 	if (mct_int_type == MCT_INT_PPI) {
 		int err;
 
@@ -493,6 +495,7 @@ static void __init exynos4_timer_resources(void)
 		WARN(err, "MCT: can't request IRQ %d (%d)\n",
 		     IRQ_MCT_LOCALTIMER, err);
 	}
+#endif /* CONFIG_LOCAL_TIMERS */
 }
 
 static void __init exynos4_timer_init(void)
