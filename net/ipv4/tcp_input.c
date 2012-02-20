@@ -3018,12 +3018,13 @@ static void tcp_fastretrans_alert(struct sock *sk, int pkts_acked,
 		tcp_xmit_retransmit_queue(sk);
 }
 
-static void tcp_valid_rtt_meas(struct sock *sk, u32 seq_rtt)
+void tcp_valid_rtt_meas(struct sock *sk, u32 seq_rtt)
 {
 	tcp_rtt_estimator(sk, seq_rtt);
 	tcp_set_rto(sk);
 	inet_csk(sk)->icsk_backoff = 0;
 }
+EXPORT_SYMBOL(tcp_valid_rtt_meas);
 
 /* Read draft-ietf-tcplw-high-performance before mucking
  * with this code. (Supersedes RFC1323)
@@ -5788,12 +5789,6 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
 				tp->snd_wnd = ntohs(th->window) <<
 					      tp->rx_opt.snd_wscale;
 				tcp_init_wl(tp, TCP_SKB_CB(skb)->seq);
-
-				/* tcp_ack considers this ACK as duplicate
-				 * and does not calculate rtt.
-				 * Force it here.
-				 */
-				tcp_ack_update_rtt(sk, 0, 0);
 
 				if (tp->rx_opt.tstamp_ok)
 					tp->advmss -= TCPOLEN_TSTAMP_ALIGNED;
