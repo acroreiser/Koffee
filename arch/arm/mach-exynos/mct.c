@@ -30,12 +30,13 @@
 
 #define TICK_BASE_CNT 1
 
+#define TICK_BASE_CNT	1
+
 enum {
 	MCT_INT_PPI,
 	MCT_INT_SPI
 };
 
-static unsigned long clk_cnt_per_tick;
 static unsigned long clk_rate;
 static unsigned int mct_int_type;
 
@@ -226,11 +227,14 @@ static int exynos4_comp_set_next_event(unsigned long cycles,
 static void exynos4_comp_set_mode(enum clock_event_mode mode,
 				  struct clock_event_device *evt)
 {
+	unsigned long cycles_per_jiffy;
 	exynos4_mct_comp0_stop();
 
 	switch (mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
-		exynos4_mct_comp0_start(mode, clk_cnt_per_tick);
+		cycles_per_jiffy =
+			(((unsigned long long) NSEC_PER_SEC / HZ * evt->mult) >> evt->shift);
+		exynos4_mct_comp0_start(mode, cycles_per_jiffy);
 		break;
 
 	case CLOCK_EVT_MODE_ONESHOT:
@@ -269,8 +273,6 @@ static struct irqaction mct_comp_event_irq = {
 
 static void exynos4_clockevent_init(void)
 {
-	clk_cnt_per_tick = clk_rate / HZ;
-
 	clockevents_calc_mult_shift(&mct_comp_device, clk_rate, 5);
 	mct_comp_device.max_delta_ns =
 		clockevent_delta2ns(0xffffffff, &mct_comp_device);
@@ -336,13 +338,15 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
 					 struct clock_event_device *evt)
 {
 	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+	unsigned long cycles_per_jiffy;
 
 	exynos4_mct_tick_stop(mevt);
 
 	switch (mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
-		exynos4_mct_tick_start(clk_cnt_per_tick / (TICK_BASE_CNT + 1)
-					, mevt);
+		cycles_per_jiffy =
+			(((unsigned long long) NSEC_PER_SEC / HZ * evt->mult) >> evt->shift);
+		exynos4_mct_tick_start(cycles_per_jiffy, mevt);
 		break;
 
 	case CLOCK_EVT_MODE_ONESHOT:
