@@ -34,6 +34,50 @@
 #undef CONFIG_PM_RUNTIME
 #endif
 
+#ifdef CONFIG_GPU_CLOCK_CONTROL
+#include <../common/gpu_clock_control.h>
+#include <../common/gpu_voltage_control.h>
+#endif
+
+#if MALI_GPU_UTILIZATION
+#include "mali_kernel_utilization.h"
+#endif /* MALI_GPU_UTILIZATION */
+
+#if MALI_POWER_MGMT_TEST_SUITE
+#ifdef CONFIG_PM
+#include "mali_linux_pm_testsuite.h"
+#include "mali_platform_pmu_internal_testing.h"
+unsigned int pwr_mgmt_status_reg = 0;
+#endif /* CONFIG_PM */
+#endif /* MALI_POWER_MGMT_TEST_SUITE */
+
+static int is_os_pmm_thread_waiting = 0;
+
+/* kernel should be configured with power management support */
+#ifdef CONFIG_PM
+
+/* License should be GPL */
+#if MALI_LICENSE_IS_GPL
+
+/* Linux kernel major version */
+#define LINUX_KERNEL_MAJOR_VERSION 2
+
+/* Linux kernel minor version */
+#define LINUX_KERNEL_MINOR_VERSION 6
+
+/* Linux kernel development version */
+#define LINUX_KERNEL_DEVELOPMENT_VERSION 29
+
+#ifdef CONFIG_PM_DEBUG
+static const char* const mali_states[_MALI_MAX_DEBUG_OPERATIONS] = {
+	[_MALI_DEVICE_SUSPEND] = "suspend",
+	[_MALI_DEVICE_RESUME] = "resume",
+	[_MALI_DVFS_PAUSE_EVENT] = "dvfs_pause",
+	[_MALI_DVFS_RESUME_EVENT] = "dvfs_resume",
+};
+
+#endif /* CONFIG_PM_DEBUG */
+
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON
 extern void set_mali_parent_power_domain(struct platform_device* dev);
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
@@ -226,6 +270,11 @@ int _mali_dev_platform_register(void)
 	set_mali_parent_power_domain((void *)&mali_gpu_device);
 #endif
 
+#ifdef CONFIG_GPU_CLOCK_CONTROL
+	gpu_clock_control_start();
+	gpu_voltage_control_start();
+#endif
+	
 #ifdef CONFIG_PM_RUNTIME
 	err = register_pm_notifier(&mali_pwr_notif_block);
 	if (err)
