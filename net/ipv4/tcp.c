@@ -3327,6 +3327,8 @@ void __init tcp_init(void)
 	       "(established %u bind %u)\n",
 	       tcp_hashinfo.ehash_mask + 1, tcp_hashinfo.bhash_size);
 
+	tcp_metrics_init();
+
 	tcp_register_congestion_control(&tcp_reno);
 
 	memset(&tcp_secret_one.secrets[0], 0, sizeof(tcp_secret_one.secrets));
