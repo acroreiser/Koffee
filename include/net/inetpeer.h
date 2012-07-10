@@ -38,15 +38,13 @@ struct inet_peer {
 	atomic_t		refcnt;
 	/*
 	 * Once inet_peer is queued for deletion (refcnt == -1), following fields
-	 * are not available: rid, ip_id_count, tcp_ts, tcp_ts_stamp, metrics
+	 * are not available: rid, ip_id_count, metrics
 	 * We can share memory with rcu_head to help keep inet_peer small.
 	 */
 	union {
 		struct {
 			atomic_t			rid;		/* Frag reception counter */
 			atomic_t			ip_id_count;	/* IP ID for the next packet */
-			__u32				tcp_ts;
-			__u32				tcp_ts_stamp;
 			u32				metrics[RTAX_MAX];
 			u32				rate_tokens;	/* rate limiting for ICMP */
 			unsigned long			rate_last;
