@@ -425,21 +425,16 @@ static int rt_cache_seq_show(struct seq_file *seq, void *v)
 		rcu_read_unlock();
 
 		seq_printf(seq, "%s\t%08X\t%08X\t%8X\t%d\t%u\t%d\t"
-			      "%08X\t%d\t%u\t%u\t%02X\t%d\t%1d\t%08X%n",
-			r->dst.dev ? r->dst.dev->name : "*",
-			(__force u32)r->rt_dst,
-			(__force u32)r->rt_gateway,
-			r->rt_flags, atomic_read(&r->dst.__refcnt),
-			r->dst.__use, 0, (__force u32)r->rt_src,
-			dst_metric_advmss(&r->dst) + 40,
-			dst_metric(&r->dst, RTAX_WINDOW),
-			(int)((dst_metric(&r->dst, RTAX_RTT) >> 3) +
-			      dst_metric(&r->dst, RTAX_RTTVAR)),
-			r->rt_key_tos,
-			r->dst.hh ? atomic_read(&r->dst.hh->hh_refcnt) : -1,
-			HHUptod,
-			r->rt_spec_dst, &len);
-
+				"%08X\t%d\t%u\t%u\t%02X\t%d\t%1d\t%08X%n",
+			   r->dst.dev ? r->dst.dev->name : "*",
+			   (__force u32)r->rt_dst,
+			   (__force u32)r->rt_gateway,
+			   r->rt_flags, atomic_read(&r->dst.__refcnt),
+			   r->dst.__use, 0, (__force u32)r->rt_src,
+			   dst_metric_advmss(&r->dst) + 40,
+			   dst_metric(&r->dst, RTAX_WINDOW), 0,
+			   r->rt_key_tos,
+			   -1, 0, 0, &len);
 		seq_printf(seq, "%*s\n", 127 - len, "");
 	}
 	return 0;
