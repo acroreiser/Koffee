@@ -1956,6 +1956,9 @@ void tcp_v4_destroy_sock(struct sock *sk)
 		tp->cookie_values = NULL;
 	}
 
+	/* If socket is aborted during connect operation */
+	tcp_free_fastopen_req(tp);
+
 	percpu_counter_dec(&tcp_sockets_allocated);
 }
 EXPORT_SYMBOL(tcp_v4_destroy_sock);
