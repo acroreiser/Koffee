@@ -35,6 +35,7 @@ config ARM
 	select HAVE_ARCH_SECCOMP_FILTER
 	select HAVE_BPF_JIT
 	select GENERIC_IRQ_SHOW
+    select GENERIC_SMP_IDLE_THREAD
 	select CPU_PM if (SUSPEND || CPU_IDLE)
 	help
 	  The ARM series is a line of low-power-consumption RISC chip designs
