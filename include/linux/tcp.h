@@ -358,6 +358,8 @@ struct tcp_sock {
 		thin_dupack : 1,/* Fast retransmit on first dupack      */
 		unused      : 2;
 
+	u8	do_early_retrans:1;/* Enable RFC5827 early-retransmit  */
+
 /* RTT measurement */
 	u32	srtt;		/* smoothed round trip time << 3	*/
 	u32	mdev;		/* medium deviation			*/
