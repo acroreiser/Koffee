@@ -196,7 +196,7 @@ struct kparam_array
 
 /* We don't get oldget: it's often a new-style param_get_uint, etc. */
 static inline int
-__check_old_set_param(int (*oldset)(const char *, const struct kernel_param *))
+__check_old_set_param(int (*oldset)(const char *, struct kernel_param *))
 {
 	return 0;
 }
