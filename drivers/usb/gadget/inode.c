@@ -2137,6 +2137,7 @@ static struct file_system_type gadgetfs_type = {
 	.mount		= gadgetfs_mount,
 	.kill_sb	= gadgetfs_kill_sb,
 };
+MODULE_ALIAS_FS("gadgetfs");
 
 /*----------------------------------------------------------------------*/
 
