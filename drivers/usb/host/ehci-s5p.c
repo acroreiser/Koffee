@@ -576,8 +576,14 @@ static int s5p_ehci_irq_cpu = 0;
  */
 static int s5p_ehci_cpus[] = {0, 1, 1, 3};
 
+#ifdef __ARM_EABI__
+/* ZZ: fix section mismatch when compiling for arm */
+static int s5p_ehci_cpu_notify(struct notifier_block *self,
+                                unsigned long action, void *hcpu)
+#else
 static int __cpuinit s5p_ehci_cpu_notify(struct notifier_block *self,
-				unsigned long action, void *hcpu)
+                                unsigned long action, void *hcpu)
+#endif
 {
 	int cpu = (unsigned long)hcpu;
 
@@ -603,7 +609,12 @@ exit:
 	return NOTIFY_OK;
 }
 
+#ifdef __ARM_EABI__
+/* ZZ: fix section mismatch when compiling for arm */
+static struct notifier_block s5p_ehci_cpu_notifier = {
+#else
 static struct notifier_block __cpuinitdata s5p_ehci_cpu_notifier = {
+#endif
 	.notifier_call = s5p_ehci_cpu_notify,
 };
 #endif
