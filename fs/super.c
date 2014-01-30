@@ -727,7 +727,6 @@ if (!god_mode_enabled) {
 	if (flags & MS_RDONLY)
 		acct_auto_close(sb);
 	shrink_dcache_sb(sb);
-	sync_filesystem(sb);
 
 	remount_ro = (flags & MS_RDONLY) && !(sb->s_flags & MS_RDONLY);
 
@@ -743,6 +742,8 @@ if (!god_mode_enabled) {
 				return retval;
 		}
 	}
+
+	sync_filesystem(sb);
 
 	if (sb->s_op->remount_fs) {
 		retval = sb->s_op->remount_fs(sb, &flags, data);
