@@ -742,6 +742,10 @@ static int keep_initrd;
 void free_initrd_mem(unsigned long start, unsigned long end)
 {
 	if (!keep_initrd) {
+		if (start == initrd_start)
+			start = round_down(start, PAGE_SIZE);
+		if (end == initrd_end)
+			end = round_up(end, PAGE_SIZE);
 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
 		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
 					    __phys_to_pfn(__pa(end)),
