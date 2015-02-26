@@ -140,6 +140,11 @@ static void default_cpu_topology_mask(unsigned int cpuid)
 	struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
 	unsigned int cpu;
 
+	if (!__cpu_capacity) {
+		pr_err("Memory allocation failed\n");
+		return;
+	}
+
 	for_each_possible_cpu(cpu) {
 		struct cputopo_arm *cpu_topo = &cpu_topology[cpu];
 
