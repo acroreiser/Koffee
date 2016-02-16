@@ -203,7 +203,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			task_unlock(p);
 			continue;
 		}
-		tasksize = get_mm_rss(p->mm);
+		tasksize = get_mm_rss(p->mm) +
+			   get_mm_counter(p->mm, MM_SWAPENTS) +
+			   p->mm->nr_ptes;
 		task_unlock(p);
 		if (tasksize <= 0)
 			continue;
