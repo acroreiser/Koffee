@@ -31,10 +31,6 @@
 #include <linux/sched.h>
 #include <asm/elf.h>
 
-struct __read_mostly va_alignment va_align = {
-	.flags = -1,
-};
-
 static unsigned int stack_maxrandom_size(void)
 {
 	unsigned int max = 0;
@@ -46,6 +42,7 @@ static unsigned int stack_maxrandom_size(void)
 	return max;
 }
 
+
 /*
  * Top of mmap area (just below the process stack).
  *
@@ -53,6 +50,21 @@ static unsigned int stack_maxrandom_size(void)
  */
 #define MIN_GAP (128*1024*1024UL + stack_maxrandom_size())
 #define MAX_GAP (TASK_SIZE/6*5)
+
+/*
+ * True on X86_32 or when emulating IA32 on X86_64
+ */
+static int mmap_is_ia32(void)
+{
+#ifdef CONFIG_X86_32
+	return 1;
+#endif
+#ifdef CONFIG_IA32_EMULATION
+	if (test_thread_flag(TIF_IA32))
+		return 1;
+#endif
+	return 0;
+}
 
 static int mmap_is_legacy(void)
 {
@@ -69,15 +81,15 @@ static unsigned long mmap_rnd(void)
 {
 	unsigned long rnd = 0;
 
+	/*
+	*  8 bits of randomness in 32bit mmaps, 20 address space bits
+	* 28 bits of randomness in 64bit mmaps, 40 address space bits
+	*/
 	if (current->flags & PF_RANDOMIZE) {
 		if (mmap_is_ia32())
-#ifdef CONFIG_COMPAT
-			rnd = get_random_long() & ((1UL << mmap_rnd_compat_bits) - 1);
-#else
-			rnd = get_random_long() & ((1UL << mmap_rnd_bits) - 1);
-#endif
+			rnd = get_random_long() % (1UL<<8);
 		else
-			rnd = get_random_long() & ((1UL << mmap_rnd_bits) - 1);
+			rnd = get_random_long() % (1UL<<28);
 	}
 	return rnd << PAGE_SHIFT;
 }
