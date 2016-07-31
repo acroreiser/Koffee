@@ -47,9 +47,9 @@ static struct workqueue_struct *workqueue;
  * performance cost, and for other reasons may not always be desired.
  * So we allow it it to be disabled.
  */
-int use_spi_crc = 0;
+bool use_spi_crc = 0;
 EXPORT_SYMBOL(use_spi_crc);
-module_param_named(crc, use_spi_crc, int, 0644);
+module_param_named(crc, use_spi_crc, bool, 0644);
 MODULE_PARM_DESC(crc, "Enable/disable CRC");
 
 /*
