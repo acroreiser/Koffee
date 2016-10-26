@@ -108,7 +108,7 @@ if (!god_mode_enabled)
 		}
 	}
 	mutex_lock(&inode->i_mutex);
-	error = notify_change(path->dentry, &newattrs);
+	error = notify_change2(path->mnt, path->dentry, &newattrs);
 	mutex_unlock(&inode->i_mutex);
 
 mnt_drop_write_and_out:
