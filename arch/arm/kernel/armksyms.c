@@ -161,3 +161,10 @@ EXPORT_SYMBOL(__gnu_mcount_nc);
 #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
 EXPORT_SYMBOL(__pv_phys_offset);
 #endif
+
+EXPORT_SYMBOL(sys_inotify_init);
+EXPORT_SYMBOL(sys_inotify_add_watch);
+EXPORT_SYMBOL(sys_open);
+EXPORT_SYMBOL(sys_read);
+EXPORT_SYMBOL(sys_lseek);
+
