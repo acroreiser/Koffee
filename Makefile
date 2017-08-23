@@ -566,12 +566,20 @@ else
 KBUILD_CFLAGS	+= -O2
 endif
 
+ifdef CONFIG_CC_USE_GRAPHITE
+KBUILD_CFLAGS	+= -fgraphite -fgraphite-identity
+endif
+
 ifdef CONFIG_CC_CHECK_WARNING_STRICTLY
 KBUILD_CFLAGS	+= -fdiagnostics-show-option -Werror \
 		   -Wno-error=unused-function \
 		   -Wno-error=unused-variable \
 		   -Wno-error=unused-value \
 		   -Wno-error=unused-label
+endif
+
+ifdef CONFIG_CC_USE_PIPE
+KBUILD_CFLAGS	+= -pipe
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile

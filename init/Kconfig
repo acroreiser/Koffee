@@ -929,6 +929,12 @@ config CC_CHECK_WARNING_STRICTLY
 	help
 	  Enabling this option will pass "-Werror" to gcc
 
+config CC_USE_PIPE
+	bool "Use pipes to speed up build"
+
+config CC_USE_GRAPHITE
+	bool "Use GCC Graphite optimization"
+
 config SYSCTL
 	bool
 
