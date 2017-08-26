@@ -415,6 +415,12 @@ int ip_defrag(struct sk_buff *skb, u32 user);
 int ip_frag_mem(struct net *net);
 int ip_frag_nqueues(struct net *net);
 
+/* Backports 56f8a75c */
+static inline bool ip_is_fragment(const struct iphdr *iph)
+{
+	return (iph->frag_off & htons(IP_MF | IP_OFFSET)) != 0;
+}
+
 /*
  *	Functions provided by ip_forward.c
  */
