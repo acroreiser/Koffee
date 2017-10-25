@@ -684,8 +684,12 @@ static ssize_t disksize_store(struct device *dev,
 	disksize = memparse(buf, NULL);
 	if (!disksize)
 		return -EINVAL;
-
+	
 	disksize = PAGE_ALIGN(disksize);
+	
+	if (disksize > (400 * 1024 * 1024))
+		return -EINVAL;
+	
 	meta = zram_meta_alloc(disksize);
 	if (!meta)
 		return -ENOMEM;
