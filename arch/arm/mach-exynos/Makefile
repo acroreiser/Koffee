@@ -358,7 +358,7 @@ obj-$(CONFIG_MDM_HSIC_PM)		+= mdm_hsic_pm.o
 ifeq ($(CONFIG_MACH_T0),y)
 obj-$(CONFIG_INPUT_WACOM)		+= midas-wacom.o
 endif
-
+obj-$(CONFIG_KOFFEE_DEBUG)		+= koffee-debug.o
 obj-$(CONFIG_CORESIGHT_ETM) += coresight.o coresight-etb.o coresight-tpiu.o coresight-funnel.o coresight-etm.o
 
 # for audio platform data driver

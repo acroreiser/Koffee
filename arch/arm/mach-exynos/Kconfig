@@ -1529,6 +1529,9 @@ config SEC_DEBUG_USER
 	default y
 	help
 	  Panic on Userspace fault
+	  
+config KOFFEE_DEBUG
+	bool "Do not enable in production builds"
 
 config SEC_DEBUG_PM_TEMP
 	bool "Temporary Logging for Sleep/Wakeup Issue"
