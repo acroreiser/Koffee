@@ -52,6 +52,73 @@ static struct list_head *mount_hashtable __read_mostly;
 static struct kmem_cache *mnt_cache __read_mostly;
 static struct rw_semaphore namespace_sem;
 
+#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROTECT_SYSTEM_PARTITION
+static unsigned int sys_lock_status = 1;
+
+#define PROCFS_MAX_SIZE		4
+#define PROCFS_NAME 		"syslock_status"
+
+static struct proc_dir_entry *syslock_status;
+static char procfs_buffer[PROCFS_MAX_SIZE];
+static unsigned long procfs_buffer_size = 2;
+
+static int  procfile_read(char *buffer,
+	      char **buffer_location,
+	      off_t offset, int buffer_length, int *eof, void *data)
+{
+	int ret;
+	
+	sprintf(procfs_buffer,"%u\n", sys_lock_status);
+	if (offset > 0) {
+		ret  = 0;
+	} else {
+		memcpy(buffer, procfs_buffer, procfs_buffer_size);
+		ret = procfs_buffer_size;
+	}
+
+	return ret;
+}
+
+static int procfile_write(struct file *file, const char *buffer, unsigned long count,
+		   void *data)
+{
+	/* set buffer size */
+	procfs_buffer_size = 4;
+	
+	/* write data to the buffer */
+	if ( copy_from_user(procfs_buffer, buffer, procfs_buffer_size) ) {
+		return -EFAULT;
+	}
+	
+	if(!strncmp("0", &procfs_buffer[0], 1))
+	   sys_lock_status = 0;
+	 else
+	 {
+		if (!strncmp("1", &procfs_buffer[0], 1))
+	   		sys_lock_status = 1;
+	   	else 
+	   		return -EINVAL;
+	 }
+	   
+	return procfs_buffer_size;
+}
+
+static int init_syslock()
+{
+	/* create the /proc file */
+	syslock_status = create_proc_entry(PROCFS_NAME, 0644, NULL);
+
+	syslock_status->read_proc  = procfile_read;
+	syslock_status->write_proc = procfile_write;
+	syslock_status->uid 	  = 0;
+	syslock_status->gid 	  = 0;
+
+	return 0;	/* everything is ok */
+}
+#endif
+#endif
+
 /* /sys/fs */
 struct kobject *fs_kobj;
 EXPORT_SYMBOL_GPL(fs_kobj);
@@ -2383,8 +2450,18 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 		   MS_STRICTATIME);
 
 	if (flags & MS_REMOUNT)
+	{
+#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROTECT_SYSTEM_PARTITION
+		if(!strncmp("/system",dir_name,7))
+			if(sys_lock_status == 1)
+				return -EPERM;
+#endif
+#endif
+
 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
 				    data_page);
+	}
 	else if (flags & MS_BIND)
 		retval = do_loopback(&path, dev_name, flags & MS_REC);
 	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
@@ -2793,6 +2870,11 @@ void __init mnt_init(void)
 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
 	init_rootfs();
 	init_mount_tree();
+#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROTECT_SYSTEM_PARTITION
+	init_syslock();
+#endif
+#endif
 }
 
 void put_mnt_ns(struct mnt_namespace *ns)
