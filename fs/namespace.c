@@ -104,7 +104,7 @@ static int procfile_write(struct file *file, const char *buffer, unsigned long c
 	return procfs_buffer_size;
 }
 
-static int init_syslock()
+static int init_syslock(void)
 {
 	/* create the /proc file */
 	syslock_status = create_proc_entry(PROCFS_NAME, 0644, NULL);
