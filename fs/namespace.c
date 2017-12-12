@@ -54,7 +54,7 @@ static struct rw_semaphore namespace_sem;
 
 #ifdef CONFIG_PROC_FS
 #ifdef CONFIG_PROTECT_SYSTEM_PARTITION
-static unsigned int sys_lock_status = 1;
+static unsigned int sys_lock_status = 0;
 
 #define PROCFS_MAX_SIZE		4
 #define PROCFS_NAME 		"syslock_status"
