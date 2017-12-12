@@ -63,7 +63,10 @@ static void write_mdnie_ui (unsigned char *dest_name,
 	struct mdnie_info *m;
 
 	// get pointer to global mdnie control structure
-	m = *((void **)kallsyms_lookup_name("g_mdnie"));
+	if(kallsyms_lookup_name("g_mdnie") == NULL)
+		return;
+	else
+		m = *((void **)kallsyms_lookup_name("g_mdnie"));
 
 	// send the sequence to the mdnie driver to reflect update instantly,
 	// based on currently configured screen mode
