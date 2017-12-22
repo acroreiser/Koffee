@@ -688,7 +688,10 @@ static ssize_t disksize_store(struct device *dev,
 	disksize = PAGE_ALIGN(disksize);
 	
 	if (disksize > (400 * 1024 * 1024))
-		return -EINVAL;
+	{
+		pr_info("%lluM exceeds 400M zRam limit! \n", ((disksize / 1024) /1024));
+		disksize = (400 * 1024 * 1024);
+	}
 	
 	meta = zram_meta_alloc(disksize);
 	if (!meta)
