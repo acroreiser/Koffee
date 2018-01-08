@@ -1529,9 +1529,6 @@ config SEC_DEBUG_USER
 	default y
 	help
 	  Panic on Userspace fault
-	  
-config KOFFEE_DEBUG
-	bool "Do not enable in production builds"
 
 config SEC_DEBUG_PM_TEMP
 	bool "Temporary Logging for Sleep/Wakeup Issue"
@@ -1621,6 +1618,11 @@ config SEC_LOG_LAST_KMSG
 	depends on SEC_LOG
 	help
 	  This option enables /proc/last_kmsg support.
+	  
+config KOFFEE_DEBUG
+	bool "Koffee debug extension"
+	help 
+	  Do not enable in production builds
 
 config EHCI_IRQ_DISTRIBUTION
 	bool "ehci irq distribution"
