@@ -19,11 +19,11 @@ extern int wireless_level;
 extern int ignore_unstable_power;
 extern int ignore_safety_margin;
 
-#define AC_CHARGE_LEVEL_DEFAULT 1000
+#define AC_CHARGE_LEVEL_DEFAULT 1250
 #define AC_CHARGE_LEVEL_MIN 100
 #define AC_CHARGE_LEVEL_MAX 1600
 
-#define USB_CHARGE_LEVEL_DEFAULT 475
+#define USB_CHARGE_LEVEL_DEFAULT 1000
 #define USB_CHARGE_LEVEL_MIN 0
 #define USB_CHARGE_LEVEL_MAX 1600
 
@@ -31,8 +31,8 @@ extern int ignore_safety_margin;
 #define WIRELESS_CHARGE_LEVEL_MIN 100
 #define WIRELESS_CHARGE_LEVEL_MAX 1600
 
-#define IGNORE_UNSTABLE_POWER_DEFAULT 0
-#define IGNORE_SAFETY_MARGIN_DEFAULT 0
+#define IGNORE_UNSTABLE_POWER_DEFAULT 1
+#define IGNORE_SAFETY_MARGIN_DEFAULT 1
 
 extern char charge_info_text[30];
 extern int charge_info_level;
