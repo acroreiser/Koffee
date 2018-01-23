@@ -88,7 +88,7 @@ return -EPERM;
 #endif
 	}
 
-	return inode_permission(inode, mask);
+	return inode_permission2(ERR_PTR(-EOPNOTSUPP), inode, mask);
 }
 
 /**
