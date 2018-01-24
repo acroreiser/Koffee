@@ -430,6 +430,26 @@ struct cfg80211_ap_settings {
 };
 
 /**
+ * struct beacon_parameters - beacon parameters
+ *
+ * Used to configure the beacon for an interface.
+ *
+ * @head: head portion of beacon (before TIM IE)
+ *     or %NULL if not changed
+ * @tail: tail portion of beacon (after TIM IE)
+ *     or %NULL if not changed
+ * @interval: beacon interval or zero if not changed
+ * @dtim_period: DTIM period or zero if not changed
+ * @head_len: length of @head
+ * @tail_len: length of @tail
+ */
+struct beacon_parameters {
+	u8 *head, *tail;
+	int interval, dtim_period;
+	int head_len, tail_len;
+};
+
+/**
  * enum plink_action - actions to perform in mesh peers
  *
  * @PLINK_ACTION_INVALID: action 0 is reserved
@@ -1061,6 +1081,7 @@ struct cfg80211_auth_request {
 	enum nl80211_auth_type auth_type;
 	const u8 *key;
 	u8 key_len, key_idx;
+	bool local_state_change;
 };
 
 /**
@@ -1115,10 +1136,12 @@ struct cfg80211_assoc_request {
  * @reason_code: The reason code for the deauthentication
  */
 struct cfg80211_deauth_request {
+	struct cfg80211_bss *bss;
 	const u8 *bssid;
 	const u8 *ie;
 	size_t ie_len;
 	u16 reason_code;
+	bool local_state_change;
 };
 
 /**
@@ -1368,6 +1391,13 @@ struct cfg80211_gtk_rekey_data {
  *	interface. This should reject the call when AP mode wasn't started.
  * @stop_ap: Stop being an AP, including stopping beaconing.
  *
+ * @add_beacon: Add a beacon with given parameters, @head, @interval
+ *	and @dtim_period will be valid, @tail is optional.
+ * @set_beacon: Change the beacon parameters for an access point mode
+ *	interface. This should reject the call when no beacon has been
+ *	configured.
+ * @del_beacon: Remove beacon configuration and stop sending the beacon.
+ *
  * @add_station: Add a new station.
  * @del_station: Remove a station; @mac may be NULL to remove all stations.
  * @change_station: Modify a given station. Note that flags changes are not much
@@ -1539,6 +1569,11 @@ struct cfg80211_ops {
 				 struct cfg80211_beacon_data *info);
 	int	(*stop_ap)(struct wiphy *wiphy, struct net_device *dev);
 
+	int	(*add_beacon)(struct wiphy *wiphy, struct net_device *dev,
+			      struct beacon_parameters *info);
+	int	(*set_beacon)(struct wiphy *wiphy, struct net_device *dev,
+			      struct beacon_parameters *info);
+	int	(*del_beacon)(struct wiphy *wiphy, struct net_device *dev);
 
 	int	(*add_station)(struct wiphy *wiphy, struct net_device *dev,
 			       u8 *mac, struct station_parameters *params);
@@ -2220,6 +2255,8 @@ struct cfg80211_conn;
 struct cfg80211_internal_bss;
 struct cfg80211_cached_keys;
 
+#define MAX_AUTH_BSSES		4
+
 /**
  * struct wireless_dev - wireless per-netdev state
  *
@@ -2282,7 +2319,9 @@ struct wireless_dev {
 
 	struct list_head event_list;
 	spinlock_t event_lock;
-
+	
+	struct cfg80211_internal_bss *authtry_bsses[MAX_AUTH_BSSES];
+	struct cfg80211_internal_bss *auth_bsses[MAX_AUTH_BSSES];
 	struct cfg80211_internal_bss *current_bss; /* associated / joined */
 	struct ieee80211_channel *channel;
 
@@ -2736,13 +2775,6 @@ struct cfg80211_bss *cfg80211_get_mesh(struct wiphy *wiphy,
 				       struct ieee80211_channel *channel,
 				       const u8 *meshid, size_t meshidlen,
 				       const u8 *meshcfg);
-/**
- * cfg80211_ref_bss - reference BSS struct
- * @bss: the BSS struct to reference
- *
- * Increments the refcount of the given BSS struct.
- */
-void cfg80211_ref_bss(struct cfg80211_bss *bss);
 
 /**
  * cfg80211_put_bss - unref BSS struct
@@ -2787,6 +2819,18 @@ void cfg80211_send_rx_auth(struct net_device *dev, const u8 *buf, size_t len);
 void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr);
 
 /**
+ * __cfg80211_auth_canceled - notify cfg80211 that authentication was canceled
+ * @dev: network device
+ * @addr: The MAC address of the device with which the authentication timed out
+ *
+ * When a pending authentication had no action yet, the driver may decide
+ * to not send a deauth frame, but in that case must calls this function
+ * to tell cfg80211 about this decision. It is only valid to call this
+ * function within the deauth() callback.
+ */
+void __cfg80211_auth_canceled(struct net_device *dev, const u8 *addr);
+
+/**
  * cfg80211_send_rx_assoc - notification of processed association
  * @dev: network device
  * @bss: the BSS struct association was requested for, the struct reference
@@ -2799,8 +2843,7 @@ void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr);
  * function or cfg80211_send_assoc_timeout() to indicate the result of
  * cfg80211_ops::assoc() call. This function may sleep.
  */
-void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
-			    const u8 *buf, size_t len);
+void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len);
 
 /**
  * cfg80211_send_assoc_timeout - notification of timed out association

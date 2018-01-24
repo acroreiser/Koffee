@@ -2270,7 +2270,7 @@ ieee80211_rx_h_userspace_mgmt(struct ieee80211_rx_data *rx)
 	 * it transmitted were processed or returned.
 	 */
 
-	if (cfg80211_rx_mgmt(rx->sdata->dev, status->freq,
+	if (cfg80211_rx_mgmt(rx->sdata->dev, status->freq, 0,
 			     rx->skb->data, rx->skb->len,
 			     GFP_ATOMIC)) {
 		if (rx->sta)

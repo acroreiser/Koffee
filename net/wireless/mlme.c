@@ -30,8 +30,7 @@ void cfg80211_send_rx_auth(struct net_device *dev, const u8 *buf, size_t len)
 }
 EXPORT_SYMBOL(cfg80211_send_rx_auth);
 
-void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
-			    const u8 *buf, size_t len)
+void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len)
 {
 	u16 status_code;
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
@@ -39,7 +38,8 @@ void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
 	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
 	struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)buf;
 	u8 *ie = mgmt->u.assoc_resp.variable;
-	int ieoffs = offsetof(struct ieee80211_mgmt, u.assoc_resp.variable);
+	int i, ieoffs = offsetof(struct ieee80211_mgmt, u.assoc_resp.variable);
+	struct cfg80211_internal_bss *bss = NULL;
 
 	wdev_lock(wdev);
 
@@ -52,20 +52,43 @@ void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
 	 * frame instead of reassoc.
 	 */
 	if (status_code != WLAN_STATUS_SUCCESS && wdev->conn &&
-	    cfg80211_sme_failed_reassoc(wdev)) {
-		cfg80211_put_bss(bss);
+	    cfg80211_sme_failed_reassoc(wdev))
 		goto out;
-	}
 
 	nl80211_send_rx_assoc(rdev, dev, buf, len, GFP_KERNEL);
 
-	if (status_code != WLAN_STATUS_SUCCESS && wdev->conn) {
+	if (status_code == WLAN_STATUS_SUCCESS) {
+		for (i = 0; i < MAX_AUTH_BSSES; i++) {
+			if (!wdev->auth_bsses[i])
+				continue;
+			if (memcmp(wdev->auth_bsses[i]->pub.bssid, mgmt->bssid,
+				   ETH_ALEN) == 0) {
+				bss = wdev->auth_bsses[i];
+				wdev->auth_bsses[i] = NULL;
+				/* additional reference to drop hold */
+				cfg80211_ref_bss(bss);
+				break;
+			}
+		}
+
+		/*
+		 * We might be coming here because the driver reported
+		 * a successful association at the same time as the
+		 * user requested a deauth. In that case, we will have
+		 * removed the BSS from the auth_bsses list due to the
+		 * deauth request when the assoc response makes it. If
+		 * the two code paths acquire the lock the other way
+		 * around, that's just the standard situation of a
+		 * deauth being requested while connected.
+		 */
+		if (!bss)
+			goto out;
+	} else if (wdev->conn) {
 		cfg80211_sme_failed_assoc(wdev);
 		/*
 		 * do not call connect_result() now because the
 		 * sme will schedule work that does it later.
 		 */
-		cfg80211_put_bss(bss);
 		goto out;
 	}
 
@@ -78,10 +101,17 @@ void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
 		wdev->sme_state = CFG80211_SME_CONNECTING;
 	}
 
-	/* this consumes the bss reference */
+	/* this consumes one bss reference (unless bss is NULL) */
 	__cfg80211_connect_result(dev, mgmt->bssid, NULL, 0, ie, len - ieoffs,
 				  status_code,
-				  status_code == WLAN_STATUS_SUCCESS, bss);
+				  status_code == WLAN_STATUS_SUCCESS,
+				  bss ? &bss->pub : NULL);
+	/* drop hold now, and also reference acquired above */
+	if (bss) {
+		cfg80211_unhold_bss(bss);
+		cfg80211_put_bss(&bss->pub);
+	}
+
  out:
 	wdev_unlock(wdev);
 }
@@ -201,6 +231,34 @@ void cfg80211_send_unprot_disassoc(struct net_device *dev, const u8 *buf,
 	nl80211_send_unprot_disassoc(rdev, dev, buf, len, GFP_ATOMIC);
 }
 EXPORT_SYMBOL(cfg80211_send_unprot_disassoc);
+
+static void __cfg80211_auth_remove(struct wireless_dev *wdev, const u8 *addr)
+{
+	int i;
+	bool done = false;
+
+	ASSERT_WDEV_LOCK(wdev);
+
+	for (i = 0; addr && i < MAX_AUTH_BSSES; i++) {
+		if (wdev->authtry_bsses[i] &&
+		    memcmp(wdev->authtry_bsses[i]->pub.bssid,
+			   addr, ETH_ALEN) == 0) {
+			cfg80211_unhold_bss(wdev->authtry_bsses[i]);
+			cfg80211_put_bss(&wdev->authtry_bsses[i]->pub);
+			wdev->authtry_bsses[i] = NULL;
+			done = true;
+			break;
+		}
+	}
+
+	WARN_ON(!done);
+}
+
+void __cfg80211_auth_canceled(struct net_device *dev, const u8 *addr)
+{
+	__cfg80211_auth_remove(dev->ieee80211_ptr, addr);
+}
+EXPORT_SYMBOL(__cfg80211_auth_canceled);
 
 void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr)
 {
