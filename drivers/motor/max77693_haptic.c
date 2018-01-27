@@ -158,7 +158,7 @@ static void haptic_work(struct work_struct *work)
 	struct max77693_haptic_data *hap_data
 		= container_of(work, struct max77693_haptic_data, work);
 
-	pr_debug("[VIB] %s\n", __func__);
+	//pr_debug("[VIB] %s\n", __func__);
 	if (hap_data->timeout > 0) {
 		if (hap_data->running)
 			return;
@@ -166,7 +166,7 @@ static void haptic_work(struct work_struct *work)
 		max77693_haptic_i2c(hap_data, true);
 
 		pwm_config(hap_data->pwm, pwm_duty, hap_data->pdata->period);
-        pr_info("[VIB] %s: pwm_config duty=%d\n", __func__, pwm_duty);
+      //  pr_info("[VIB] %s: pwm_config duty=%d\n", __func__, pwm_duty);
 		pwm_enable(hap_data->pwm);
 
 		if (hap_data->pdata->motor_en)

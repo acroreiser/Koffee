@@ -108,7 +108,7 @@ static void vibrator_work(struct work_struct *_work)
 	struct vibrator_drvdata *data =
 		container_of(_work, struct vibrator_drvdata, work);
 
-	pr_debug("[VIB] time = %dms\n", data->timeout);
+	//pr_debug("[VIB] time = %dms\n", data->timeout);
 
 	if (0 == data->timeout) {
 		if (!data->running)
@@ -130,7 +130,7 @@ static void vibrator_work(struct work_struct *_work)
 			regulator_enable(data->regulator);
 		i2c_max8997_hapticmotor(data, true);
 		pwm_config(data->pwm, pwm_duty, data->pdata->period);
-		pr_info("[VIB] %s: pwm_config duty=%d\n", __func__, pwm_duty);
+	//	pr_info("[VIB] %s: pwm_config duty=%d\n", __func__, pwm_duty);
 		pwm_enable(data->pwm);
 
 		data->running = true;
