@@ -71,7 +71,7 @@ struct ip_cpu_info {
 
 static DEFINE_PER_CPU(struct ip_cpu_info, ip_info);
 
-static unsigned int screen_off_max = UINT_MAX;
+static unsigned int screen_off_max = 600000;
 module_param(screen_off_max, uint, 0664);
 
 #define CAPACITY_RESERVE	50
@@ -514,7 +514,7 @@ int __init intelli_plug_init(void)
 		 INTELLI_PLUG_MINOR_VERSION);
 
 	if (nr_possible_cores > 2) {
-		nr_run_hysteresis = NR_RUN_HYSTERESIS_QUAD;
+		nr_run_hysteresis = 5;
 		nr_run_profile_sel = 0;
 	} else {
 		nr_run_hysteresis = NR_RUN_HYSTERESIS_DUAL;
