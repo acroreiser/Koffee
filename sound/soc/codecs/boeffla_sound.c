@@ -67,8 +67,8 @@ static struct snd_soc_codec *codec;
 static struct wm8994_priv *wm8994;
 
 // internal boeffla sound variables
-static int boeffla_sound = 1;		// boeffla sound master switch
-static int debug_level = 0;			// debug level for logging into kernel log
+static int boeffla_sound;		// boeffla sound master switch
+static int debug_level;			// debug level for logging into kernel log
 
 static int headphone_l, headphone_r;	// headphone volume left/right
 
@@ -82,9 +82,9 @@ static int eq_gains[5];			// gain information for headphone eq (speaker is stati
 
 static unsigned int eq_bands[5][4];	// frequency setup for headphone eq (speaker is static)
 
-static int dac_direct = 1;			// activate dac_direct for headphone eq
-static int dac_oversampling = 1;	// activate 128bit oversampling for headphone eq
-static int fll_tuning = 1;			// activate fll tuning to avoid jitter
+static int dac_direct;			// activate dac_direct for headphone eq
+static int dac_oversampling;	// activate 128bit oversampling for headphone eq
+static int fll_tuning;			// activate fll tuning to avoid jitter
 static int stereo_expansion_gain;	// activate stereo expansion effect if greater than zero
 static int mono_downmix;		// activate mono downmix
 static int privacy_mode;		// activate privacy mode
