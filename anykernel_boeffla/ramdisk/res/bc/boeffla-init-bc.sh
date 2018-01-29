@@ -60,7 +60,7 @@
 	/sbin/busybox rm -f $BOEFFLA_STARTCONFIG_DONE
 
 # remove not used configuration files for frandom and busybox
-	/sbin/busybox rm -f $FRANDOM_ENABLER
+#	/sbin/busybox rm -f $FRANDOM_ENABLER
 	/sbin/busybox rm -f $BUSYBOX_ENABLER
 	
 # Apply Boeffla-Kernel default settings
@@ -76,7 +76,7 @@
 	/sbin/busybox sync
 
 	# Sdcard buffer tweaks default to 256 kb
-	echo 256 > /sys/block/mmcblk0/bdi/read_ahead_kb
+	echo 512 > /sys/block/mmcblk0/bdi/read_ahead_kb
 	echo 256 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
 	echo $(date) Boeffla-Kernel default settings applied >> $BOEFFLA_LOGFILE
@@ -140,10 +140,17 @@
 		busybox swapon -p 2 /dev/block/zram0
 		busybox sleep 0.5s
 		busybox sync
-		echo "80" > /proc/sys/vm/swappiness
+		echo "100" > /proc/sys/vm/swappiness
 		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
 	fi
 	
+# Switch to fq_codel on mobile data and wlan
+	tc qdisc add dev rmnet0 root fq_codel
+	tc qdisc add dev wlan0 root fq_codel
+
+# Tweak scheduler
+	echo 1 > /proc/sys/kernel/sched_child_runs_first
+
 # Turn off debugging for certain modules
 	echo 0 > /sys/module/ump/parameters/ump_debug_level
 	echo 0 > /sys/module/mali/parameters/mali_debug_level
