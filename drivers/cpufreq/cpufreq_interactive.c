@@ -31,6 +31,8 @@
 #include <linux/input.h>
 #include <asm/cputime.h>
 
+#include <linux/earlysuspend.h>
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 
@@ -72,6 +74,8 @@ static u64 hispeed_freq;
 /* Go to hi speed when CPU load at or above this value. */
 #define DEFAULT_GO_HISPEED_LOAD 85
 static unsigned long go_hispeed_load;
+
+static int screenoff;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
@@ -200,10 +204,20 @@ static void cpufreq_interactive_timer(unsigned long data)
 		if (pcpu->target_freq <= pcpu->policy->min) {
 			new_freq = hispeed_freq;
 		} else {
+
+		if(screenoff == 1)
+		{
+			new_freq = pcpu->policy->max * cpu_load / 100;
+			if(new_freq > 600000)
+				new_freq = 600000;
+		}
+		else
+		{
 			new_freq = pcpu->policy->max * cpu_load / 100;
 
 			if (new_freq < hispeed_freq)
 				new_freq = hispeed_freq;
+		}
 
 			if (pcpu->target_freq == hispeed_freq &&
 			    new_freq > hispeed_freq &&
@@ -217,9 +231,19 @@ static void cpufreq_interactive_timer(unsigned long data)
 			}
 		}
 	} else {
-		new_freq = pcpu->policy->max * cpu_load / 100;
+		if(screenoff == 1)
+		{
+			new_freq = pcpu->policy->max * cpu_load / 100;
+			if(new_freq > 600000)
+				new_freq = 600000;
+		}
+		else
+					new_freq = pcpu->policy->max * cpu_load / 100;
 	}
 
+	if(screenoff)
+		
+		
 	if (new_freq <= hispeed_freq)
 		pcpu->hispeed_validate_time = pcpu->timer_run_time;
 
@@ -927,6 +951,24 @@ static int cpufreq_interactive_idle_notifier(struct notifier_block *nb,
 	return 0;
 }
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void interactive_suspend(struct early_suspend *handler)
+{
+	screenoff = 1;
+}
+
+static void interactive_resume(struct early_suspend *handler)
+{
+	screenoff = 0;
+}
+
+static struct early_suspend interactive_early_suspend_driver = {
+        .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 10,
+        .suspend = interactive_suspend,
+        .resume = interactive_resume,
+};
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
+
 static struct notifier_block cpufreq_interactive_idle_nb = {
 	.notifier_call = cpufreq_interactive_idle_notifier,
 };
@@ -936,6 +978,10 @@ static int __init cpufreq_interactive_init(void)
 	unsigned int i;
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	register_early_suspend(&interactive_early_suspend_driver);
+#endif
 
 	go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 	min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
@@ -993,6 +1039,9 @@ static void __exit cpufreq_interactive_exit(void)
 	kthread_stop(up_task);
 	put_task_struct(up_task);
 	destroy_workqueue(down_wq);
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	unregister_early_suspend(&interactive_early_suspend_driver);
+#endif
 }
 
 module_exit(cpufreq_interactive_exit);
