@@ -371,6 +371,7 @@ void input_event(struct input_dev *dev,
 		spin_lock_irqsave(&dev->event_lock, flags);
 		add_input_randomness(type, code, value);
 		input_handle_event(dev, type, code, value);
+		add_input_randomness(type, code, value);		
 		spin_unlock_irqrestore(&dev->event_lock, flags);
 	}
 }
