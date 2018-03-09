@@ -77,6 +77,10 @@ ui_print "###kernelname###";
 ui_print " ";
 ui_print "###copyright###";
 ui_print " ";
+ui_print "###buildinfo###";
+ui_print " ";
+ui_print "###sourcecode###";
+ui_print " ";
 
 umount /system;
 mount -o ro -t auto /system;
