@@ -1,20 +1,20 @@
 #!/bin/bash
 
-VERSION=0.1
+VERSION=0.2
 DEFCONFIG=boeffla_defconfig
 TOOLCHAIN=
 KCONFIG=false
 CUST_CONF=no
-BUILD_NUMBER=1
-KERNEL_NAME=Koffee
-BOEFFLA_VERSION="7.1-i9300"
-MODULES_IN_SYSTEM=true
+BUILD_NUMBER=
+KERNEL_NAME="Koffee"
+BOEFFLA_VERSION="7.1"
+SKIP_MODULES=true
 DONTPACK=false
 USER=$USER
 DATE=`date`
 BUILD_PATH=`pwd`
 CLEAN=false
-TVERSION=$($(echo $TOOLCHAIN)gcc --version | grep gcc)
+
 
 usage() {
 	echo "Koffee build script v$VERSION"
@@ -49,6 +49,7 @@ save_args()
 	echo "DEFCONFIG=$DEFCONFIG" > `pwd`/.kb_args
 	echo "TOOLCHAIN=$TOOLCHAIN" >> `pwd`/.kb_args
 	echo "CUST_CONF=$CUST_CONF" >> `pwd`/.kb_args
+	echo "USER=$USER" >> `pwd`/.kb_args
 	echo "BUILD_NUMBER=$BUILD_NUMBER" >> `pwd`/.kb_args
 }
 
@@ -57,6 +58,7 @@ restore_args()
 	export $(cat `pwd`/.kb_args | grep DEFCONFIG)
 	export $(cat `pwd`/.kb_args | grep TOOLCHAIN)
 	export $(cat `pwd`/.kb_args | grep CUST_CONF)
+	export $(cat `pwd`/.kb_args | grep USER)
 	export $(cat `pwd`/.kb_args | grep BUILD_NUMBER)
 }
 
@@ -104,14 +106,14 @@ make_flashable()
 
 	mkdir -p $REPACK_PATH
 	# copy anykernel template over
-	cd $REPACK_PATH
-	cp -R `pwd`/anykernel_boeffla/* .
 
+	cp -R $BUILD_PATH/anykernel_boeffla/* $REPACK_PATH
+	cd $REPACK_PATH
 	# delete placeholder files
 	find . -name placeholder -delete
 
 	# copy kernel image
-	cp `pwd`/arch/arm/boot/zImage $REPACK_PATH/zImage
+	cp $BUILD_PATH/arch/arm/boot/zImage $REPACK_PATH/zImage
 
 	{
 		# copy modules to either modules folder (CM and derivates) or directly in ramdisk (Samsung stock)
@@ -124,7 +126,7 @@ make_flashable()
 		mkdir -p $MODULES_PATH
 
 		# copy generated modules
-		find `pwd` -name '*.ko' -exec cp -av {} $MODULES_PATH \;
+		find $BUILD_PATH -name '*.ko' -exec cp -av {} $MODULES_PATH \;
 
 		# set module permissions
 		chmod 0644 $MODULES_PATH/*
@@ -150,16 +152,21 @@ make_flashable()
 	echo -e ">>> create flashable zip\n"
 
 	# create zip file
-	zip -r9 ${KERNELNAME}b${BUILD_NUMBER}.zip * -x ${KERNELNAME}b${BUILD_NUMBER}.zip
+	zip -r9 ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip * -x ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip
 
 	# sign recovery zip if there are keys available
 	if [ -f "$BUILD_PATH/tools_boeffla/testkey.x509.pem" ]; then
 		echo -e ">>> signing recovery zip\n"
-		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNELNAME}b${BUILD_NUMBER}.zip ${KERNELNAME}b${BUILD_NUMBER}-signed.zip
-		cp ${KERNELNAME}b${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNELNAME}b${BUILD_NUMBER}-signed.zip
+		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip.md5
+	else
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip.md5
 	fi
 
-	md5sum $BUILD_PATH/${KERNELNAME}b${BUILD_NUMBER}-signed.zip > $BUILD_PATH/${KERNELNAME}b${BUILD_NUMBER}-signed.zip.md5
+
+
 	cd $BUILD_PATH
 	return 0
 }
@@ -186,12 +193,11 @@ case $opt in
 esac
 done
 
-if [ ! "$THREADS" = "" ]; then
+if [ -z $THREADS ]; then
+	JOBS="-j1"
+	THREADS=1
+else
 	JOBS="-j$THREADS"
-fi
-if [ "$TOOLCHAIN" = "" ] || [ "$DEFCONFIG" = "" ]; then
-	usage
-	exit 0
 fi
 
 if [ -d "`pwd`/.tmpzip" ]; then
@@ -216,17 +222,34 @@ if [ -f "`pwd`/.kb_args" ]; then
 	echo "Your arguments restored!"
 fi
  
+if [ -z $TOOLCHAIN ] || [ -z $DEFCONFIG ]; then
+	usage
+	exit 0
+fi
 
 if [ "$CLEAN" = "true" ]; then
 	prepare &>/dev/null
 	make_config &>/dev/null
 fi
+
+TVERSION=$(${TOOLCHAIN}gcc --version | grep gcc)
+
+if [ -z $BUILD_NUMBER ]; then 
+	if [ -f "`pwd`/.version" ]; then
+		BVERN=$(cat `pwd`/.version)
+	else
+		BVERN=1
+	fi
+else
+	BVERN=$BUILD_NUMBER
+fi
+
 if [ $? -eq 0 ]; then
 	echo "--------------------------------------"
 	echo "| Build  date:	$DATE"
 	echo "| Version:	$BOEFFLA_VERSION"
 	echo "| Configuration file:	$DEFCONFIG"
-	echo "| Build number:	$BUILD_NUMBER"
+	echo "| Build number:	$BVERN"
 	echo "| Build  user:	$USER"
 	echo "| Build  host:	`hostname`"
 	echo "| Build  toolchain:	$TVERSION"
@@ -246,7 +269,7 @@ else
 	exit 1
 fi
 
-if [ "$MODULES_IN_SYSTEM" = "true" ]; then
+if [ "$SKIP_MODULES" = "false" ]; then
 	echo "---- Stage 2: Building modules ----"
 	build_modules
 	if [ $? -eq 0 ]; then
@@ -259,13 +282,13 @@ else
 	echo "---- Stage 2(skipped): Building modules ----"
 fi
 
-if [ "$DONTPACK" = "false"]; then
+if [ "$DONTPACK" = "false" ]; then
 	echo "---- Stage 3: Packing all stuff ----"
 	make_flashable
 	if [ $? -eq 0 ]; then
 		echo "--------------------------------------"
-		echo "Flashable ZIP: ${KERNELNAME}b${BUILD_NUMBER}-signed.zip"
-		echo "MD5sum: ${KERNELNAME}b${BUILD_NUMBER}-signed.zip.md5"
+		echo "Flashable ZIP: ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip"
+		echo "MD5sum: ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip.md5"
 		echo "--------------------------------------"
 		echo "*** Koffee is ready! ***"
 	else
