@@ -141,7 +141,7 @@ make_flashable()
 	cd $REPACK_PATH
 	KERNELNAME="Flashing $KERNEL_NAME $BOEFFLA_VERSION"
 	sed -i "s;###kernelname###;${KERNELNAME};" META-INF/com/google/android/update-binary;
-	COPYRIGHT="(c) A\$teroid (aka acroreiser) and Lord Boeffla (aka andip71), 2018"
+	COPYRIGHT=$(echo "(c) A\$teroid (aka acroreiser) and Lord Boeffla (aka andip71), 2018")
 	sed -i "s;###copyright###;${COPYRIGHT};" META-INF/com/google/android/update-binary;
 	BUILDINFO="Build ${BUILD_NUMBER}, $DATE"
 	sed -i "s;###buildinfo###;${BUILDINFO};" META-INF/com/google/android/update-binary;
