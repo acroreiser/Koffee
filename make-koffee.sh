@@ -6,6 +6,7 @@ TOOLCHAIN=
 KCONFIG=false
 CUST_CONF=no
 BUILD_NUMBER=
+KCONF_REPLACE=false
 KERNEL_NAME="Koffee"
 BOEFFLA_VERSION="7.1"
 SKIP_MODULES=true
@@ -74,7 +75,9 @@ make_config()
 		echo "Using custom configuration from $CUST_CONF"
 		DEFCONFIG=custom
 	else
-		make ARCH=arm $JOBS $DEFCONFIG
+		if [ ! -f "`pwd`/.config" ] || [ "$KCONF_REPLACE" = true ]; then
+			make ARCH=arm $JOBS $DEFCONFIG &>/dev/null
+		fi
 	fi
 	if [ "$KCONFIG" = "true" ]; then
 		make ARCH=arm $JOBS menuconfig
@@ -180,13 +183,13 @@ case $opt in
 	v) echo $VERSION; exit 0;;
 	t) TOOLCHAIN=$OPTARG;;
 	j) THREADS=$OPTARG;;
-	O) CUST_CONF=$OPTARG; DEFCONFIG=custom;;
+	O) CUST_CONF=$OPTARG; DEFCONFIG=custom; KCONF_REPLACE=true;;
 	C) CLEAN=true;;
 	N) BUILD_NUMBER=$OPTARG;;
 	K) KCONFIG=true;;
 	k) DONTPACK=true;;
-	d) DEFCONFIG="koffee_defconfig";;
-	D) DEFCONFIG="koffee_debug_defconfig";;
+	d) DEFCONFIG="koffee_defconfig"; KCONF_REPLACE=true;;
+	D) DEFCONFIG="koffee_debug_defconfig"; KCONF_REPLACE=true;;
 	R) REMEMBER=true;;
 	U) USER=$OPTARG;;
 	*) usage; exit 0;;
@@ -210,7 +213,7 @@ echo "Koffee build script v$VERSION"
 echo $DATE
 
 if [ ! -f "$BUILD_PATH/.config" ]; then
-	make_config &>/dev/null
+	make_config 
 fi
 
 if [ "$REMEMBER" = "true" ]; then
@@ -229,9 +232,10 @@ fi
 
 if [ "$CLEAN" = "true" ]; then
 	prepare &>/dev/null
-	make_config &>/dev/null
+fi 
+if [ "$KCONFIG" = "true" ]; then
+	make_config
 fi
-
 TVERSION=$(${TOOLCHAIN}gcc --version | grep gcc)
 
 if [ -z $BUILD_NUMBER ]; then 
