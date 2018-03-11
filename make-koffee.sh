@@ -1,11 +1,13 @@
 #!/bin/bash
 
-VERSION=0.2
+VERSION=0.3
 DEFCONFIG=boeffla_defconfig
 TOOLCHAIN=
 KCONFIG=false
 CUST_CONF=no
 BUILD_NUMBER=
+DEVICE=m0
+BOOT=/dev/block/mmcblk0p5
 KCONF_REPLACE=false
 KERNEL_NAME="Koffee"
 BOEFFLA_VERSION="7.1"
@@ -27,21 +29,23 @@ usage() {
 	echo "koffee-build.sh [-d/-D/-O <file>] [-K] [-U <user>] [-N <BUILD_NUMBER>] [-k] [-R] -t <toolchain_prefix>"
 	echo ""
 	echo "Main options:"
-	echo "	-K         				    call Kconfig (use only with ready config!)"
-	echo "	-d           				koffee_defconfig"
-	echo "	-D            				koffee_debug_defconfig - produce debugging kernel"
-	echo "	-O <file>           		external/other defconfig."
-	echo "	-t <toolchain_prefix>		toolchain prefix"
+	echo "	-K 			call Kconfig (use only with ready config!)"
+	echo "	-d 			koffee_defconfig"
+	echo "	-D 			koffee_debug_defconfig - produce debugging kernel"
+	echo "	-S 			set device codename (m0 for i9300 or t03g for n7100)"
+	echo "	-B 			partition for boot.img (/dev/block/mmcblk0p5 for i9300 or /dev/block/mmcblk0p8 for n7100)"
+	echo "	-O <file> 			external/other defconfig."
+	echo "	-t <toolchain_prefix> 			toolchain prefix"
 	echo ""
 	echo "Extra options:"
-	echo "	-j <number_of_cpus>			set number of CPUs to use"
-	echo "	-k 							make only zImage, do not pack into zip"
-	echo "	-C 							cleanup before building"
-	echo "	-R 							save your arguments to reuse (just run koffee-build.sh on next builds)"
-	echo "	-U <username>				set build user"
-	echo "	-N <build_number>			set build number"
-	echo "	-v 							show build script version"
-	echo "	-h 							show this help"
+	echo "	-j <number_of_cpus> 			set number of CPUs to use"
+	echo "	-k 			make only zImage, do not pack into zip"
+	echo "	-C 			cleanup before building"
+	echo "	-R 			save your arguments to reuse (just run koffee-build.sh on next builds)"
+	echo "	-U <username> 			set build user"
+	echo "	-N <build_number> 			set build number"
+	echo "	-v 			show build script version"
+	echo "	-h 			show this help"
 	
 }
 
@@ -144,12 +148,16 @@ make_flashable()
 	cd $REPACK_PATH
 	KERNELNAME="Flashing $KERNEL_NAME $BOEFFLA_VERSION"
 	sed -i "s;###kernelname###;${KERNELNAME};" META-INF/com/google/android/update-binary;
-	COPYRIGHT=$(echo "(c) A\$teroid (aka acroreiser) and Lord Boeffla (aka andip71), 2018")
+	COPYRIGHT=$(echo '(c) A\$teroid (aka acroreiser) and Lord Boeffla (aka andip71), 2018')
 	sed -i "s;###copyright###;${COPYRIGHT};" META-INF/com/google/android/update-binary;
 	BUILDINFO="Build ${BUILD_NUMBER}, $DATE"
 	sed -i "s;###buildinfo###;${BUILDINFO};" META-INF/com/google/android/update-binary;
 	SOURCECODE="Source code:  https://github.com/acroreiser/Koffee"
 	sed -i "s;###sourcecode###;${SOURCECODE};" META-INF/com/google/android/update-binary;
+	DEVNAME="device.name1=${DEVICE}"
+	sed -i "s;###DEVICENAME###;${DEVNAME};" anykernel.sh;
+	BOOTBLK="block=${BOOT}"
+	sed -i "s;###BOOTBLK###;${BOOTBLK};" anykernel.sh;
 
 		# Creating recovery flashable zip
 	echo -e ">>> create flashable zip\n"
@@ -161,22 +169,23 @@ make_flashable()
 	if [ -f "$BUILD_PATH/tools_boeffla/testkey.x509.pem" ]; then
 		echo -e ">>> signing recovery zip\n"
 		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip
-		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip
-		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip.md5
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}-signed.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}-signed.zip.md5
 	else
-		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip
-		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip.md5
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}.zip.md5
 	fi
 
 
 
 	cd $BUILD_PATH
+	rm -fr .tmpzip
 	return 0
 }
 
 # Pre
 
-while getopts "hvO:j:KdN:CU:Dt:R" opt
+while getopts "hvO:j:KdkB:S:N:CU:Dt:R" opt
 do
 case $opt in
 	h) usage; exit 0;;
@@ -186,8 +195,10 @@ case $opt in
 	O) CUST_CONF=$OPTARG; DEFCONFIG=custom; KCONF_REPLACE=true;;
 	C) CLEAN=true;;
 	N) BUILD_NUMBER=$OPTARG;;
+	S) DEVICE=$OPTARG;;
 	K) KCONFIG=true;;
 	k) DONTPACK=true;;
+	B) BOOT=$OPTARG;;
 	d) DEFCONFIG="koffee_defconfig"; KCONF_REPLACE=true;;
 	D) DEFCONFIG="koffee_debug_defconfig"; KCONF_REPLACE=true;;
 	R) REMEMBER=true;;
@@ -254,6 +265,8 @@ if [ $? -eq 0 ]; then
 	echo "| Version:	$BOEFFLA_VERSION"
 	echo "| Configuration file:	$DEFCONFIG"
 	echo "| Build number:	$BVERN"
+	echo "| Building for:	$DEVICE"
+	echo "| Boot partition:	$BOOT"
 	echo "| Build  user:	$USER"
 	echo "| Build  host:	`hostname`"
 	echo "| Build  toolchain:	$TVERSION"
@@ -291,8 +304,19 @@ if [ "$DONTPACK" = "false" ]; then
 	make_flashable
 	if [ $? -eq 0 ]; then
 		echo "--------------------------------------"
-		echo "Flashable ZIP: ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip"
-		echo "MD5sum: ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip.md5"
+		echo "--------------------------------------"
+		echo "| Build  date:	$DATE"
+		echo "| Version:	$BOEFFLA_VERSION"
+		echo "| Configuration file:	$DEFCONFIG"
+		echo "| Build number:	$BVERN"
+		echo "| Building for:	$DEVICE"
+		echo "| Boot partition:	$BOOT"
+		echo "| Build  user:	$USER"
+		echo "| Build  host:	`hostname`"
+		echo "| Build  toolchain:	$TVERSION"
+		echo "| Number of threads:	$THREADS"
+		echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE} | grep .zip | head -n 1)"
+		echo "> MD5sum: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE} | grep .md5)"
 		echo "--------------------------------------"
 		echo "*** Koffee is ready! ***"
 	else
@@ -302,7 +326,18 @@ if [ "$DONTPACK" = "false" ]; then
 else
 	echo "---- Stage 3(skipped): Packing all stuff ----"
 	echo "--------------------------------------"
-	echo "zImage: arch/arm/boot/zImage"
+	echo "--------------------------------------"
+	echo "| Build  date:	$DATE"
+	echo "| Version:	$BOEFFLA_VERSION"
+	echo "| Configuration file:	$DEFCONFIG"
+	echo "| Build number:	$BVERN"
+	echo "| Building for:	$DEVICE"
+	echo "| Boot partition:	$BOOT"
+	echo "| Build  user:	$USER"
+	echo "| Build  host:	`hostname`"
+	echo "| Build  toolchain:	$TVERSION"
+	echo "| Number of threads:	$THREADS"
+	echo "> zImage: arch/arm/boot/zImage"
 	echo "--------------------------------------"
 	echo "*** Koffee is ready! ***"
 fi
