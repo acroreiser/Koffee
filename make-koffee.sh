@@ -7,7 +7,6 @@ KCONFIG=false
 CUST_CONF=no
 BUILD_NUMBER=
 DEVICE=m0
-BOOT=/dev/block/mmcblk0p5
 KCONF_REPLACE=false
 KERNEL_NAME="Koffee"
 BOEFFLA_VERSION="7.1"
@@ -33,7 +32,6 @@ usage() {
 	echo "	-d 			koffee_defconfig"
 	echo "	-D 			koffee_debug_defconfig - produce debugging kernel"
 	echo "	-S 			set device codename (m0 for i9300 or t03g for n7100)"
-	echo "	-B 			partition for boot.img (/dev/block/mmcblk0p5 for i9300 or /dev/block/mmcblk0p8 for n7100)"
 	echo "	-O <file> 			external/other defconfig."
 	echo "	-t <toolchain_prefix> 			toolchain prefix"
 	echo ""
@@ -156,9 +154,41 @@ make_flashable()
 	sed -i "s;###sourcecode###;${SOURCECODE};" META-INF/com/google/android/update-binary;
 	DEVNAME="device.name1=${DEVICE}"
 	sed -i "s;###DEVICENAME###;${DEVNAME};" anykernel.sh;
-	BOOTBLK="block=${BOOT}"
-	sed -i "s;###BOOTBLK###;${BOOTBLK};" anykernel.sh;
+	if [ "$DEVICE" = "m0" ]; then
+		BOOTBLK="block=/dev/block/mmcblk0p5"
+	fi
+	if [ "$DEVICE" = "t03g" ]; then
+		sed -i "s;###BOOTBLK###;/dev/block/mmcblk0p8;" anykernel.sh;
+	fi
 
+	if [ "$DEVICE" = "m0" ]; then
+		sed -i "s;###SYSTEM_DEVICE###;"SYSTEM_DEVICE=\"/dev/block/mmcblk0p9\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###CACHE_DEVICE###;"CACHE_DEVICE=\"/dev/block/mmcblk0p8\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###DATA_DEVICE###;"DATA_DEVICE=\"/dev/block/mmcblk0p12\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###BOOT_DEVICE###;"BOOT_DEVICE=\"/dev/block/mmcblk0p5\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###RADIO_DEVICE###;"RADIO_DEVICE=\"/dev/block/mmcblk0p7\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###RECOVERY_DEVICE###;"RECOVERY_DEVICE=\"/dev/block/mmcblk0p6\"";" ramdisk/res/bc/bccontroller.sh;
+
+		sed -i "s;###SYSTEM_DEVICE###;"SYSTEM_DEVICE=\"/dev/block/mmcblk0p9\"";" ramdisk/res/bc/boeffla-init-bc.sh;
+		sed -i "s;###CACHE_DEVICE###;"CACHE_DEVICE=\"/dev/block/mmcblk0p8\"";" ramdisk/res/bc/boeffla-init-bc.sh;
+		sed -i "s;###DATA_DEVICE###;"DATA_DEVICE=\"/dev/block/mmcblk0p12\"";" ramdisk/res/bc/boeffla-init-bc.sh;
+
+		sed -i "s;###BOOTBLK###;"BOOTBLK=\"/dev/block/mmcblk0p5\"";" tools/ak2-core.sh;
+	fi
+	if [ "$DEVICE" = "t03g" ]; then
+		sed -i "s;###SYSTEM_DEVICE###;"SYSTEM_DEVICE=\"/dev/block/mmcblk0p13\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###CACHE_DEVICE###;"CACHE_DEVICE=\"/dev/block/mmcblk0p12\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###DATA_DEVICE###;"DATA_DEVICE=\"/dev/block/mmcblk0p16\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###BOOT_DEVICE###;"BOOT_DEVICE=\"/dev/block/mmcblk0p8\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###RADIO_DEVICE###;"RADIO_DEVICE=\"/dev/block/mmcblk0p10\"";" ramdisk/res/bc/bccontroller.sh;
+		sed -i "s;###RECOVERY_DEVICE###;"RECOVERY_DEVICE=\"/dev/block/mmcblk0p9\"";" ramdisk/res/bc/bccontroller.sh;
+
+		sed -i "s;###SYSTEM_DEVICE###;"SYSTEM_DEVICE=\"/dev/block/mmcblk0p13\"";" ramdisk/res/bc/boeffla-init-bc.sh;
+		sed -i "s;###CACHE_DEVICE###;"CACHE_DEVICE=\"/dev/block/mmcblk0p12\"";" ramdisk/res/bc/boeffla-init-bc.sh;
+		sed -i "s;###DATA_DEVICE###;"DATA_DEVICE=\"/dev/block/mmcblk0p16\"";" ramdisk/res/bc/boeffla-init-bc.sh;
+
+		sed -i "s;###BOOTBLK###;"BOOTBLK=\"/dev/block/mmcblk0p8\"";" tools/ak2-core.sh;
+	fi
 		# Creating recovery flashable zip
 	echo -e ">>> create flashable zip\n"
 
@@ -198,7 +228,6 @@ case $opt in
 	S) DEVICE=$OPTARG;;
 	K) KCONFIG=true;;
 	k) DONTPACK=true;;
-	B) BOOT=$OPTARG;;
 	d) DEFCONFIG="koffee_defconfig"; KCONF_REPLACE=true;;
 	D) DEFCONFIG="koffee_debug_defconfig"; KCONF_REPLACE=true;;
 	R) REMEMBER=true;;
@@ -266,7 +295,6 @@ if [ $? -eq 0 ]; then
 	echo "| Configuration file:	$DEFCONFIG"
 	echo "| Build number:	$BVERN"
 	echo "| Building for:	$DEVICE"
-	echo "| Boot partition:	$BOOT"
 	echo "| Build  user:	$USER"
 	echo "| Build  host:	`hostname`"
 	echo "| Build  toolchain:	$TVERSION"
@@ -310,7 +338,6 @@ if [ "$DONTPACK" = "false" ]; then
 		echo "| Configuration file:	$DEFCONFIG"
 		echo "| Build number:	$BVERN"
 		echo "| Building for:	$DEVICE"
-		echo "| Boot partition:	$BOOT"
 		echo "| Build  user:	$USER"
 		echo "| Build  host:	`hostname`"
 		echo "| Build  toolchain:	$TVERSION"
@@ -332,7 +359,6 @@ else
 	echo "| Configuration file:	$DEFCONFIG"
 	echo "| Build number:	$BVERN"
 	echo "| Building for:	$DEVICE"
-	echo "| Boot partition:	$BOOT"
 	echo "| Build  user:	$USER"
 	echo "| Build  host:	`hostname`"
 	echo "| Build  toolchain:	$TVERSION"

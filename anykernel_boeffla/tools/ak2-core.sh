@@ -42,10 +42,11 @@ contains()
 	test "${1#*$2}" != "$1" && return 0 || return 1;
 }
 
+###BOOTBLK###
 # dump boot and extract ramdisk
 dump_boot()
 {
-	dd if=$block of=/tmp/anykernel/boot.img;
+	dd if=$BOOTBLK of=/tmp/anykernel/boot.img;
 
 	$bin/unpackbootimg -i /tmp/anykernel/boot.img -o $split_img;
 	if [ $? != 0 ]; then
@@ -158,7 +159,7 @@ write_boot()
 		echo -n "SEANDROIDENFORCE" >> /tmp/anykernel/boot-new.img
 	fi
 
-	dd if=/tmp/anykernel/boot-new.img of=$block;
+	dd if=/tmp/anykernel/boot-new.img of=$BOOTBLK;
 }
 
 # backup_file <file>
