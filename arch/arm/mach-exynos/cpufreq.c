@@ -719,6 +719,7 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 		 * if the selected governor has its own hotplugging implemented, disable intelli_plug,
 		 * if not, enable intelli_plug.
 		 */
+#if defined (CONFIG_INTELLI_PLUG) || defined (CONFIG_MSM_HOTPLUG)
 		if ((!strnicmp(policy->governor->name, "lulzactiveq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusqplus",	CPUFREQ_NAME_LEN))
@@ -756,6 +757,7 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 				msm_enabled = 1;
 			}
 		} /* hotplug */
+#endif
 #endif
 		if ((!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN))
