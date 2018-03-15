@@ -72,7 +72,10 @@
 #include <linux/ftrace.h>
 #include <linux/slab.h>
 #include <linux/cpuacct.h>
+
+#if defined (CONFIG_IO_PRIO_BOOST)
 #include <linux/ioprio.h>
+#endif
 
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
@@ -5080,31 +5083,11 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
 
 #endif
 
-static int protected_apps(char *comm)
-{
-	if (strcmp(comm, "d.process.acore") == 0 ||
-			strcmp(comm, "d.process.media") == 0 ||
-#ifdef CONFIG_LMK_LOCK_TREBUCHET
-			strcmp(comm, "enmod.trebuchet") == 0 || // Trebuchet
-#endif
-#ifdef CONFIG_LMK_LOCK_NOVA
-			strcmp(comm, "coilsw.launcher") == 0 || // Nova Launcher
-#endif
-			strcmp(comm, "m.android.phone") == 0 || // Phone
-			strcmp(comm, "rver.telecom:ui") == 0 ||  // Telecom UI
-
-			strcmp(comm, "ndroid.systemui") == 0)
-		return 1;
-	
-	return 0;
-}
-
 void set_user_nice(struct task_struct *p, long nice)
 {
 	int old_prio, delta, on_rq;
 	unsigned long flags;
 	struct rq *rq;
-	struct sched_param param;
 
 	if (TASK_NICE(p) == nice || nice < -20 || nice > 19)
 		return;
@@ -5114,23 +5097,16 @@ void set_user_nice(struct task_struct *p, long nice)
 	 */
 	rq = task_rq_lock(p, &flags);
 
-
+#if defined (CONFIG_IO_PRIO_BOOST)
 	if (nice == -10 && TASK_NICE(p) == 0 && p->cred->uid > 10000)
 	{
-		param.sched_priority = NICE_TO_PRIO(nice);
-		sched_setscheduler(p, SCHED_RR, &param);
-		p->static_prio = NICE_TO_PRIO(nice);
 		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,4));
-		goto out_unlock;
 	}
 	else if (TASK_NICE(p) == -10 && nice == 0 && p->cred->uid > 10000)
-	{
-		param.sched_priority = NICE_TO_PRIO(nice);
-		sched_setscheduler(p, SCHED_NORMAL, &param);
-		
-		set_task_ioprio(p, IOPRIO_PRIO_VALUE(2,4));
+	{	
+		set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,4));
 	}
-
+#endif
 	/*
 	 * The RT priorities are set via sched_setscheduler(), but we still
 	 * allow the 'normal' nice value to be set - but as expected
