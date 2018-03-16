@@ -76,6 +76,7 @@
 #if defined (CONFIG_IO_PRIO_BOOST)
 #include <linux/ioprio.h>
 #endif
+#include <linux/cpufreq.h>
 
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
@@ -5100,7 +5101,7 @@ void set_user_nice(struct task_struct *p, long nice)
 #if defined (CONFIG_IO_PRIO_BOOST)
 	if (nice == -10 && TASK_NICE(p) == 0 && p->cred->uid > 10000)
 	{
-		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,4));
+		set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,2));
 	}
 	else if (TASK_NICE(p) == -10 && nice == 0 && p->cred->uid > 10000)
 	{	
@@ -7218,6 +7219,7 @@ static const struct cpumask *cpu_cpu_mask(int cpu)
 }
 
 int sched_smt_power_savings = 0, sched_mc_power_savings = 0;
+EXPORT_SYMBOL(sched_mc_power_savings);
 
 struct sd_data {
 	struct sched_domain **__percpu sd;
@@ -7920,7 +7922,7 @@ match2:
 }
 
 #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-static void reinit_sched_domains(void)
+ void reinit_sched_domains(void)
 {
 	get_online_cpus();
 
@@ -7930,9 +7932,11 @@ static void reinit_sched_domains(void)
 	rebuild_sched_domains();
 	put_online_cpus();
 }
+EXPORT_SYMBOL(reinit_sched_domains);
 
 static ssize_t sched_power_savings_store(const char *buf, size_t count, int smt)
 {
+	struct cpufreq_policy policy;
 	unsigned int level = 0;
 
 	if (sscanf(buf, "%u", &level) != 1)
@@ -7946,6 +7950,10 @@ static ssize_t sched_power_savings_store(const char *buf, size_t count, int smt)
 	 */
 
 	if (level >= MAX_POWERSAVINGS_BALANCE_LEVELS)
+		return -EINVAL;
+
+	cpufreq_get_policy(&policy, 0);
+	if (strcmp(policy.governor->name, "interactive") != 0)
 		return -EINVAL;
 
 	if (smt)
