@@ -151,6 +151,9 @@
 # Tweak scheduler
 	echo 1 > /proc/sys/kernel/sched_child_runs_first
 
+# fix sepolicy for Doze helper at runtime
+	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
+
 # Turn off debugging for certain modules
 	echo 0 > /sys/module/ump/parameters/ump_debug_level
 	echo 0 > /sys/module/mali/parameters/mali_debug_level
