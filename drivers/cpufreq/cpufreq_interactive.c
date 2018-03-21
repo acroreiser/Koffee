@@ -75,6 +75,7 @@ static u64 hispeed_freq;
 #define DEFAULT_GO_HISPEED_LOAD 85
 static unsigned long go_hispeed_load;
 
+static int screenoff_limit_s;
 static int screenoff;
 
 /*
@@ -205,11 +206,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 			new_freq = hispeed_freq;
 		} else {
 
-		if(screenoff == 1)
+		if(screenoff == 1 && screenoff_limit_s == 1)
 		{
 			new_freq = pcpu->policy->max * cpu_load / 100;
-			if(new_freq > 600000)
-				new_freq = 600000;
+			if(new_freq > 800000)
+				new_freq = 800000;
 		}
 		else
 		{
@@ -231,11 +232,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 			}
 		}
 	} else {
-		if(screenoff == 1)
+		if(screenoff == 1 && screenoff_limit_s == 1)
 		{
 			new_freq = pcpu->policy->max * cpu_load / 100;
-			if(new_freq > 600000)
-				new_freq = 600000;
+			if(new_freq > 800000)
+				new_freq = 800000;
 		}
 		else
 					new_freq = pcpu->policy->max * cpu_load / 100;
@@ -777,6 +778,27 @@ static ssize_t store_input_boost(struct kobject *kobj, struct attribute *attr,
 
 define_one_global_rw(input_boost);
 
+static ssize_t show_screenoff_limit(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", screenoff_limit_s);
+}
+
+static ssize_t store_screenoff_limit(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+	screenoff_limit_s = val;
+	return count;
+}
+
+define_one_global_rw(screenoff_limit);
+
 static ssize_t show_boost(struct kobject *kobj, struct attribute *attr,
 			  char *buf)
 {
@@ -832,6 +854,7 @@ static struct attribute *interactive_attributes[] = {
 	&min_sample_time_attr.attr,
 	&timer_rate_attr.attr,
 	&input_boost.attr,
+	&screenoff_limit.attr,
 	&boost.attr,
 	&boostpulse.attr,
 	NULL,
