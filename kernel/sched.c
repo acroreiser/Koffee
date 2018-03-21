@@ -5101,7 +5101,7 @@ void set_user_nice(struct task_struct *p, long nice)
 #if defined (CONFIG_IO_PRIO_BOOST)
 	if (nice == -10 && TASK_NICE(p) == 0 && p->cred->uid > 10000)
 	{
-		set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,2));
+		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,6));
 	}
 	else if (TASK_NICE(p) == -10 && nice == 0 && p->cred->uid > 10000)
 	{	
