@@ -855,16 +855,6 @@ static irqreturn_t link_pm_irq_handler(int irq, void *data)
 	value = gpio_get_value(pm_data->gpio_link_hostwake);
 	mif_info("gpio [HWK] get [%d]\n", value);
 
-	/*
-	* igonore host wakeup interrupt at suspending kernel
-	*/
-	if (pm_data->dpm_suspending) {
-		mif_info("ignore request by suspending\n");
-		/* Ignore HWK but AP got to L2 by suspending fail */
-		wake_lock(&pm_data->l2_wake);
-		return IRQ_HANDLED;
-	}
-
 	if (value == HOSTWAKE_TRIGLEVEL) {
 		/* move to slave wake function */
 		/* runtime pm goes to active */
@@ -1033,26 +1023,6 @@ static int if_usb_suspend(struct usb_interface *intf, pm_message_t message)
 
 	devdata->usb_ld->suspended++;
 
-	if (devdata->usb_ld->suspended == LINKPM_DEV_NUM) {
-		mif_debug("[if_usb_suspended]\n");
-		wake_lock_timeout(&pm_data->l2_wake, msecs_to_jiffies(50));
-#ifdef	CONFIG_SLP
-		pm_wakeup_event(pm_data->miscdev.this_device,
-				msecs_to_jiffies(20));
-#endif
-		/* XMM6262 Host wakeup toggle recovery */
-		if (!pm_data->rx_cnt && !pm_data->tx_cnt) {
-			if (pm_data->ipc_debug_cnt++ > 10) {
-				mif_err("No TX/RX after resume 10times\n");
-				link_pm_change_modem_state(pm_data,
-					STATE_CRASH_RESET);
-			}
-		} else {
-			pm_data->ipc_debug_cnt = 0;
-			pm_data->rx_cnt = 0;
-			pm_data->tx_cnt = 0;
-		}
-	}
 	return 0;
 }
 
@@ -1080,10 +1050,6 @@ static int if_usb_resume(struct usb_interface *intf)
 	}
 
 	devdata->usb_ld->suspended--;
-	if (!devdata->usb_ld->suspended) {
-		mif_debug("[if_usb_resumed]\n");
-		wake_lock(&pm_data->l2_wake);
-	}
 
 	return 0;
 }
@@ -1333,7 +1299,6 @@ static int __devinit if_usb_probe(struct usb_interface *intf,
 			queue_delayed_work(usb_ld->link_pm_data->wq,
 					&usb_ld->link_pm_data->link_pm_start,
 					msecs_to_jiffies(500));
-			wake_lock(&usb_ld->link_pm_data->l2_wake);
 			wake_unlock(&usb_ld->link_pm_data->boot_wake);
 	}
 
@@ -1514,7 +1479,6 @@ static int usb_link_pm_init(struct usb_link_device *usb_ld, void *data)
 	INIT_DELAYED_WORK(&pm_data->link_pm_start, link_pm_runtime_start);
 	INIT_DELAYED_WORK(&pm_data->link_reconnect_work,
 						link_pm_reconnect_work);
-	wake_lock_init(&pm_data->l2_wake, WAKE_LOCK_SUSPEND, "l2_hsic");
 	wake_lock_init(&pm_data->boot_wake, WAKE_LOCK_SUSPEND, "boot_hsic");
 	wake_lock_init(&pm_data->rpm_wake, WAKE_LOCK_SUSPEND, "rpm_hsic");
 	wake_lock_init(&pm_data->tx_async_wake, WAKE_LOCK_SUSPEND, "tx_hsic");
