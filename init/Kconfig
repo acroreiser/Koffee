@@ -1003,6 +1003,9 @@ config CC_USE_PIPE
 config CC_USE_GRAPHITE
 	bool "Use GCC Graphite optimization"
 
+config CC_MORE_OPTIMIZATIONS
+	bool "Use more GCC optimizations"
+
 config SYSCTL
 	bool
 
