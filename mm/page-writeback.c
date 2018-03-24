@@ -40,7 +40,7 @@
  * After a CPU has dirtied this many pages, balance_dirty_pages_ratelimited
  * will look to see if it needs to force writeback or throttling.
  */
-static long ratelimit_pages = 32;
+static long ratelimit_pages = 3072;
 
 /*
  * When balance_dirty_pages decides that the caller needs to perform some
@@ -62,7 +62,7 @@ static inline long sync_writeback_pages(unsigned long dirtied)
  * Start background writeback (via writeback threads) at this percentage
  */
 #ifdef CONFIG_DECREASE_DIRTY_RATIO
-int dirty_background_ratio = 2;
+int dirty_background_ratio = 0;
 #else
 int dirty_background_ratio = 10;
 #endif
@@ -71,19 +71,22 @@ int dirty_background_ratio = 10;
  * dirty_background_bytes starts at 0 (disabled) so that it is a function of
  * dirty_background_ratio * the amount of dirtyable memory
  */
+#ifdef CONFIG_DECREASE_DIRTY_RATIO
+unsigned long __read_mostly dirty_background_bytes = 12779520;
+#else
 unsigned long dirty_background_bytes;
-
+#endif
 /*
  * free highmem will not be subtracted from the total free memory
  * for calculating free ratios if vm_highmem_is_dirtyable is true
  */
-int vm_highmem_is_dirtyable;
+int vm_highmem_is_dirtyable = 1;
 
 /*
  * The generator of dirty data starts writeback at this percentage
  */
 #ifdef CONFIG_DECREASE_DIRTY_RATIO
-int vm_dirty_ratio = 4;
+int vm_dirty_ratio = 0;
 #else
 int vm_dirty_ratio = 20;
 #endif
@@ -92,17 +95,21 @@ int vm_dirty_ratio = 20;
  * vm_dirty_bytes starts at 0 (disabled) so that it is a function of
  * vm_dirty_ratio * the amount of dirtyable memory
  */
+#ifdef CONFIG_DECREASE_DIRTY_RATIO
+unsigned long __read_mostly vm_dirty_bytes = (12779520 * 2);
+#else
 unsigned long vm_dirty_bytes;
+#endif
 
 /*
  * The interval between `kupdate'-style writebacks
  */
-unsigned int dirty_writeback_interval = 5 * 100; /* centiseconds */
+unsigned int __read_mostly dirty_writeback_interval = 100; /* centiseconds */
 
 /*
  * The longest time for which data is allowed to remain dirty
  */
-unsigned int dirty_expire_interval = 30 * 100; /* centiseconds */
+unsigned int __read_mostly dirty_expire_interval = 100; /* centiseconds */
 
 /*
  * Flag that makes the machine dump writes/reads and block dirtyings.
