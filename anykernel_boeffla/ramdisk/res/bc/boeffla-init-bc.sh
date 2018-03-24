@@ -143,7 +143,7 @@
 		echo "100" > /proc/sys/vm/swappiness
 		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
 	fi
-	
+### KOFFEE's TWEAKS AND FIXUPS	
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
@@ -154,11 +154,9 @@
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
-# strict request affinity for emmc
-	echo 2 > /sys/block/mmcblk0/queue/rq_affinity
-
 # reduce nr_requests for emmc
 	echo 32 > /sys/block/mmcblk0/queue/nr_requests
+### KOFFEE's TWEAKS AND FIXUPS ###
 
 # Turn off debugging for certain modules
 	echo 0 > /sys/module/ump/parameters/ump_debug_level
