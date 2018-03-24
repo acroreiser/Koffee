@@ -154,6 +154,12 @@
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
+# strict request affinity for emmc
+	echo 2 > /sys/block/mmcblk0/queue/rq_affinity
+
+# reduce nr_requests for emmc
+	echo 32 > /sys/block/mmcblk0/queue/nr_requests
+
 # Turn off debugging for certain modules
 	echo 0 > /sys/module/ump/parameters/ump_debug_level
 	echo 0 > /sys/module/mali/parameters/mali_debug_level
