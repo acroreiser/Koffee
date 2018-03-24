@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.3
+VERSION=0.4
 DEFCONFIG=boeffla_defconfig
 TOOLCHAIN=
 KCONFIG=false
@@ -41,7 +41,7 @@ usage() {
 	echo "	-C 			cleanup before building"
 	echo "	-R 			save your arguments to reuse (just run koffee-build.sh on next builds)"
 	echo "	-U <username> 			set build user"
-	echo "	-N <build_number> 			set build number"
+	echo "	-N <release_number> 			set release number"
 	echo "	-v 			show build script version"
 	echo "	-h 			show this help"
 	
@@ -146,9 +146,9 @@ make_flashable()
 	cd $REPACK_PATH
 	KERNELNAME="Flashing $KERNEL_NAME $BOEFFLA_VERSION"
 	sed -i "s;###kernelname###;${KERNELNAME};" META-INF/com/google/android/update-binary;
-	COPYRIGHT=$(echo '(c) A\$teroid (aka acroreiser) and Lord Boeffla (aka andip71), 2018')
+	COPYRIGHT=$(echo '(c) A\$teroid × Lord Boeffla, 2018')
 	sed -i "s;###copyright###;${COPYRIGHT};" META-INF/com/google/android/update-binary;
-	BUILDINFO="Build ${BUILD_NUMBER}, $DATE"
+	BUILDINFO="Release ${BUILD_NUMBER}, $DATE"
 	sed -i "s;###buildinfo###;${BUILDINFO};" META-INF/com/google/android/update-binary;
 	SOURCECODE="Source code:  https://github.com/acroreiser/Koffee"
 	sed -i "s;###sourcecode###;${SOURCECODE};" META-INF/com/google/android/update-binary;
@@ -193,17 +193,17 @@ make_flashable()
 	echo -e ">>> create flashable zip\n"
 
 	# create zip file
-	zip -r9 ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip * -x ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip
+	zip -r9 ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip * -x ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip
 
 	# sign recovery zip if there are keys available
 	if [ -f "$BUILD_PATH/tools_boeffla/testkey.x509.pem" ]; then
 		echo -e ">>> signing recovery zip\n"
-		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip
-		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}-signed.zip
-		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}-signed.zip.md5
+		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-signed.zip
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip.md5
 	else
-		cp ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}.zip
-		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE}.zip.md5
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip.md5
 	fi
 
 
@@ -293,7 +293,7 @@ if [ $? -eq 0 ]; then
 	echo "| Build  date:	$DATE"
 	echo "| Version:	$BOEFFLA_VERSION"
 	echo "| Configuration file:	$DEFCONFIG"
-	echo "| Build number:	$BVERN"
+	echo "| Release:	$BVERN"
 	echo "| Building for:	$DEVICE"
 	echo "| Build  user:	$USER"
 	echo "| Build  host:	`hostname`"
@@ -336,14 +336,14 @@ if [ "$DONTPACK" = "false" ]; then
 		echo "| Build  date:	$DATE"
 		echo "| Version:	$BOEFFLA_VERSION"
 		echo "| Configuration file:	$DEFCONFIG"
-		echo "| Build number:	$BVERN"
+		echo "| Release:	$BVERN"
 		echo "| Building for:	$DEVICE"
 		echo "| Build  user:	$USER"
 		echo "| Build  host:	`hostname`"
 		echo "| Build  toolchain:	$TVERSION"
 		echo "| Number of threads:	$THREADS"
-		echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE} | grep .zip | head -n 1)"
-		echo "> MD5sum: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}b${BUILD_NUMBER}-${DEVICE} | grep .md5)"
+		echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE} | grep .zip | head -n 1)"
+		echo "> MD5sum: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE} | grep .md5)"
 		echo "--------------------------------------"
 		echo "*** Koffee is ready! ***"
 	else
@@ -357,7 +357,7 @@ else
 	echo "| Build  date:	$DATE"
 	echo "| Version:	$BOEFFLA_VERSION"
 	echo "| Configuration file:	$DEFCONFIG"
-	echo "| Build number:	$BVERN"
+	echo "| Release:	$BVERN"
 	echo "| Building for:	$DEVICE"
 	echo "| Build  user:	$USER"
 	echo "| Build  host:	`hostname`"
