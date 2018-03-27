@@ -36,6 +36,10 @@
 #define CONFIG_DVFS_LIMIT
 #endif
 
+#if defined(CONFIG_ARCH_EXYNOS4)
+extern unsigned int exynos_result_of_asv;
+#endif
+
 #ifdef CONFIG_DVFS_LIMIT
 #include <mach/cpufreq.h>
 #include <../kernel/power/power.h>
@@ -932,7 +936,6 @@ err_out_kobj_put:
 	return ret;
 }
 
-
 /**
  * cpufreq_add_dev - add a CPU device
  *
@@ -1008,7 +1011,17 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	}
 #endif
 	if (!found)
+#ifdef CONFIG_ARCH_EXYNOS4
+	{
+		if(exynos_result_of_asv < 5)
+			policy->governor = &cpufreq_gov_pegasusq;
+		else
+			policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+	}
+#else
 		policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+#endif
+
 	/* call driver. From then on the cpufreq must be able
 	 * to accept all calls to ->verify and ->setpolicy for this CPU
 	 */
