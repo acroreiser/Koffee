@@ -1,0 +1,25 @@
+# sched_mc [on|off|aggressive]
+if [[ -e "$1" ]]; then
+	if [[ ! -z "$2" ]]; then
+		if [ "$2" = "off" ]; then
+			echo 0 > /sys/devices/system/cpu/sched_mc_power_savings
+		fi
+		if [ "$2" = "on" ]; then
+			echo 1 > /sys/devices/system/cpu/sched_mc_power_savings
+		fi
+		if [ "$2" = "aggressive" ]; then
+			echo 2 > /sys/devices/system/cpu/sched_mc_power_savings
+		fi
+	fi
+	MC=$(cat /sys/devices/system/cpu/sched_mc_power_savings)
+	if [ "$MC" = "0" ]; then
+		echo "off"
+	fi
+	if [ "$MC" = "1" ]; then
+		echo "on"
+	fi
+	if [ "$MC" = "2" ]; then
+		echo "aggressive"
+	fi
+else # avoid errors
+	echo "0"; fi
