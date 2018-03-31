@@ -42,7 +42,7 @@
 #define DEFAULT_MAX_CPUS_ONLINE		NR_CPUS
 /* cur_avg_load can be > 200! */
 #define DEFAULT_FAST_LANE_LOAD		180
-#define DEFAULT_FAST_LANE_MIN_FREQ	1574400
+#define DEFAULT_FAST_LANE_MIN_FREQ	1100000
 
 /*
  * debug = 1 will print info with dprintk.
@@ -50,7 +50,7 @@
  * debug = 3 will print suspend/resume and fast lane boost.
  * debug = 4 will print suspend/resume and hotplug work delay for debug.
  */
-static unsigned int debug = 2;
+static unsigned int debug = 0;
 module_param_named(debug_mask, debug, uint, 0644);
 
 unsigned int msm_enabled = 0;
