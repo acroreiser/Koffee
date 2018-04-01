@@ -78,7 +78,7 @@ static unsigned long go_hispeed_load;
 static int screenoff_limit_s;
 static int screenoff;
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-static int temp_factor;
+static int temp_factor = 1;
 #endif
 
 /*
