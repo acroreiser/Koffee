@@ -229,7 +229,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 				unsigned int event);
 
 #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PEGASUSQ
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PYRAMID
 static
 #endif
 #endif

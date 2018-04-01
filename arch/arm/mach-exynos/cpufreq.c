@@ -700,14 +700,10 @@ static struct notifier_block exynos_cpufreq_notifier = {
 };
 
 extern int sched_mc_power_savings;
-extern void reinit_sched_domains();
+extern void reinit_sched_domains(void);
 
 #if defined (CONFIG_INTELLI_PLUG)
 extern unsigned int intelli_plug_active;
-#endif
-
-#if defined (CONFIG_MSM_HOTPLUG)
-extern unsigned int msm_enabled;
 #endif
 
 static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
@@ -717,7 +713,7 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 
 	switch (code) {
 	case CPUFREQ_ADJUST:
-		if (strcmp(policy->governor->name, "interactive") != 0)
+		if (strcmp(policy->governor->name, "pyramid") != 0)
 		{
 			sched_mc_power_savings = 0;
 			reinit_sched_domains();
@@ -728,9 +724,10 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 		 * if the selected governor has its own hotplugging implemented, disable intelli_plug,
 		 * if not, enable intelli_plug.
 		 */
-#if defined (CONFIG_INTELLI_PLUG) || defined (CONFIG_MSM_HOTPLUG)
+#if defined (CONFIG_INTELLI_PLUG)
 		if ((!strnicmp(policy->governor->name, "lulzactiveq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusq",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "pyramid",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusqplus",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN)) /* add performance	governor as an exception */
 		 || (!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN)) /* add powersave	governor as an exception */
@@ -753,20 +750,6 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 		} /* intelli_plug */
 #endif
 
-#if defined (CONFIG_MSM_HOTPLUG)
-			if (msm_enabled) {
-				printk(KERN_DEBUG "disabling msm_hotplug for governor: %s\n",
-								policy->governor->name);
-				msm_enabled = 0;
-			}
-		} else {
-			if (!msm_enabled) {
-				printk(KERN_DEBUG "enabling msm_hotplug for governor: %s\n",
-								policy->governor->name);
-				msm_enabled = 1;
-			}
-		} /* hotplug */
-#endif
 #endif
 		if ((!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN))

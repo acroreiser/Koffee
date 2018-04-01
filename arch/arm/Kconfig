@@ -1334,7 +1334,6 @@ config ARM_ERRATA_775420
 endmenu
 
 source "arch/arm/common/Kconfig"
-source "arch/arm/hotplug/Kconfig"
 
 menu "Bus support"
 
@@ -1515,6 +1514,8 @@ config HOTPLUG_CPU
 	help
 	  Say Y here to experiment with turning CPUs off and on.  CPUs
 	  can be controlled through /sys/devices/system/cpu.
+
+source arch/arm/hotplug/Kconfig
 
 config LOCAL_TIMERS
 	bool "Use local timer interrupts"

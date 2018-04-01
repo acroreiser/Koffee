@@ -1011,7 +1011,7 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	}
 #endif
 	if (!found)
-#ifdef CONFIG_ARCH_EXYNOS4
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PEGASUSQ
 	{
 		if(exynos_result_of_asv < 5)
 			policy->governor = &cpufreq_gov_pegasusq;
