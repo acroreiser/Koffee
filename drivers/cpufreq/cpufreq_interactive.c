@@ -77,9 +77,6 @@ static unsigned long go_hispeed_load;
 
 static int screenoff_limit_s;
 static int screenoff;
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-static int temp_factor = 1;
-#endif
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
@@ -131,10 +128,6 @@ struct cpufreq_governor cpufreq_gov_interactive = {
 	.max_transition_latency = 10000000,
 	.owner = THIS_MODULE,
 };
-
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-extern unsigned int get_exynos4_temperature(void);
-#endif
 
 static void cpufreq_interactive_timer(unsigned long data)
 {
@@ -212,49 +205,19 @@ static void cpufreq_interactive_timer(unsigned long data)
 		if (pcpu->target_freq <= pcpu->policy->min) {
 			new_freq = hispeed_freq;
 		} else {
-		new_freq = pcpu->policy->max * cpu_load / 100;
+
 		if(screenoff == 1 && screenoff_limit_s == 1)
 		{
+			new_freq = pcpu->policy->max * cpu_load / 100;
 			if(new_freq > 800000)
 				new_freq = 800000;
 		}
 		else
 		{
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-			if(temp_factor == 1)
-			{
-				if(get_exynos4_temperature() >= 55)
-				{
-					if(new_freq > 1000000)
-						new_freq = new_freq - 400000;
-					else
-						if(new_freq > 600000)
-							new_freq = new_freq - 200000;
-						else
-							if(new_freq >= 300000)
-								new_freq = new_freq - 100000;
+			new_freq = pcpu->policy->max * cpu_load / 100;
 
-				}
-				else
-				{
-					if(get_exynos4_temperature() >= 45)
-					{
-						if(new_freq > 1000000)
-							new_freq = new_freq - 200000;
-						else
-							if(new_freq > 600000)
-								new_freq = new_freq - 100000;
-					}
-					else
-					{
-#endif
-						if (new_freq < hispeed_freq)
-							new_freq = hispeed_freq;
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-					}
-				}
-			}
-#endif
+			if (new_freq < hispeed_freq)
+				new_freq = hispeed_freq;
 		}
 
 			if (pcpu->target_freq == hispeed_freq &&
@@ -269,44 +232,18 @@ static void cpufreq_interactive_timer(unsigned long data)
 			}
 		}
 	} else {
-		new_freq = pcpu->policy->max * cpu_load / 100;
 		if(screenoff == 1 && screenoff_limit_s == 1)
-		{	
+		{
+			new_freq = pcpu->policy->max * cpu_load / 100;
 			if(new_freq > 800000)
 				new_freq = 800000;
 		}
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 		else
-		{
-			if(temp_factor == 1)
-			{
-				if(get_exynos4_temperature() >= 60)
-				{
-					if(new_freq > 1000000)
-						new_freq = new_freq - 400000;
-					else
-						if(new_freq > 600000)
-							new_freq = new_freq - 200000;
-						else
-							if(new_freq >= 300000)
-								new_freq = new_freq - 100000;
+					new_freq = pcpu->policy->max * cpu_load / 100;
+	}
 
-				}
-				else
-				{
-					if(get_exynos4_temperature() >= 50)
-					{
-						if(new_freq > 1000000)
-							new_freq = new_freq - 200000;
-						else
-							if(new_freq > 600000)
-								new_freq = new_freq - 100000;
-					}
-				}
-			}
-		}
-#endif
-	}	
+	if(screenoff)
+		
 		
 	if (new_freq <= hispeed_freq)
 		pcpu->hispeed_validate_time = pcpu->timer_run_time;
@@ -856,42 +793,11 @@ static ssize_t store_screenoff_limit(struct kobject *kobj, struct attribute *att
 	ret = strict_strtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
-
-	if(val < 0 || val > 1)
-		return -EINVAL;
-
 	screenoff_limit_s = val;
 	return count;
 }
 
 define_one_global_rw(screenoff_limit);
-
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-static ssize_t show_temperature_factor(struct kobject *kobj, struct attribute *attr,
-				char *buf)
-{
-	return sprintf(buf, "%u\n", temp_factor);
-}
-
-static ssize_t store_temperature_factor(struct kobject *kobj, struct attribute *attr,
-				 const char *buf, size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = strict_strtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-
-	if(val < 0 || val > 1)
-		return -EINVAL;
-
-	temp_factor = val;
-	return count;
-}
-
-define_one_global_rw(temperature_factor);
-#endif
 
 static ssize_t show_boost(struct kobject *kobj, struct attribute *attr,
 			  char *buf)
@@ -949,9 +855,6 @@ static struct attribute *interactive_attributes[] = {
 	&timer_rate_attr.attr,
 	&input_boost.attr,
 	&screenoff_limit.attr,
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-	&temperature_factor.attr,
-#endif
 	&boost.attr,
 	&boostpulse.attr,
 	NULL,
