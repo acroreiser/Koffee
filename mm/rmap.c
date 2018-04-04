@@ -529,7 +529,11 @@ vma_address(struct page *page, struct vm_area_struct *vma)
 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
 	unsigned long address;
 
+#ifdef CONFIG_HUGETLB_PAGE
 	if (unlikely(is_vm_hugetlb_page(vma)))
+#else
+	if (unlikely(0))
+#endif
 		pgoff = page->index << huge_page_order(page_hstate(page));
 	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
 	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
