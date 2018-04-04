@@ -194,7 +194,7 @@ cma_alloc_from(const char *regions, size_t size, dma_addr_t alignment)
  * On error returns a negative error, zero otherwise.
  */
 static inline int
-cma_info_about(struct cma_info *info, const const char *regions)
+cma_info_about(struct cma_info *info, const char *regions)
 {
 	return __cma_info(info, NULL, regions);
 }
