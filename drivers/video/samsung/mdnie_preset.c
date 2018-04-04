@@ -63,7 +63,7 @@ static void write_mdnie_ui (unsigned char *dest_name,
 	struct mdnie_info *m;
 
 	// get pointer to global mdnie control structure
-	if(kallsyms_lookup_name("g_mdnie") == NULL)
+	if(kallsyms_lookup_name("g_mdnie") == 0)
 		return;
 	else
 		m = *((void **)kallsyms_lookup_name("g_mdnie"));
