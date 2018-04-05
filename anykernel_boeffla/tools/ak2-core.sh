@@ -121,6 +121,9 @@ write_boot()
 		dtb="--dt $split_img/$dtb";
 	fi;
 
+	chmod -R 0755 /tmp/anykernel/ramdisk/sbin/*;
+	chmod -R 0755 /tmp/anykernel/ramdisk/res/synapse/actions/*;
+
 	if [ -f "$bin/mkbootfs" ]; then
 		$bin/mkbootfs /tmp/anykernel/ramdisk | gzip > /tmp/anykernel/ramdisk-new.cpio.gz;
 	else

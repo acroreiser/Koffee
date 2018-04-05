@@ -36,6 +36,8 @@
 		/sbin/busybox mkdir $BOEFFLA_DATA_PATH
 	fi
 
+	/sbin/busybox ln -s /sbin/busybox /sbin/awk
+
 	/sbin/busybox chmod 775 $SD_PATH
 	/sbin/busybox chown 1023:1023 $SD_PATH
 

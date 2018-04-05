@@ -42,6 +42,7 @@
                   action:"generic /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
                   values:[
                      interactive,
+                     pyramid,
                      ondemand,
                      lulzactiveq,
                      pegasusq,
@@ -255,53 +256,43 @@
          ]
       },
       {
-         name:Screen,
-         elements:[
-            {
-               SPane:{
-                  title:"mDNIe global controls",
-                  description:"mobile Digital Natural Image engine control. Samsungs hardware image post-processor controls virtually any image manipulation. All control master switches, if left as delta controls, will negate the sequence setting if checked. Master sequence has SCR and CS enabled by default."
-               }
-            },
-            {
-               SCheckBox:{
-                  label:"Sharpness tweak",
-                  action:"mdnie_preset /sys/devices/virtual/misc/mdnie_preset/mdnie_preset"
-               }
-            },
-         ]
-      },
-      {
          name:Audio,
          elements:[
             {
                SPane:{
-                  title:"Boeffla Sound",
+                  title:"Boeffla Sound Engine",
                   description:"Headphone amplification increases volume only on headphones and headsets. The controlled input is the digital input volume for the audio DAC."
+               }
+            },
+            {
+               SCheckBox:{
+                  label:"Enabled",
+                  default:1,
+                  action:"bs_s /sys/class/misc/boeffla_sound/boeffla_sound"
                }
             },
             {
                SSeekBar:{
                   description:"Headphone left channel volume",
-                  min:80,
-                  max:150,
+                  min:0,
+                  max:63,
                   unit:"dB",
-                  weight:0.5,
+                  weight:1,
                   offset:128,
-                  default:128,
-                  action:"generic /sys/class/misc/wolfson_control/headphone_left"
+                  default:50,
+                  action:"headphone left"
                }
             },
             {
                SSeekBar:{
                   description:"Headphone right channel volume",
-                  min:80,
-                  max:150,
+                  min:0,
+                  max:63,
                   unit:"dB",
-                  weight:0.5,
+                  weight:1,
                   offset:128,
                   default:128,
-                  action:"generic /sys/class/misc/wolfson_control/headphone_right"
+                  action:"headphone right"
                }
             },
             {
@@ -309,35 +300,31 @@
                   description:"Enables mono output",
                   label:"Mono mixer",
                   default:0,
-                  action:"generic /sys/class/misc/wolfson_control/switch_hp_mono"
+                  action:"bs_cb /sys/class/misc/boeffla_sound/mono_downmix"
                }
             },
             {
                SPane:{
                   title:"Speaker Amplification",
-                  description:"Speaker amplification increases volume on the external speaker and earpiece. Speaker volumes are expressed as deltas to Samsung's audio profiles, so not to completely override them."
+                  description:"Speaker amplification increases volume on the speaker."
                }
             },
             {
                SSeekBar:{
                   description:"Main speaker volume",
-                  min:-8,
-                  max:16,
+                  min:0,
+                  max:63,
                   unit:"dB",
-                  weight:0.5,
+                  weight:1,
                   default:0,
-                  action:"generic /sys/class/misc/wolfson_control/speaker_volume"
+                  action:"speaker_vol /sys/class/misc/boeffla_sound/speaker_volume"
                }
             },
             {
-               SSeekBar:{
-                  description:"Earpiece volume",
-                  min:-8,
-                  max:16,
-                  unit:"dB",
-                  weight:0.5,
+               SCheckBox:{
+                  label:"Speaker tuning",
                   default:0,
-                  action:"generic /sys/class/misc/wolfson_control/earpiece_volume"
+                  action:"bs_cb /sys/class/misc/boeffla_sound/speaker_tuning"
                }
             },
             {
@@ -345,157 +332,39 @@
                   description:"Disables the main speaker when audio is outputted via headphones; all audio routed to the speaker is disabled (!!!).",
                   label:"Privacy mode",
                   default:0,
-                  action:"generic /sys/class/misc/wolfson_control/switch_sp_privacy"
+                  action:"bs_cb /sys/class/misc/boeffla_sound/privacy_mode"
                }
             },
             {
                SPane:{
-                  title:"Speaker tuning",
-                  description:"Speaker tuning uses a hardware equalizer to reshape the signal depending on the frequency response of the speaker to achieve a (as much as possible) flat frequency response. It gives much better sounding speaker output."
-               }
-            },
-            {
-               SPane:{
-                  title:"HP Equalizer settings",
-                  description:"Controls the hardware equalizer."
+                  title:"Digital-to-analog converter options",
                }
             },
             {
                SCheckBox:{
-                  description:"Enable headphone equalizer for gain controls.",
-                  label:"Enable headphone equalizer",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/switch_eq_headphone"
+                  label:"DAC direct",
+                  default:1,
+                  action:"bs_cb /sys/class/misc/boeffla_sound/dac_direct"
                }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 1 gain",
-                  description:"Cutoff-frequency: 96Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_hp_gain_1"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 2 gain",
-                  description:"Center-frequency: 273Hz, bandwidth: 551Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_hp_gain_2"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 3 gain",
-                  description:"Center-frequency: 784Hz, bandwidth: 1560Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_hp_gain_3"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 4 gain",
-                  description:"Center-frequency: 2206Hz, bandwidth: 4409Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_hp_gain_4"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 5 gain",
-                  description:"Cutoff-frequency: 6340Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_hp_gain_5"
-               }
-            },
-            {
-               SPane:{
-                  title:"SP Equalizer settings",
-                  description:"Controls the hardware equalizer."
-               }
-            },
+            },    
             {
                SCheckBox:{
-                  description:"Enable speaker equalizer for gain controls.",
-                  label:"Enable speaker equalizer",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/switch_eq_speaker"
+                  label:"DAC oversampling",
+                  default:1,
+                  action:"bs_cb /sys/class/misc/boeffla_sound/dac_oversampling"
                }
-            },
+            },     
             {
-               SSeekBar:{
-                  title:"Band 1 gain",
-                  description:"Cutoff-frequency: 160Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_sp_gain_1"
+               SCheckBox:{
+                  label:"FLL tuning",
+                  default:1,
+                  action:"bs_cb /sys/class/misc/boeffla_sound/fll_tuning"
                }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 2 gain",
-                  description:"Center-frequency: 500Hz, bandwidth: 1050Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_sp_gain_2"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 3 gain",
-                  description:"Center-frequency: 2800Hz, bandwidth: 2200Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_sp_gain_3"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 4 gain",
-                  description:"Center-frequency: 7600Hz, bandwidth: 4500Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_sp_gain_4"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Band 5 gain",
-                  description:"Cutoff-frequency: 20000Hz",
-                  min:-12,
-                  max:12,
-                  unit:"dB",
-                  default:0,
-                  action:"generic /sys/class/misc/wolfson_control/eq_sp_gain_5"
-               }
-            }
+            },         
          ]
       },
       {
-         name:Battery,
+         name:Charging,
          elements:[
             {
                SDescription:{
@@ -503,372 +372,62 @@
                }
             },
             {
-               SButton:{
-                  label:"Detect live charging source",
-                  action:"charge-source"
-               }
-            },
-            {
                SPane:{
-                  title:"AC/Mains",
-                  description:"AC or mains current limits applied to designated dedicated chargers and corresponding cables."
+                  title:"Charge levels",
                }
             },
             {
                SSeekBar:{
-                  title:"AC/Mains Input Current",
-                  min:400,
-                  max:3000,
-                  unit:"mA",
-                  step:50,
-                  default:1900,
-                  action:"generic /sys/devices/platform/sec-battery/ac_input_curr"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"AC/Mains Charge Current",
-                  description:"AC or mains charge current supplied to battery during charging.",
-                  min:400,
-                  max:3000,
-                  unit:"mA",
-                  step:50,
-                  default:1900,
-                  action:"generic /sys/devices/platform/sec-battery/ac_chrg_curr"
-               }
-            },
-            {
-               SDescription:{
-                  description:"Input and charging current are limited to certain maximas if the screen is turned on to avoid elevated heat generation. Normal charging limits are applied when the screen is off."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"AC/Mains Input Current (Screen-on)",
-                  min:400,
-                  max:3000,
-                  unit:"mA",
-                  step:50,
-                  default:1200,
-                  action:"generic /sys/devices/platform/sec-battery/siop_input_limit"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"AC/Mains Charge Current (Screen-on)",
-                  min:400,
-                  max:3000,
-                  unit:"mA",
-                  step:50,
-                  default:1000,
-                  action:"generic /sys/devices/platform/sec-battery/siop_charge_limit"
-               }
-            },
-            {
-               SPane:{
-                  title:"Standard Downstream Port",
-                  description:"Standard Downstream Port current limits applied on plain and compliant USB data connectivity ports."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"SDP Input Current",
-                  min:400,
-                  max:1500,
-                  unit:"mA",
-                  step:25,
-                  default:460,
-                  action:"generic /sys/devices/platform/sec-battery/sdp_input_curr"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"SDP Charge Current",
-                  min:400,
-                  max:1500,
-                  unit:"mA",
-                  step:25,
-                  default:460,
-                  action:"generic /sys/devices/platform/sec-battery/sdp_chrg_curr"
-               }
-            },
-            {
-               SPane:{
-                  title:"Dedicated Charging Port",
-                  description:"Dedicated Charging Port current limits applied when detection of a standalone charger happens, or if a USB connector with shorted D+ and D- pins is attached."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"DCP Input Current",
-                  min:400,
-                  max:2000,
-                  unit:"mA",
-                  step:50,
-                  default:1000,
-                  action:"generic /sys/devices/platform/sec-battery/dcp_input_curr"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"DCP Charge Current",
-                  min:400,
-                  max:2000,
-                  unit:"mA",
-                  step:50,
-                  default:1000,
-                  action:"generic /sys/devices/platform/sec-battery/dcp_chrg_curr"
-               }
-            },
-            {
-               SPane:{
-                  title:"Charging Downstream Port",
-                  description:"Charging Downstream Port current limits applied on BCS 1.1 special charging USB data connectivity ports."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"CDP Input Current",
-                  min:400,
-                  max:1500,
-                  unit:"mA",
-                  step:50,
-                  default:1000,
-                  action:"generic /sys/devices/platform/sec-battery/cdp_input_curr"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"CDP Charge Current",
-                  min:400,
-                  max:1500,
-                  unit:"mA",
-                  step:50,
-                  default:1000,
-                  action:"generic /sys/devices/platform/sec-battery/cdp_chrg_curr"
-               }
-            },
-            {
-               SPane:{
-                  title:"Accessory Charging Adapter",
-                  description:"Accessory Charging Adapter current limits applied to various dedicated USB accessories."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"ACA Input Current",
+                  description:"Charge level AC",
                   min:100,
-                  max:1000,
+                  max:1600,
                   unit:"mA",
-                  step:25,
-                  default:460,
-                  action:"generic /sys/devices/platform/sec-battery/aca_input_curr"
+                  step:100,
+                  default:1100,
+                  action:"chg_lvl /sys/kernel/charge_levels/charge_level_ac"
                }
             },
             {
                SSeekBar:{
-                  title:"ACA Charge Current",
+                  description:"Charge level USB",
                   min:100,
-                  max:1000,
+                  max:1600,
                   unit:"mA",
-                  step:25,
-                  default:460,
-                  action:"generic /sys/devices/platform/sec-battery/aca_chrg_curr"
+                  step:100,
+                  default:475,
+                  action:"chg_lvl /sys/kernel/charge_levels/charge_level_usb"
+               }
+            },
+            {
+               SSeekBar:{
+                  description:"Charge level Wireless",
+                  min:100,
+                  max:1600,
+                  unit:"mA",
+                  step:100,
+                  default:475,
+                  action:"chg_lvl /sys/kernel/charge_levels/charge_level_wireless"
                }
             },
             {
                SPane:{
-                  title:"Miscellaneous charging",
-                  description:"Miscaenellous current limits applied to any other unidentifiable charging source."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Misc Input Current",
-                  min:100,
-                  max:2000,
-                  unit:"mA",
-                  step:50,
-                  default:1700,
-                  action:"generic /sys/devices/platform/sec-battery/misc_input_curr"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Misc Charge Current",
-                  min:100,
-                  max:2000,
-                  unit:"mA",
-                  step:50,
-                  default:1600,
-                  action:"generic /sys/devices/platform/sec-battery/misc_chrg_curr"
-               }
-            },
-            {
-               SPane:{
-                  title:"Wireless charging",
-                  description:"Wireless input current limit applied to the wireless charging port."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Wireless Input Current",
-                  min:100,
-                  max:1500,
-                  unit:"mA",
-                  step:25,
-                  default:650,
-                  action:"generic /sys/devices/platform/sec-battery/wpc_input_curr"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Wireless Charge Current",
-                  min:100,
-                  max:1500,
-                  unit:"mA",
-                  step:25,
-                  default:750,
-                  action:"generic /sys/devices/platform/sec-battery/wpc_chrg_curr"
-               }
-            }
-         ]
-      },
-      {
-         name:LED,
-         elements:[
-            {
-               SPane:{
-                  title:"Brightness",
-                  description:"The notification LED has two brightness modes, depending on the external brightness detected by the light sensor."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Low light environment brightness",
-                  min:1,
-                  max:120,
-                  unit:"mA",
-                  weight:0.125,
-                  default:5,
-                  action:"generic /sys/class/sec/led/led_lowpower_current"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Bright light environment brightness",
-                  min:1,
-                  max:120,
-                  unit:"mA",
-                  weight:0.125,
-                  default:40,
-                  action:"generic /sys/class/sec/led/led_highpower_current"
-               }
-            },
-            {
-               SPane:{
-                  title:"Blinking effect",
-                  description:"Control the way the LED blinks."
+                  title:"Charger logic",
                }
             },
             {
                SCheckBox:{
-                  description:"If disabled, the controller bypasses slope generation.",
-                  label:"Enable LED fading",
-                  default:1,
-                  action:"generic /sys/class/sec/led/led_fade"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Fade-in time period",
-                  description:"Sets the time period of the rising slope.",
-                  max:2000,
-                  unit:"ms",
-                  step:50,
-                  default:300,
-                  action:"generic /sys/class/sec/led/led_fade_in_time"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Blink retention period",
-                  description:"Sets the time period of high retention at maximum PWM level",
-                  max:2000,
-                  unit:"ms",
-                  step:50,
-                  default:350,
-                  action:"generic /sys/class/sec/led/led_blink_retention"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Fade-out time period",
-                  description:"Sets the time period of the falling slope.",
-                  max:2000,
-                  unit:"ms",
-                  step:50,
-                  default:1300,
-                  action:"generic /sys/class/sec/led/led_fade_out_time"
-               }
-            },
-            {
-               SPane:{
-                  title:"Stock ROM notification",
-                  description:"Stock ROM notification controls only apply to the native notification framework, 3rd party apps are not affected."
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Blink delay period",
-                  description:"Sets the time period of low retention at zero PWM level",
-                  max:6000,
-                  unit:"ms",
-                  step:250,
-                  default:3250,
-                  action:"generic /sys/class/sec/led/led_blink_delay"
-               }
-            },
-            {
-               SSeekBar:{
-                  title:"Red value",
-                  max:255,
-                  step:2,
+                  label:"Ignore unstable power",
                   default:0,
-                  action:"generic /sys/class/sec/led/led_noti_r"
+                  action:"generic /sys/kernel/charge_levels/ignore_unstable_power"
                }
-            },
+            },  
             {
-               SSeekBar:{
-                  title:"Green value",
-                  max:255,
-                  step:2,
+               SCheckBox:{
+                  label:"Ignore safety margin",
                   default:0,
-                  action:"generic /sys/class/sec/led/led_noti_g"
+                  action:"generic /sys/kernel/charge_levels/ignore_safety_margin"
                }
-            },
-            {
-               SSeekBar:{
-                  title:"Blue value",
-                  max:255,
-                  step:2,
-                  default:254,
-                  action:"generic /sys/class/sec/led/led_noti_b"
-               }
-            },
-            {
-               SButton:{
-                  label:"Apply notification",
-                  action:"led 3"
-               }
-            },
-            {
-               SButton:{
-                  label:"Stop notification",
-                  action:"led 0"
-               }
-            },
-
+            }, 
          ]
       },
       {
