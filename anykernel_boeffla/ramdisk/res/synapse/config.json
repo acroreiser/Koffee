@@ -449,7 +449,9 @@
                      deadline,
                      row,
                      cfq,
-
+                     bfq,
+                     sio,
+                     zen,
                   ]
                }
             },
@@ -463,7 +465,9 @@
                      deadline,
                      row,
                      cfq,
-
+                     bfq,
+                     sio,
+                     zen,
                   ]
                }
             },
@@ -491,7 +495,13 @@
                   action:"generic /sys/block/mmcblk1/queue/read_ahead_kb"
                }
             },
-
+            {
+               SCheckBox:{
+                  label:"/system write-protection",
+                  default:0,
+                  action:"generic /proc/syslock_status"
+               }
+            }, 
          ]
       }
    ]
