@@ -61,7 +61,7 @@ static unsigned int sys_lock_status = 0;
 
 static struct proc_dir_entry *syslock_status;
 static char procfs_buffer[PROCFS_MAX_SIZE];
-static unsigned long procfs_buffer_size = 2;
+static unsigned long procfs_buffer_size = 1;
 
 static int  procfile_read(char *buffer,
 	      char **buffer_location,
@@ -84,7 +84,7 @@ static int procfile_write(struct file *file, const char *buffer, unsigned long c
 		   void *data)
 {
 	/* set buffer size */
-	procfs_buffer_size = 4;
+	procfs_buffer_size = 1;
 	
 	/* write data to the buffer */
 	if ( copy_from_user(procfs_buffer, buffer, procfs_buffer_size) ) {
