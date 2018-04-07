@@ -713,7 +713,7 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 
 	switch (code) {
 	case CPUFREQ_ADJUST:
-		if (strcmp(policy->governor->name, "pyramid") != 0 || strcmp(policy->governor->name, "interactive") != 0)
+		if (strcmp(policy->governor->name, "pyramid") != 0 && strcmp(policy->governor->name, "interactive") != 0)
 		{
 			sched_mc_power_savings = 0;
 			reinit_sched_domains();
