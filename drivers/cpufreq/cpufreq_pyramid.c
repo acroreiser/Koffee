@@ -75,7 +75,7 @@ static struct mutex set_speed_lock;
 static u64 hispeed_freq;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 85
+#define DEFAULT_GO_HISPEED_LOAD 100
 static unsigned long go_hispeed_load;
 
 static int screenoff_limit_s;
@@ -131,7 +131,7 @@ static
 struct cpufreq_governor cpufreq_gov_pyramid = {
 	.name = "pyramid",
 	.governor = cpufreq_governor_pyramid,
-	.max_transition_latency = 8000000,
+	.max_transition_latency = 10000000,
 	.owner = THIS_MODULE,
 };
 
@@ -1119,7 +1119,7 @@ static int __init cpufreq_pyramid_init(void)
 
 	/* No rescuer thread, bind to CPU queuing the work for possibly
 	   warm cache (probably doesn't matter much). */
-	down_wq = alloc_workqueue("pyramid_down", 0, 1);
+	down_wq = alloc_workqueue("pyramid_down", WQ_POWER_EFFICIENT, 1);
 
 	if (!down_wq)
 		goto err_freeuptask;

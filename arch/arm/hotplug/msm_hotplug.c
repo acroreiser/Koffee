@@ -31,10 +31,10 @@
 
 #define MSM_HOTPLUG			"msm_hotplug"
 #define HOTPLUG_ENABLED			0
-#define DEFAULT_UPDATE_RATE		100
+#define DEFAULT_UPDATE_RATE		50
 #define START_DELAY			10000
 #define MIN_INPUT_INTERVAL		150 * 1000L
-#define DEFAULT_HISTORY_SIZE		20
+#define DEFAULT_HISTORY_SIZE		10
 #define DEFAULT_DOWN_LOCK_DUR		1000
 #define DEFAULT_BOOST_LOCK_DUR		500 * 1000L
 #define DEFAULT_NR_CPUS_BOOSTED		1
@@ -42,7 +42,7 @@
 #define DEFAULT_MAX_CPUS_ONLINE		NR_CPUS
 /* cur_avg_load can be > 200! */
 #define DEFAULT_FAST_LANE_LOAD		180
-#define DEFAULT_FAST_LANE_MIN_FREQ	1100000
+#define DEFAULT_FAST_LANE_MIN_FREQ	700000
 
 /*
  * debug = 1 will print info with dprintk.
@@ -291,8 +291,8 @@ struct loads_tbl {
 
 static struct loads_tbl loads[] = {
 	LOAD_SCALE(400, 0),
-	LOAD_SCALE(65, 0),
-	LOAD_SCALE(120, 50),
+	LOAD_SCALE(40, 20),
+	LOAD_SCALE(120, 65),
 	LOAD_SCALE(190, 100),
 	LOAD_SCALE(410, 170),
 	LOAD_SCALE(0, 0),
@@ -724,7 +724,7 @@ static int __ref msm_hotplug_start(void)
 	struct down_lock *dl;
 
 	hotplug_wq =
-	    alloc_workqueue("msm_hotplug_wq", WQ_HIGHPRI | WQ_FREEZABLE, 0);
+	    alloc_workqueue("msm_hotplug_wq", WQ_HIGHPRI | WQ_POWER_EFFICIENT | WQ_FREEZABLE, 0);
 	if (!hotplug_wq) {
 		pr_err("%s: Failed to allocate hotplug workqueue\n",
 		       MSM_HOTPLUG);
