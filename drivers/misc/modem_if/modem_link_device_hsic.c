@@ -31,7 +31,7 @@
 #include <linux/suspend.h>
 #include <linux/version.h>
 
-#include "modem.h"
+#include <linux/platform_data/modem.h>
 #include "modem_prj.h"
 #include "modem_link_device_hsic.h"
 #include "modem_utils.h"
@@ -589,8 +589,8 @@ static int link_pm_runtime_get_active(struct link_pm_data *pm_data)
 		mif_err("Kernel in suspending try get_active later\n");
 		/* during dpm_suspending..
 		 * if AP get tx data, wake up. */
-		//wake_lock(&pm_data->l2_wake);
-		return 0;
+		wake_lock(&pm_data->l2_wake);
+		return -EAGAIN;
 	}
 
 	if (dev->power.runtime_status == RPM_ACTIVE) {
