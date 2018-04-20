@@ -932,6 +932,7 @@ static void ndisc_recv_na(struct sk_buff *skb)
 				    offsetof(struct nd_msg, opt));
 	struct ndisc_options ndopts;
 	struct net_device *dev = skb->dev;
+	struct inet6_dev *idev = __in6_dev_get(dev);
 	struct inet6_ifaddr *ifp;
 	struct neighbour *neigh;
 
@@ -953,6 +954,14 @@ static void ndisc_recv_na(struct sk_buff *skb)
 			   "ICMPv6 NA: solicited NA is multicasted.\n");
 		return;
 	}
+
+	/* For some 802.11 wireless deployments (and possibly other networks),
+	 * there will be a NA proxy and unsolicitd packets are attacks
+	 * and thus should not be accepted.
+	 */
+	if (idev && idev->cnf.drop_unsolicited_na &&
+	    !msg->icmph.icmp6_solicited)
+		return;
 
 	if (!ndisc_parse_options(msg->opt, ndoptlen, &ndopts)) {
 		ND_PRINTK2(KERN_WARNING
