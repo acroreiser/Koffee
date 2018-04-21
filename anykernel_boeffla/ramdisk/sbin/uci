@@ -7,6 +7,12 @@ ACTIONS=/res/synapse/actions
 mountrw() { mount -t rootfs -o rw,remount rootfs; }
 mountro() { mount -t rootfs -o ro,remount rootfs; }
 
+if [ ! -f /sbin/awk ]; then
+	mountrw
+	busybox ln -s /sbin/busybox /sbin/awk
+	mountro
+fi
+
 if [ ! -f $OUTPUT ]; then
 	mountrw; chmod -R 755 $ACTIONS; source $INPUT > $OUTPUT; mountro; fi
 

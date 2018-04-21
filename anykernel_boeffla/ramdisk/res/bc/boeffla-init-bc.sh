@@ -65,13 +65,6 @@
 	
 # Apply Boeffla-Kernel default settings
 
-	# Set AC charging rate default
-	echo "1100" > /sys/kernel/charge_levels/charge_level_ac
-
-	/sbin/busybox mount -o remount,rw / /
-	/sbin/busybox ln -s /sbin/busybox /sbin/awk
-	/sbin/busybox mount -o remount,ro / /
-
 	# Sdcard buffer tweaks default to 256 kb
 	echo 512 > /sys/block/mmcblk0/bdi/read_ahead_kb
 	echo 256 > /sys/block/mmcblk1/bdi/read_ahead_kb
