@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 0
-SUBLEVEL = 103
-EXTRAVERSION =
+SUBLEVEL = 101
+EXTRAVERSION = .4
 NAME = Sodden Ben Lomond
 
 # *DOCUMENTATION*
@@ -574,7 +574,7 @@ ifdef CONFIG_CC_MORE_OPTIMIZATIONS
 KBUILD_CFLAGS	+= -fsched-pressure -fsched-spec-load \
 				-fsched2-use-superblocks -floop-nest-optimize \
 				-floop-interchange -fpredictive-commoning \
-				-fno-printf-return-value  \
+#				-fno-printf-return-value  \
 				--param l1-cache-size=32 --param l1-cache-line-size=32 \
 				--param l2-cache-size=1024
 
