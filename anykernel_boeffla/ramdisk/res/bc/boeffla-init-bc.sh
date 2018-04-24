@@ -63,6 +63,8 @@
 #	/sbin/busybox rm -f $FRANDOM_ENABLER
 	/sbin/busybox rm -f $BUSYBOX_ENABLER
 	
+	echo pyramid > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
 # Apply Boeffla-Kernel default settings
 
 	# Sdcard buffer tweaks default to 256 kb
