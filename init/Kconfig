@@ -1006,6 +1006,9 @@ config CC_USE_GRAPHITE
 config CC_MORE_OPTIMIZATIONS
 	bool "Use more GCC optimizations"
 
+config CC_8
+	bool "We use GCC 8"
+
 config SYSCTL
 	bool
 
