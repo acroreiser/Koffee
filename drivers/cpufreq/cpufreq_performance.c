@@ -19,15 +19,8 @@
 static int cpufreq_governor_performance(struct cpufreq_policy *policy,
 					unsigned int event)
 {
-	unsigned int cpu;
 	switch (event) {
 	case CPUFREQ_GOV_START:
-		// fire up all cpus
-		for_each_possible_cpu(cpu) {
-			if (cpu == 0)
-				continue;
-			cpu_up(cpu);
-		}
 	case CPUFREQ_GOV_LIMITS:
 		pr_debug("setting to %u kHz because of event %u\n",
 						policy->max, event);
