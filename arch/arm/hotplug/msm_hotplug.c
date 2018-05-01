@@ -41,8 +41,8 @@
 #define DEFAULT_MIN_CPUS_ONLINE		1
 #define DEFAULT_MAX_CPUS_ONLINE		NR_CPUS
 /* cur_avg_load can be > 200! */
-#define DEFAULT_FAST_LANE_LOAD		180
-#define DEFAULT_FAST_LANE_MIN_FREQ	700000
+#define DEFAULT_FAST_LANE_LOAD		200
+#define DEFAULT_FAST_LANE_MIN_FREQ	600000
 
 /*
  * debug = 1 will print info with dprintk.
@@ -292,8 +292,8 @@ struct loads_tbl {
 static struct loads_tbl loads[] = {
 	LOAD_SCALE(400, 0),
 	LOAD_SCALE(40, 20),
-	LOAD_SCALE(120, 65),
-	LOAD_SCALE(190, 100),
+	LOAD_SCALE(140, 75),
+	LOAD_SCALE(300, 200),
 	LOAD_SCALE(410, 170),
 	LOAD_SCALE(0, 0),
 };
