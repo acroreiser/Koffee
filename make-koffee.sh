@@ -9,8 +9,8 @@ BUILD_NUMBER=
 DEVICE=m0
 KCONF_REPLACE=false
 KERNEL_NAME="Koffee"
-BOEFFLA_VERSION="7.1"
-SKIP_MODULES=false
+BOEFFLA_VERSION="7.2"
+SKIP_MODULES=true
 DONTPACK=false
 USER=$USER
 DATE=`date`
@@ -120,13 +120,10 @@ make_flashable()
 	# copy kernel image
 	cp $BUILD_PATH/arch/arm/boot/zImage $REPACK_PATH/zImage
 
+	if [ "$SKIP_MODULES" = "false" ]; then
 	{
 		# copy modules to either modules folder (CM and derivates) or directly in ramdisk (Samsung stock)
-		if [ "true" == "$MODULES_IN_SYSTEM" ]; then
-			MODULES_PATH=$REPACK_PATH/modules
-		else
-			MODULES_PATH=$REPACK_PATH/ramdisk/lib/modules
-		fi
+		MODULES_PATH=$REPACK_PATH/modules
 
 		mkdir -p $MODULES_PATH
 
@@ -141,7 +138,8 @@ make_flashable()
 		${TOOLCHAIN}strip --strip-unneeded $MODULES_PATH/*
 
 	} 2>/dev/null
-
+	
+	fi
 	# replace variables in anykernel script
 	cd $REPACK_PATH
 	KERNELNAME="Flashing $KERNEL_NAME $BOEFFLA_VERSION"
