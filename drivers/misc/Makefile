@@ -58,9 +58,10 @@ obj-$(CONFIG_USBHUB_USB3503_OTG_CONN)	+= usb3503_otg_conn.o
 obj-$(CONFIG_USBHUB_USB3803)	+= usb3803.o
 ifeq ($(CONFIG_SEC_MODEM_P8LTE),y)
 obj-$(CONFIG_SEC_MODEM)         += modem_if_na/
-else
-ifeq ($(CONFIG_MACH_U1),y)
-obj-$(CONFIG_SEC_MODEM)		+= modem_if_u1/
+else ifeq ($(CONFIG_SEC_MODEM_U1_SPR),y)
+obj-$(CONFIG_SEC_MODEM)		+= modem_if_na_spr/
+else ifeq ($(CONFIG_SEC_MODEM_V2), y)
+obj-$(CONFIG_SEC_MODEM)         += modem_v2/
 else
 obj-$(CONFIG_SEC_MODEM)		+= modem_if/
 endif
