@@ -40,6 +40,7 @@
 static atomic_t active_count = ATOMIC_INIT(0);
 
 extern unsigned int msm_enabled;
+extern unsigned int mc_eco;
 
 struct cpufreq_pyramid_cpuinfo {
 	struct timer_list cpu_timer;
@@ -224,6 +225,24 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		}
 		else
 		{
+			if(mc_eco == 1)
+			{
+				if(num_online_cpus() > 1)
+				{
+					if(new_freq > 1200000)
+						new_freq = 1200000;
+				}
+				if(num_online_cpus() > 2)
+				{
+					if(new_freq > 1000000)
+						new_freq = 1000000;
+				}
+				if(num_online_cpus() > 3)
+				{
+					if(new_freq > 800000)
+						new_freq = 800000;
+				}
+			}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 			if(temp_factor == 1)
 			{
@@ -887,6 +906,30 @@ static ssize_t store_temperature_factor(struct kobject *kobj, struct attribute *
 define_one_global_rw(temperature_factor);
 #endif
 
+static ssize_t show_multicore_eco(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_eco);
+}
+
+static ssize_t store_multicore_eco(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 0 || val > 1)
+		return -EINVAL;
+
+	mc_eco = val;
+	return count;
+}
+define_one_global_rw(multicore_eco);
+
 static ssize_t show_boost(struct kobject *kobj, struct attribute *attr,
 			  char *buf)
 {
@@ -942,6 +985,7 @@ static struct attribute *pyramid_attributes[] = {
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 	&temperature_factor.attr,
 #endif
+	&multicore_eco.attr,
 	&boost.attr,
 	&boostpulse.attr,
 	NULL,
@@ -1110,7 +1154,7 @@ static int __init cpufreq_pyramid_init(void)
 	}
 
 	up_task = kthread_create(cpufreq_pyramid_up_task, NULL,
-				 "kpyramidup");
+				 "kpyramid_up");
 	if (IS_ERR(up_task))
 		return PTR_ERR(up_task);
 

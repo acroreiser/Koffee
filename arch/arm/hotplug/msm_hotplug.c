@@ -56,6 +56,9 @@ module_param_named(debug_mask, debug, uint, 0644);
 unsigned int msm_enabled;
 EXPORT_SYMBOL(msm_enabled);
 
+unsigned int mc_eco;
+EXPORT_SYMBOL(mc_eco);
+
 /*
  * suspend mode, if set = 1 hotplug will sleep,
  * if set = 0, then hoplug will be active all the time.
@@ -298,6 +301,15 @@ static struct loads_tbl loads[] = {
 	LOAD_SCALE(0, 0),
 };
 
+static struct loads_tbl loads_mc[] = {
+	LOAD_SCALE(400, 0),
+	LOAD_SCALE(65, 0),
+	LOAD_SCALE(120, 50),
+	LOAD_SCALE(190, 100),
+	LOAD_SCALE(410, 170),
+	LOAD_SCALE(0, 0),
+};
+
 static void apply_down_lock(unsigned int cpu)
 {
 	struct down_lock *dl = &per_cpu(lock_info, cpu);
@@ -496,6 +508,18 @@ static void msm_hotplug_work(struct work_struct *work)
 		goto reschedule;
 	}
 
+if(mc_eco == 1)
+{
+	for (i = stats.min_cpus; loads_mc[i].up_threshold; i++) {
+		if (stats.cur_avg_load <= loads_mc[i].up_threshold
+		    && stats.cur_avg_load > loads_mc[i].down_threshold) {
+			target = i;
+			break;
+		}
+	}
+}
+else
+{
 	for (i = stats.min_cpus; loads[i].up_threshold; i++) {
 		if (stats.cur_avg_load <= loads[i].up_threshold
 		    && stats.cur_avg_load > loads[i].down_threshold) {
@@ -503,6 +527,7 @@ static void msm_hotplug_work(struct work_struct *work)
 			break;
 		}
 	}
+}
 
 	if (target > hotplug.max_cpus_online)
 		target = hotplug.max_cpus_online;
