@@ -298,6 +298,24 @@ static void cpufreq_pyramid_timer(unsigned long data)
 				new_freq = 800000;
 
 		}
+			if(mc_eco == 1)
+			{
+				if(num_online_cpus() > 1)
+				{
+					if(new_freq > 1200000)
+						new_freq = 1200000;
+				}
+				if(num_online_cpus() > 2)
+				{
+					if(new_freq > 1000000)
+						new_freq = 1000000;
+				}
+				if(num_online_cpus() > 3)
+				{
+					if(new_freq > 800000)
+						new_freq = 800000;
+				}
+			}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 		else
 		{
