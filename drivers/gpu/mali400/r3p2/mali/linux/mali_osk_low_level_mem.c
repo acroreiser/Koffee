@@ -536,6 +536,8 @@ _mali_osk_errcode_t _mali_osk_mem_mapregion_map( mali_memory_allocation * descri
 
 	MALI_DEBUG_ASSERT_POINTER( phys_addr );
 
+	if (NULL == phys_addr) return _MALI_OSK_ERR_FAULT;
+
 	MALI_DEBUG_ASSERT( 0 != (descriptor->flags & MALI_MEMORY_ALLOCATION_FLAG_MAP_INTO_USERSPACE) );
 
 	MALI_DEBUG_ASSERT( 0 == (size & ~_MALI_OSK_CPU_PAGE_MASK) );
@@ -552,6 +554,8 @@ _mali_osk_errcode_t _mali_osk_mem_mapregion_map( mali_memory_allocation * descri
 	}
 
 	mappingInfo = (MappingInfo *)descriptor->process_addr_mapping_info;
+
+	if (NULL == mappingInfo ) return _MALI_OSK_ERR_FAULT;
 
 	MALI_DEBUG_ASSERT_POINTER( mappingInfo );
 
