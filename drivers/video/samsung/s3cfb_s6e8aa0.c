@@ -1039,7 +1039,7 @@ static int s6e8ax0_ldi_init(struct lcd_info *lcd)
 	s6e8ax0_write(lcd, SEQ_APPLY_LEVEL_2_KEY, ARRAY_SIZE(SEQ_APPLY_LEVEL_2_KEY));
 	s6e8ax0_write(lcd, SEQ_LTPS_DELAY, ARRAY_SIZE(SEQ_LTPS_DELAY));
 	s6e8ax0_write(lcd, SEQ_SLEEP_OUT, ARRAY_SIZE(SEQ_SLEEP_OUT));
-	msleep(22);
+//	msleep(22);
 	s6e8ax0_write(lcd, SEQ_PANEL_CONDITION_SET, ARRAY_SIZE(SEQ_PANEL_CONDITION_SET));
 	s6e8ax0_write(lcd, SEQ_DISPLAY_CONDITION_SET, ARRAY_SIZE(SEQ_DISPLAY_CONDITION_SET));
 	s6e8ax0_gamma_ctl(lcd);
@@ -1052,7 +1052,7 @@ static int s6e8ax0_ldi_init(struct lcd_info *lcd)
 	s6e8ax0_write(lcd, SEQ_APPLY_LEVEL_2, ARRAY_SIZE(SEQ_APPLY_LEVEL_2));
 	s6e8ax0_write(lcd, SEQ_APPLY_MTP_KEY_ENABLE, ARRAY_SIZE(SEQ_APPLY_MTP_KEY_ENABLE));
 	s6e8ax0_write(lcd, SEQ_SLEEP_OUT, ARRAY_SIZE(SEQ_SLEEP_OUT));
-	msleep(22);
+//	msleep(22);
 
 	/* 4.8" HD for M0/C1*/
 	if (lcd->id[1] == 0x20 || lcd->id[1] == 0x40 || lcd->id[1] == 0x60) {
@@ -1126,7 +1126,7 @@ static int s6e8ax0_power_on(struct lcd_info *lcd)
 		goto err;
 	}
 
-	msleep(120);
+//	msleep(120);
 
 	ret = s6e8ax0_ldi_enable(lcd);
 	if (ret) {
@@ -1151,7 +1151,7 @@ static int s6e8ax0_power_off(struct lcd_info *lcd)
 
 	ret = s6e8ax0_ldi_disable(lcd);
 
-	msleep(135);
+//	msleep(135);
 
 	return ret;
 }
