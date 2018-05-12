@@ -152,6 +152,9 @@ make_flashable()
 	sed -i "s;###sourcecode###;${SOURCECODE};" META-INF/com/google/android/update-binary;
 	DEVNAME="device.name1=${DEVICE}"
 	sed -i "s;###DEVICENAME###;${DEVNAME};" anykernel.sh;
+
+	sed -i "s;#VERSION#;${BOEFFLA_VERSION};" ramdisk/res/bc/bccontroller.sh;
+
 	if [ "$DEVICE" = "m0" ]; then
 		BOOTBLK="block=/dev/block/mmcblk0p5"
 	fi
