@@ -699,9 +699,6 @@ static struct notifier_block exynos_cpufreq_notifier = {
 	.notifier_call = exynos_cpufreq_notifier_event,
 };
 
-extern int sched_mc_power_savings;
-extern void reinit_sched_domains(void);
-
 #if defined (CONFIG_INTELLI_PLUG)
 extern unsigned int intelli_plug_active;
 #endif
@@ -713,11 +710,6 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 
 	switch (code) {
 	case CPUFREQ_ADJUST:
-		if (strcmp(policy->governor->name, "pyramid") != 0)
-		{
-			sched_mc_power_savings = 0;
-			reinit_sched_domains();
-		}
 
 		/*
 		 * arter97: add intelli_plug hook here;
