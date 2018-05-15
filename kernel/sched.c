@@ -7954,7 +7954,7 @@ static ssize_t sched_power_savings_store(const char *buf, size_t count, int smt)
 		return -EINVAL;
 
 	cpufreq_get_policy(&policy, 0);
-	if (strcmp(policy.governor->name, "pyramid") != 0 && strcmp(policy.governor->name, "interactive") != 0)
+	if (strcmp(policy.governor->name, "pyramid") != 0 || strcmp(policy.governor->name, "interactive") != 0)
 		return -EINVAL;
 
 	if (smt)
