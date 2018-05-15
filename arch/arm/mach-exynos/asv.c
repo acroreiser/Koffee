@@ -25,8 +25,6 @@
 
 static struct samsung_asv *exynos_asv;
 unsigned int exynos_result_of_asv;
-EXPORT_SYMBOL(exynos_result_of_asv);
-
 unsigned int exynos_special_flag;
 bool exynos_dynamic_ema;
 

@@ -350,6 +350,7 @@ static inline int cpufreq_ondemand_flexrate_request(unsigned int rate_ms,
  *                       CPUFREQ DEFAULT GOVERNOR                    *
  *********************************************************************/
 
+
 /*
   Performance governor is fallback governor if any other gov failed to
   auto load due latency restrictions
@@ -379,9 +380,6 @@ extern struct cpufreq_governor cpufreq_gov_interactive;
 #define CPUFREQ_DEFAULT_GOVERNOR       (&cpufreq_gov_interactive)
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PYRAMID)
 extern struct cpufreq_governor cpufreq_gov_pyramid;
-#ifdef CONFIG_ARCH_EXYNOS4
-extern struct cpufreq_governor cpufreq_gov_pegasusq;
-#endif
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_pyramid)
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ADAPTIVE)
 extern struct cpufreq_governor cpufreq_gov_adaptive;

@@ -229,9 +229,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 				unsigned int event);
 
 #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PEGASUSQ
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PYRAMID
 static
-#endif
 #endif
 struct cpufreq_governor cpufreq_gov_pegasusq = {
 	.name                   = "pegasusq",
