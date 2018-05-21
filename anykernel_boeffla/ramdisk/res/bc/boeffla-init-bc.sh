@@ -140,6 +140,12 @@
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
 
+# Enable network security enhacements
+	echo 1 > /proc/sys/net/ipv4/conf/all/drop_unicast_in_l2_multicast
+	echo 1 > /proc/sys/net/ipv6/conf/all/drop_unicast_in_l2_multicast
+	echo 1 > /proc/sys/net/ipv4/conf/all/drop_gratuitous_arp
+	echo 1 > /proc/sys/net/ipv6/conf/all/drop_unsolicited_na
+
 # Tweak scheduler
 	echo 1 > /proc/sys/kernel/sched_child_runs_first
 
