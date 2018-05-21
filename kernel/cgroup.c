@@ -3995,6 +3995,10 @@ static int cgroup_css_sets_empty(struct cgroup *cgrp)
 
 static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
 {
+
+	if(dentry == NULL)
+		return 1;
+
 	struct cgroup *cgrp = dentry->d_fsdata;
 	struct dentry *d;
 	struct cgroup *parent;
