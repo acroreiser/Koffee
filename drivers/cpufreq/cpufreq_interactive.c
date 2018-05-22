@@ -31,8 +31,10 @@
 #include <linux/slab.h>
 #include <asm/cputime.h>
 
-#define CREATE_TRACE_POINTS
+/* #define CREATE_TRACE_POINTS */
+#ifdef CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
+#endif
 
 static int active_count;
 
@@ -326,9 +328,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 	if (pcpu->target_freq >= hispeed_freq &&
 	    new_freq > pcpu->target_freq &&
 	    now - pcpu->hispeed_validate_time < above_hispeed_delay_val) {
+#ifdef CREATE_TRACE_POINTS
 		trace_cpufreq_interactive_notyet(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
+#endif
 		goto rearm;
 	}
 
@@ -347,9 +351,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 	 */
 	if (new_freq < pcpu->floor_freq) {
 		if (now - pcpu->floor_validate_time < min_sample_time) {
+#ifdef CREATE_TRACE_POINTS
 			trace_cpufreq_interactive_notyet(
 				data, cpu_load, pcpu->target_freq,
 				pcpu->policy->cur, new_freq);
+#endif
 			goto rearm;
 		}
 	}
@@ -368,14 +374,18 @@ static void cpufreq_interactive_timer(unsigned long data)
 	}
 
 	if (pcpu->target_freq == new_freq) {
+#ifdef CREATE_TRACE_POINTS
 		trace_cpufreq_interactive_already(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
+#endif
 		goto rearm_if_notmax;
 	}
 
+#ifdef CREATE_TRACE_POINTS
 	trace_cpufreq_interactive_target(data, cpu_load, pcpu->target_freq,
 					 pcpu->policy->cur, new_freq);
+#endif
 
 	pcpu->target_freq = new_freq;
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
@@ -506,10 +516,11 @@ static int cpufreq_interactive_speedchange_task(void *data)
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
 							CPUFREQ_RELATION_H);
+#ifdef CREATE_TRACE_POINTS
 			trace_cpufreq_interactive_setspeed(cpu,
 						     pcpu->target_freq,
 						     pcpu->policy->cur);
-
+#endif
 			up_read(&pcpu->enable_sem);
 		}
 	}
@@ -816,10 +827,14 @@ static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
 	boost_val = val;
 
 	if (boost_val) {
+#ifdef CREATE_TRACE_POINTS
 		trace_cpufreq_interactive_boost("on");
+#endif
 		cpufreq_interactive_boost();
+#ifdef CREATE_TRACE_POINTS
 	} else {
 		trace_cpufreq_interactive_unboost("off");
+#endif
 	}
 
 	return count;
@@ -838,7 +853,9 @@ static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
 		return ret;
 
 	boostpulse_endtime = ktime_to_us(ktime_get()) + boostpulse_duration_val;
+#ifdef CREATE_TRACE_POINTS
 	trace_cpufreq_interactive_boost("pulse");
+#endif
 	cpufreq_interactive_boost();
 	return count;
 }
