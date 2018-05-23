@@ -452,7 +452,6 @@ int ieee80211_key_link(struct ieee80211_key *key,
 	else
 		old_key = key_mtx_dereference(sdata->local, sdata->keys[idx]);
 
-	increment_tailroom_need_count(sdata);
 
 
 	__ieee80211_key_replace(sdata, sta, pairwise, old_key, key);
