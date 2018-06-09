@@ -31,7 +31,7 @@
 #include <linux/slab.h>
 #include <asm/cputime.h>
 
-/* #define CREATE_TRACE_POINTS */
+//#define CREATE_TRACE_POINTS
 #ifdef CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 #endif
@@ -65,14 +65,14 @@ static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
-static unsigned int hispeed_freq = 600000;
+static unsigned int hispeed_freq;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 60
+#define DEFAULT_GO_HISPEED_LOAD 0
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Target load.  Lower values result in higher CPU speeds. */
-#define DEFAULT_TARGET_LOAD 95
+#define DEFAULT_TARGET_LOAD 80
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
@@ -81,20 +81,20 @@ static int ntarget_loads = ARRAY_SIZE(default_target_loads);
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  */
-#define DEFAULT_MIN_SAMPLE_TIME (100 * USEC_PER_MSEC)
+#define DEFAULT_MIN_SAMPLE_TIME (150 * USEC_PER_MSEC)
 static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 
 /*
  * The sample rate of the timer used to increase frequency
  */
-#define DEFAULT_TIMER_RATE (100 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE 6667
 static unsigned long timer_rate = DEFAULT_TIMER_RATE;
 
 /*
  * Wait this long before raising speed above hispeed, by default a single
  * timer interval.
  */
-#define DEFAULT_ABOVE_HISPEED_DELAY DEFAULT_TIMER_RATE
+#define DEFAULT_ABOVE_HISPEED_DELAY 0
 static unsigned long above_hispeed_delay_val = DEFAULT_ABOVE_HISPEED_DELAY;
 
 /* Non-zero means indefinite speed boost active */
