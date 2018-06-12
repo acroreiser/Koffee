@@ -3,7 +3,7 @@
 # Boeffla-Config controller interface
 #
 # *****************************
-# i9300 Lineage14 version
+# Koffee version
 #
 # V0.1
 # *****************************
@@ -13,7 +13,7 @@
 # ********************************
 
 # kernel specification (hardware; type; target; url)
-KERNEL_SPECS="i9300;cm;cm14.0;http://kernel.boeffla.de/sgs3/boeffla-kernel-cm/;boeffla-kernel-#VERSION#-Lineage14.1-i9300-anykernel.recovery.zip"
+KERNEL_SPECS="Koffee"
 
 # kernel features 
 # (1=enable-busybox,2=enable-frandom,3=wipe-cache,4=disable-zram-control)
@@ -79,14 +79,14 @@ fi
 if [ "lov_presets" == "$1" ]; then
 	# Note, the ^ sign will be translated into newline for this setting
 	echo "Power extreme~"
-	echo "Gov: pegasusq / standard"
-	echo "^Sched: row / row"
+	echo "Gov: pyramid / standard"
+	echo "^Sched: bfq / row"
 	echo "^CPU: 1600 / no uv"
 	echo "^GPU: 440-700 / +50mV;"
 	
 	echo "Power~"
-	echo "Gov: zzmoove / performance"
-	echo "^Sched: row / row"
+	echo "Gov: pyramid / standard"
+	echo "^Sched: bfq / row"
 	echo "^CPU: 1400 / no uv"
 	echo "^GPU: 266-600 / no uv;"
 	
@@ -103,7 +103,7 @@ if [ "lov_presets" == "$1" ]; then
 	echo "^GPU: 160/266 / -25mV;"
 	
 	echo "Battery saving~"
-	echo "Gov: zzmoove / battery yank"
+	echo "Gov: pegasusq / boeffla - battery saving"
 	echo "^Sched: zen / zen"
 	echo "^CPU: 1000 / light uv"
 	echo "^GPU: 160/266 / light uv;"
@@ -119,22 +119,22 @@ fi
 if [ "conf_presets" == "$1" ]; then
 	if [ "Power extreme" ==  "$2" ]; then
 		# gov, gov prof, sched int, sched ext, cpu max, cpu uv, gpu freq, gpu uv
-		echo "pegasusq;standard;"
-		echo "row;row;"
+		echo "pyramid;standard;"
+		echo "bfq;row;"
 		echo "1600000;None;"
 		echo "440/533/600/640/700;overvolt +50mV"
 	fi
 	if [ "Power" ==  "$2" ]; then
 		# gov, gov prof, sched int, sched ext, cpu max, cpu uv, gpu freq, gpu uv
-		echo "zzmoove;zzmoove - performance;"
-		echo "row;row;"
+		echo "pyramid;standard;"
+		echo "bfq;row;"
 		echo "1400000;None;"
 		echo "266/350/440/533/600;None"
 	fi
 	if [ "Standard" ==  "$2" ]; then
 		# gov, gov prof, sched int, sched ext, cpu max, cpu uv, gpu freq, gpu uv
 		echo "pegasusq;standard;"
-		echo "cfq;cfq;"
+		echo "cfq;deadline;"
 		echo "1400000;None;"
 		echo "None;None"
 	fi
@@ -147,7 +147,7 @@ if [ "conf_presets" == "$1" ]; then
 	fi
 	if [ "Battery saving" ==  "$2" ]; then
 		# gov, gov prof, sched int, sched ext, cpu max, cpu uv, gpu freq, gpu uv
-		echo "zzmoove;zzmoove - battery yank;"
+		echo "pegasusq;boeffla - battery saving;"
 		echo "zen;zen;"
 		echo "1000000;undervolt light;"
 		echo "160/266;undervolt light"
@@ -305,9 +305,9 @@ fi
 
 if [ "param_readahead" == "$1" ]; then
 	# Internal sd (min/max/steps)
-	echo "128;3072;128;"
+	echo "128;8192;256;"
 	# External sd (min/max/steps)
-	echo "128;3072;128"
+	echo "128;8192;256"
 	exit 0
 fi
 
@@ -359,7 +359,7 @@ fi
 
 if [ "param_zram" == "$1" ]; then
 	# zRam size min/max/steps
-	echo "104857600;838860800;20971520"
+	echo "104857600;419430400;20971520"
 	exit 0
 fi
 
@@ -1123,7 +1123,7 @@ if [ "apply_zram" == "$1" ]; then
 			busybox sleep 0.5s
 			busybox sync
 		fi
-		echo "80" > /proc/sys/vm/swappiness
+		echo "100" > /proc/sys/vm/swappiness
 	fi
 
 	# not supported anymore
