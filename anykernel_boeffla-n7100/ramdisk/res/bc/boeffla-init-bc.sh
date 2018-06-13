@@ -3,7 +3,7 @@
 # *****************************
 # BC-based initialization
 #
-# Koffee version
+# i9300 Cyanogenmod 13.0 version
 #
 # V0.1
 # *****************************
@@ -13,9 +13,9 @@
 	SD_PATH="/data/media/0"
 
 	# block devices
-###SYSTEM_DEVICE###
-###CACHE_DEVICE###
-###DATA_DEVICE###
+	SYSTEM_DEVICE="/dev/block/mmcblk0p13"
+	CACHE_DEVICE="/dev/block/mmcblk0p12"
+	DATA_DEVICE="/dev/block/mmcblk0p16"
 
 # define file paths
 	BOEFFLA_DATA_PATH="$SD_PATH/boeffla-kernel-data"
@@ -60,20 +60,18 @@
 	/sbin/busybox rm -f $BOEFFLA_STARTCONFIG_DONE
 
 # remove not used configuration files for frandom and busybox
-#	/sbin/busybox rm -f $FRANDOM_ENABLER
+	/sbin/busybox rm -f $FRANDOM_ENABLER
 	/sbin/busybox rm -f $BUSYBOX_ENABLER
 	
-	echo pyramid > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-
 # Apply Boeffla-Kernel default settings
 
-	# Sdcard buffer tweaks default to 256 kb
+	# Sdcard buffer tweaks
 	echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
 	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
 	echo $(date) Boeffla-Kernel default settings applied >> $BOEFFLA_LOGFILE
 
-# init.d support (enabler only to be considered for Lineage based roms)
+# init.d support (enabler only to be considered for CM based roms)
 # (zipalign scripts will not be executed as only exception)
 	if [ -f $INITD_ENABLER ] ; then
 		echo $(date) Execute init.d scripts start >> $BOEFFLA_LOGFILE
@@ -109,7 +107,6 @@
 	cat /sys/kernel/charge_levels/charge_level_wireless > /dev/bk_orig_charge_level_wireless
 	cat /sys/module/lowmemorykiller/parameters/minfree > /dev/bk_orig_minfree
 	/sbin/busybox lsmod > /dev/bk_orig_modules
-	cat /proc/sys/vm/swappiness > /dev/bk_orig_swappiness
 	cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor > /dev/bk_orig_scaling_governor
 	cat /sys/block/mmcblk0/queue/scheduler > /dev/bk_orig_mmcblk0_scheduler
 	cat /sys/block/mmcblk1/queue/scheduler > /dev/bk_orig_mmcblk1_scheduler
@@ -123,8 +120,11 @@
 		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
 		. $BOEFFLA_STARTCONFIG
 		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
+	else
+		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
 	fi
-### KOFFEE's TWEAKS AND FIXUPS	
+
+### KOFFEE's TWEAKS AND FIXUPS
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
@@ -195,6 +195,7 @@
 		echo "0" > /sys/fs/selinux/enforce
 		echo $(date) "SELinux: permissive" >> $BOEFFLA_LOGFILE
 	else
+        echo "1" > /sys/fs/selinux/enforce
 		echo $(date) "SELinux: enforcing" >> $BOEFFLA_LOGFILE
 	fi
 

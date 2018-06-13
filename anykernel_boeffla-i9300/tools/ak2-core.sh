@@ -42,7 +42,7 @@ contains()
 	test "${1#*$2}" != "$1" && return 0 || return 1;
 }
 
-###BOOTBLK###
+BOOTBLK="/dev/block/mmcblk0p5"
 # dump boot and extract ramdisk
 dump_boot()
 {

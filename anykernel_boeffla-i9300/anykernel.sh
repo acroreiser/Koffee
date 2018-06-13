@@ -11,7 +11,7 @@ do.devicecheck=1
 do.initd=0
 do.modules=1
 do.cleanup=1
-###DEVICENAME###
+device.name1=m0
 device.name2=
 device.name3=
 device.name4=
