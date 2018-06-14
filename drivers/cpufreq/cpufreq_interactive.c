@@ -73,7 +73,7 @@ static unsigned int hispeed_freq = DEFAULT_HISPEED_FREQ;
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Target load.  Lower values result in higher CPU speeds. */
-#define DEFAULT_TARGET_LOAD 70
+#define DEFAULT_TARGET_LOAD 95
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
@@ -82,13 +82,13 @@ static int ntarget_loads = ARRAY_SIZE(default_target_loads);
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  */
-#define DEFAULT_MIN_SAMPLE_TIME (150 * USEC_PER_MSEC)
+#define DEFAULT_MIN_SAMPLE_TIME (80 * USEC_PER_MSEC)
 static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 
 /*
  * The sample rate of the timer used to increase frequency
  */
-#define DEFAULT_TIMER_RATE (1 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE 3333
 static unsigned long timer_rate = DEFAULT_TIMER_RATE;
 
 /*
@@ -109,7 +109,7 @@ static u64 boostpulse_endtime;
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
  */
-#define DEFAULT_TIMER_SLACK -1
+#define DEFAULT_TIMER_SLACK 13333
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
