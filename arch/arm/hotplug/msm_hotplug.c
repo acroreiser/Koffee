@@ -56,7 +56,7 @@ module_param_named(debug_mask, debug, uint, 0644);
 unsigned int msm_enabled;
 EXPORT_SYMBOL(msm_enabled);
 
-unsigned int mc_eco;
+unsigned int mc_eco = 1;
 EXPORT_SYMBOL(mc_eco);
 
 /*
