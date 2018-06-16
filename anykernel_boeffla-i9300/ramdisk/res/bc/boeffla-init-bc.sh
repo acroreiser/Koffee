@@ -124,6 +124,14 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	fi
 
 ### KOFFEE's TWEAKS AND FIXUPS	
+# Enable total 400 MB zRam on 1 device as default
+	echo "1" > /sys/block/zram0/reset
+	echo "419430400" > /sys/block/zram0/disksize
+	busybox mkswap /dev/block/zram0
+	busybox swapon /dev/block/zram0
+	echo "100" > /proc/sys/vm/swappiness
+	echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
+
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
