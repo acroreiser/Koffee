@@ -124,6 +124,9 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	fi
 
 ### KOFFEE's TWEAKS AND FIXUPS	
+# Use pyramid cpu scheduler by default
+	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
 # Enable total 400 MB zRam on 1 device as default
 	echo "1" > /sys/block/zram0/reset
 	echo "419430400" > /sys/block/zram0/disksize
