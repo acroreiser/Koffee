@@ -76,7 +76,7 @@ static struct mutex set_speed_lock;
 static u64 hispeed_freq;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 100
+#define DEFAULT_GO_HISPEED_LOAD 1000
 static unsigned long go_hispeed_load;
 
 static int screenoff_limit_s;
@@ -88,7 +88,7 @@ static int temp_factor = 1;
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  */
-#define DEFAULT_MIN_SAMPLE_TIME (10 * USEC_PER_MSEC)
+#define DEFAULT_MIN_SAMPLE_TIME (5 * USEC_PER_MSEC)
 static unsigned long min_sample_time;
 
 /*
@@ -220,8 +220,8 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		new_freq = pcpu->policy->max * cpu_load / 100;
 		if(screenoff == 1 && screenoff_limit_s == 1)
 		{
-			if(new_freq > 800000)
-				new_freq = 800000;
+			if(new_freq > 900000)
+				new_freq = 900000;
 		}
 		else
 		{
@@ -234,13 +234,13 @@ static void cpufreq_pyramid_timer(unsigned long data)
 				}
 				if(num_online_cpus() > 2)
 				{
-					if(new_freq > 1000000)
-						new_freq = 1000000;
+					if(new_freq > 900000)
+						new_freq = 900000;
 				}
 				if(num_online_cpus() > 3)
 				{
-					if(new_freq > 800000)
-						new_freq = 800000;
+					if(new_freq > 600000)
+						new_freq = 600000;
 				}
 			}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
@@ -248,7 +248,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			{
 				temperature = get_exynos4_temperature();
 
-				if(temperature >= 55)
+				if(temperature >= 50)
 				{
 					if(new_freq > 1000000)
 						new_freq = new_freq - 400000;
@@ -262,7 +262,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 				}
 				else
 				{
-					if(temperature >= 45)
+					if(temperature >= 40)
 					{
 						if(new_freq > 1000000)
 							new_freq = new_freq - 200000;
@@ -294,8 +294,8 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		new_freq = pcpu->policy->max * cpu_load / 100;
 		if(screenoff == 1 && screenoff_limit_s == 1)
 		{	
-			if(new_freq > 800000)
-				new_freq = 800000;
+			if(new_freq > 900000)
+				new_freq = 900000;
 
 		}
 			if(mc_eco == 1)
@@ -307,13 +307,13 @@ static void cpufreq_pyramid_timer(unsigned long data)
 				}
 				if(num_online_cpus() > 2)
 				{
-					if(new_freq > 1000000)
-						new_freq = 1000000;
+					if(new_freq > 900000)
+						new_freq = 900000;
 				}
 				if(num_online_cpus() > 3)
 				{
-					if(new_freq > 800000)
-						new_freq = 800000;
+					if(new_freq > 600000)
+						new_freq = 600000;
 				}
 			}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
@@ -323,7 +323,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			{
 				temperature = get_exynos4_temperature();
 
-				if(temperature >= 55)
+				if(temperature >= 50)
 				{
 					if(new_freq > 1000000)
 						new_freq = new_freq - 400000;
@@ -337,7 +337,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 				}
 				else
 				{
-					if(temperature >= 45)
+					if(temperature >= 40)
 					{
 						if(new_freq > 1000000)
 							new_freq = new_freq - 200000;
