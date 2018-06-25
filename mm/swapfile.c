@@ -2068,7 +2068,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 		return PTR_ERR(p);
 
 	name = getname(specialfile);
-	if(strcmp(name, "/dev/block/zram0"))
+	if(strcmp(name, "/dev/block/zram0") && strcmp(name, "/dev/block/zram1"))
 		return -EPERM;
 
 	if (IS_ERR(name)) {

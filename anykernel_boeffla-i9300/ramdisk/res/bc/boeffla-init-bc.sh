@@ -129,9 +129,15 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 
 # Enable total 400 MB zRam on 1 device as default
 	echo "1" > /sys/block/zram0/reset
-	echo "419430400" > /sys/block/zram0/disksize
+	echo "209715200" > /sys/block/zram0/disksize
 	busybox mkswap /dev/block/zram0
 	busybox swapon /dev/block/zram0
+
+	echo "1" > /sys/block/zram1/reset
+	echo "lzo" > /sys/block/zram1/comp_algorithm
+	echo "419430400" > /sys/block/zram1/disksize
+	busybox mkswap /dev/block/zram1
+	busybox swapon /dev/block/zram1
 	echo "100" > /proc/sys/vm/swappiness
 	echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
 
