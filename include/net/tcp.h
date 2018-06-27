@@ -406,8 +406,7 @@ extern void tcp_set_keepalive(struct sock *sk, int val);
 extern void tcp_syn_ack_timeout(struct sock *sk, struct request_sock *req);
 extern int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
 		       size_t len, int nonblock, int flags, int *addr_len);
-extern void tcp_parse_options(struct sk_buff *skb,
-			      struct tcp_options_received *opt_rx, u8 **hvpp,
+extern void tcp_parse_options(struct sk_buff *skb, struct tcp_options_received *opt_rx, const u8 **hvpp,
 			      int estab, struct tcp_fastopen_cookie *foc);
 extern u8 *tcp_parse_md5sig_option(struct tcphdr *th);
 
