@@ -5100,14 +5100,21 @@ void set_user_nice(struct task_struct *p, long nice)
 	rq = task_rq_lock(p, &flags);
 
 #if defined (CONFIG_IO_PRIO_BOOST)
-	if (nice == -10 && (TASK_NICE(p) == 0 || TASK_NICE(p) == 10) && p->cred->uid > 10000)
+	if (nice == -10 && (TASK_NICE(p) == 0 || TASK_NICE(p) == -8) && p->cred->uid > 10000)
 	{
-		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,6));
+		set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,1));
 	}
 	else if (TASK_NICE(p) == -10 && nice == 0 && p->cred->uid > 10000)
 	{	
-		nice = 10;
-		set_task_ioprio(p, IOPRIO_PRIO_VALUE(3,4));
+		if(strcmp(p->comm,"ndroid.systemui") == 0)
+		{
+			nice = -8;
+			set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,3));
+		}
+		else
+		{
+			set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,4));
+		}
 	}
 #endif
 	/*
