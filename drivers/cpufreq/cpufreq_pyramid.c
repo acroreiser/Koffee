@@ -81,6 +81,7 @@ static unsigned long go_hispeed_load;
 
 static int screenoff_limit_s;
 static int screenoff;
+static int scr_off_freq = 900000;
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 static int temp_factor = 1;
 #endif
@@ -220,8 +221,8 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		new_freq = pcpu->policy->max * cpu_load / 100;
 		if(screenoff == 1 && screenoff_limit_s == 1)
 		{
-			if(new_freq > 900000)
-				new_freq = 900000;
+			if(new_freq > scr_off_freq)
+				new_freq = scr_off_freq;
 		}
 		else
 		{
@@ -294,8 +295,8 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		new_freq = pcpu->policy->max * cpu_load / 100;
 		if(screenoff == 1 && screenoff_limit_s == 1)
 		{	
-			if(new_freq > 900000)
-				new_freq = 900000;
+			if(new_freq > scr_off_freq)
+				new_freq = scr_off_freq;
 
 		}
 			if(mc_eco == 1)
@@ -897,6 +898,31 @@ static ssize_t store_screenoff_limit(struct kobject *kobj, struct attribute *att
 
 define_one_global_rw(screenoff_limit);
 
+static ssize_t show_screenoff_freq(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", scr_off_freq);
+}
+
+static ssize_t store_screenoff_freq(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 200000 || val > 1400000)
+		return -EINVAL;
+
+	scr_off_freq = val;
+	return count;
+}
+
+define_one_global_rw(screenoff_freq);
+
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 static ssize_t show_temperature_factor(struct kobject *kobj, struct attribute *attr,
 				char *buf)
@@ -999,6 +1025,7 @@ static struct attribute *pyramid_attributes[] = {
 	&min_sample_time_attr.attr,
 	&timer_rate_attr.attr,
 	&input_boost.attr,
+	&screenoff_freq.attr
 	&screenoff_limit.attr,
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 	&temperature_factor.attr,
