@@ -214,109 +214,30 @@ static void cpufreq_pyramid_timer(unsigned long data)
 	if (load_since_change > cpu_load)
 		cpu_load = load_since_change;
 
-	if (cpu_load >= go_hispeed_load || boost_val) {
-		if (pcpu->target_freq <= pcpu->policy->min) {
-			new_freq = hispeed_freq;
-		} else {
-		new_freq = pcpu->policy->max * cpu_load / 100;
-		if(screenoff == 1 && screenoff_limit_s == 1)
-		{
-			if(new_freq > scr_off_freq)
-				new_freq = scr_off_freq;
-		}
-		else
-		{
-			if(mc_eco == 1)
-			{
-				if(num_online_cpus() > 1)
-				{
-					if(new_freq > 1200000)
-						new_freq = 1200000;
-				}
-				if(num_online_cpus() > 2)
-				{
-					if(new_freq > 900000)
-						new_freq = 900000;
-				}
-				if(num_online_cpus() > 3)
-				{
-					if(new_freq > 600000)
-						new_freq = 600000;
-				}
-			}
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-			if(temp_factor == 1)
-			{
-				temperature = get_exynos4_temperature();
-
-				if(temperature >= 50)
-				{
-					if(new_freq > 1000000)
-						new_freq = new_freq - 400000;
-					else
-						if(new_freq > 600000)
-							new_freq = new_freq - 200000;
-						else
-							if(new_freq >= 300000)
-								new_freq = new_freq - 100000;
-
-				}
-				else
-				{
-					if(temperature >= 40)
-					{
-						if(new_freq > 1000000)
-							new_freq = new_freq - 200000;
-						else
-							if(new_freq > 600000)
-								new_freq = new_freq - 100000;
-					}
-					else
-					{
-#endif
-						if (new_freq < hispeed_freq)
-							new_freq = hispeed_freq;
-#ifdef CONFIG_EXYNOS4_EXPORT_TEMP
-					}
-				}
-			}
-#endif
-		}
-
-			if (pcpu->target_freq == hispeed_freq &&
-			    new_freq > hispeed_freq &&
-			    cputime64_sub(pcpu->timer_run_time,
-					  pcpu->hispeed_validate_time)
-			    < above_hispeed_delay_val) {
-				goto rearm;
-			}
-		}
-	} else {
 		new_freq = pcpu->policy->max * cpu_load / 100;
 		if(screenoff == 1 && screenoff_limit_s == 1)
 		{	
 			if(new_freq > scr_off_freq)
 				new_freq = scr_off_freq;
 
-		}
-			if(mc_eco == 1)
+		} else if(mc_eco == 1)
+		{
+			if(num_online_cpus() > 1)
 			{
-				if(num_online_cpus() > 1)
-				{
-					if(new_freq > 1200000)
-						new_freq = 1200000;
-				}
-				if(num_online_cpus() > 2)
-				{
-					if(new_freq > 900000)
-						new_freq = 900000;
-				}
-				if(num_online_cpus() > 3)
-				{
-					if(new_freq > 600000)
-						new_freq = 600000;
-				}
+				if(new_freq > 1200000)
+					new_freq = 1200000;
 			}
+			if(num_online_cpus() > 2)
+			{
+				if(new_freq > 900000)
+					new_freq = 900000;
+			}
+			if(num_online_cpus() > 3)
+			{
+				if(new_freq > 600000)
+					new_freq = 600000;
+			}
+		}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 		else
 		{
@@ -350,10 +271,6 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			}
 		}
 #endif
-	}	
-		
-	if (new_freq <= hispeed_freq)
-		pcpu->hispeed_validate_time = pcpu->timer_run_time;
 
 	if (cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table,
 					   new_freq, CPUFREQ_RELATION_H,
