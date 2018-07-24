@@ -137,6 +137,9 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 # Tweak scheduler
 	echo 1 > /proc/sys/kernel/sched_child_runs_first
 
+# Fix/restore contexts on boot
+	restorecon -FR /data
+
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 ### KOFFEE's TWEAKS AND FIXUPS ###
