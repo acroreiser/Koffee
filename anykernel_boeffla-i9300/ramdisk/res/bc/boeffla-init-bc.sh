@@ -124,6 +124,23 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	fi
 
 ### KOFFEE's TWEAKS AND FIXUPS	
+# Use pyramid cpu scheduler by default
+	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+# Enable total 400 MB zRam on 1 device as default
+	echo "1" > /sys/block/zram0/reset
+	echo "209715200" > /sys/block/zram0/disksize
+	busybox mkswap /dev/block/zram0
+	busybox swapon /dev/block/zram0
+
+	echo "1" > /sys/block/zram1/reset
+	echo "lzo" > /sys/block/zram1/comp_algorithm
+	echo "419430400" > /sys/block/zram1/disksize
+	busybox mkswap /dev/block/zram1
+	busybox swapon /dev/block/zram1
+	echo "100" > /proc/sys/vm/swappiness
+	echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
+
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
@@ -142,6 +159,9 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
+
+# reduce nr_requests for emmc
+	echo 32 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
 
 # Turn off debugging for certain modules
