@@ -116,13 +116,6 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	cat /proc/sys/kernel/random/read_wakeup_threshold > /dev/bk_read_wakeup_threshold
 	cat /proc/sys/kernel/random/write_wakeup_threshold > /dev/bk_write_wakeup_threshold
 
-	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
-	if [ -f $BOEFFLA_STARTCONFIG ]; then
-		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
-		. $BOEFFLA_STARTCONFIG
-		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
-	fi
-
 ### KOFFEE's TWEAKS AND FIXUPS	
 # Use pyramid cpu scheduler by default
 	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
@@ -161,8 +154,15 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
 # reduce nr_requests for emmc
-	echo 32 > /sys/block/mmcblk0/queue/nr_requests
+	echo 1024 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
+	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
+	if [ -f $BOEFFLA_STARTCONFIG ]; then
+		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
+		. $BOEFFLA_STARTCONFIG
+		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
+	fi
+
 
 # Turn off debugging for certain modules
 	echo 0 > /sys/module/ump/parameters/ump_debug_level
