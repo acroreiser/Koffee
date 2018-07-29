@@ -78,6 +78,9 @@ static int screenoff;
 static int scr_off_freq = 900000;
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 static int temp_factor = 1;
+static unsigned int mc_step1 = 1200000;
+static unsigned int mc_step2 = 900000;
+static unsigned int mc_step3 = 600000;
 #endif
 
 /*
@@ -207,18 +210,18 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		{
 			if(num_online_cpus() > 1)
 			{
-				if(new_freq > 1200000)
-					new_freq = 1200000;
+				if(new_freq > mc_step1)
+					new_freq = mc_step1;
 			}
 			if(num_online_cpus() > 2)
 			{
-				if(new_freq > 900000)
-					new_freq = 900000;
+				if(new_freq > mc_step2)
+					new_freq = mc_step2;
 			}
 			if(num_online_cpus() > 3)
 			{
-				if(new_freq > 600000)
-					new_freq = 600000;
+				if(new_freq > mc_step3)
+					new_freq = mc_step3;
 			}
 		}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
@@ -594,6 +597,81 @@ static ssize_t store_screenoff_freq(struct kobject *kobj, struct attribute *attr
 
 define_one_global_rw(screenoff_freq);
 
+static ssize_t show_mc_step_1(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_step1);
+}
+
+static ssize_t store_mc_step_1(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 200000 || val > 1400000)
+		return -EINVAL;
+
+	mc_step1 = val;
+	return count;
+}
+
+define_one_global_rw(mc_step_1);
+
+static ssize_t show_mc_step_2(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_step2);
+}
+
+static ssize_t store_mc_step_2(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 200000 || val > 1400000)
+		return -EINVAL;
+
+	mc_step2 = val;
+	return count;
+}
+
+define_one_global_rw(mc_step_2);
+
+static ssize_t show_mc_step_3(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_step3);
+}
+
+static ssize_t store_mc_step_3(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 200000 || val > 1400000)
+		return -EINVAL;
+
+	mc_step3 = val;
+	return count;
+}
+
+define_one_global_rw(mc_step_3);
+
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 static ssize_t show_temperature_factor(struct kobject *kobj, struct attribute *attr,
 				char *buf)
@@ -655,6 +733,9 @@ static struct attribute *pyramid_attributes[] = {
 	&temperature_factor.attr,
 #endif
 	&multicore_eco.attr,
+	&mc_step_1.attr,
+	&mc_step_2.attr,
+	&mc_step_3.attr,
 	NULL,
 };
 
