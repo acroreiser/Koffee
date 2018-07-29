@@ -41,6 +41,8 @@ static atomic_t active_count = ATOMIC_INIT(0);
 
 extern unsigned int msm_enabled;
 extern unsigned int mc_eco;
+extern unsigned int max_cpus_on;
+static unsigned int max_cpus = 4;
 
 struct cpufreq_pyramid_cpuinfo {
 	struct timer_list cpu_timer;
@@ -759,12 +761,67 @@ static ssize_t store_multicore_eco(struct kobject *kobj, struct attribute *attr,
 }
 define_one_global_rw(multicore_eco);
 
+static ssize_t show_max_cpus_online(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", max_cpus_on);
+}
+
+static ssize_t store_max_cpus_online(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 1 || val > 4)
+		return -EINVAL;
+
+	max_cpus_on = val;
+	return count;
+}
+define_one_global_rw(max_cpus_online);
+
+static ssize_t show_max_screenoff_cpus_online(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", screenoff_max_cpus_on);
+}
+
+static ssize_t store_screenoff_max_cpus_online(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 1 || val > 4)
+		return -EINVAL;
+
+	screenoff_max_cpus_on = val;
+
+	if(screenoff == 1)
+	{
+		max_cpus = max_cpus_on;
+		max_cpus_on = screenoff_max_cpus_on;
+	}
+
+	return count;
+}
+define_one_global_rw(screenoff_max_cpus_online);
 
 static struct attribute *pyramid_attributes[] = {
 	&min_sample_time_attr.attr,
 	&timer_rate_attr.attr,
 	&screenoff_freq.attr,
 	&screenoff_limit.attr,
+	&screenoff_max_cpus_online.attr,
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 	&temperature_factor.attr,
 #endif
@@ -886,11 +943,14 @@ static int cpufreq_pyramid_idle_notifier(struct notifier_block *nb,
 static void pyramid_suspend(struct early_suspend *handler)
 {
 	screenoff = 1;
+	max_cpus = max_cpus_on;
+	max_cpus_on = screenoff_max_cpus_on;
 }
 
 static void pyramid_resume(struct early_suspend *handler)
 {
 	screenoff = 0;
+	max_cpus_on = max_cpus;
 }
 
 static struct early_suspend pyramid_early_suspend_driver = {

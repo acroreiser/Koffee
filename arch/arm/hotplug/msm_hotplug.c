@@ -37,7 +37,7 @@
 #define DEFAULT_HISTORY_SIZE		10
 #define DEFAULT_DOWN_LOCK_DUR		100
 #define DEFAULT_BOOST_LOCK_DUR		500 * 1000L
-#define DEFAULT_NR_CPUS_BOOSTED		1
+#define DEFAULT_NR_CPUS_BOOSTED		0
 #define DEFAULT_MIN_CPUS_ONLINE		1
 #define DEFAULT_MAX_CPUS_ONLINE		NR_CPUS
 /* cur_avg_load can be > 200! */
@@ -58,6 +58,9 @@ EXPORT_SYMBOL(msm_enabled);
 
 unsigned int mc_eco = 1;
 EXPORT_SYMBOL(mc_eco);
+
+unsigned int max_cpus_on = 4;
+EXPORT_SYMBOL(max_cpus_on);
 
 /*
  * suspend mode, if set = 1 hotplug will sleep,
@@ -103,7 +106,7 @@ static struct cpu_hotplug {
 	.fast_lane_min_freq = DEFAULT_FAST_LANE_MIN_FREQ
 };
 
-unsigned int *pyramid_maxcpus = &hotplug.max_cpus_online;
+unsigned int *pyramid_maxcpus = &max_cpus_on;
 EXPORT_SYMBOL(pyramid_maxcpus);
 
 static struct workqueue_struct *hotplug_wq;
@@ -414,7 +417,7 @@ static void online_cpu(unsigned int target)
 	 * and cancel online task if target already achieved.
 	 */
 	if (target <= online_cpus ||
-		online_cpus >= hotplug.max_cpus_online)
+		online_cpus >= max_cpus_on)
 		return;
 
 	hotplug.target_cpus = target;
@@ -491,7 +494,7 @@ static void msm_hotplug_work(struct work_struct *work)
 	if ((stats.cur_avg_load >= hotplug.fast_lane_load) &&
 			(cpufreq_quick_get(0) >= hotplug.fast_lane_min_freq)) {
 		/* Enter the fast lane */
-		online_cpu(hotplug.max_cpus_online);
+		online_cpu(max_cpus_on);
 		if (debug == 3)
 			pr_info("%s: fast lane GO GO GO!\n", MSM_HOTPLUG);
 		goto reschedule;
@@ -502,9 +505,9 @@ static void msm_hotplug_work(struct work_struct *work)
 		if (stats.online_cpus != hotplug.min_cpus_online)
 			online_cpu(hotplug.min_cpus_online);
 		goto reschedule;
-	} else if (hotplug.max_cpus_online == stats.min_cpus) {
-		if (stats.online_cpus != hotplug.max_cpus_online)
-			offline_cpu(hotplug.max_cpus_online);
+	} else if (max_cpus_on == stats.min_cpus) {
+		if (stats.online_cpus != max_cpus_on)
+			offline_cpu(max_cpus_on);
 		goto reschedule;
 	}
 
@@ -529,8 +532,8 @@ else
 	}
 }
 
-	if (target > hotplug.max_cpus_online)
-		target = hotplug.max_cpus_online;
+	if (target > max_cpus_on)
+		target = max_cpus_on;
 	else if (target < hotplug.min_cpus_online)
 		target = hotplug.min_cpus_online;
 
@@ -565,8 +568,8 @@ static void __ref msm_hotplug_suspend(void)
 		hotplug.suspended = 1;
 		hotplug.min_cpus_online_res = hotplug.min_cpus_online;
 		hotplug.min_cpus_online = 1;
-		hotplug.max_cpus_online_res = hotplug.max_cpus_online;
-		hotplug.max_cpus_online = 3;
+		max_cpus_on_res = max_cpus_on;
+		max_cpus_on = 3;
 		mutex_unlock(&hotplug.msm_hotplug_mutex);
 
 		/* Flush hotplug workqueue */
@@ -603,7 +606,7 @@ static void __ref msm_hotplug_resume(void)
 		mutex_lock(&hotplug.msm_hotplug_mutex);
 		hotplug.suspended = 0;
 		hotplug.min_cpus_online = hotplug.min_cpus_online_res;
-		hotplug.max_cpus_online = hotplug.max_cpus_online_res;
+		max_cpus_on = max_cpus_on_res;
 		mutex_unlock(&hotplug.msm_hotplug_mutex);
 		required_wakeup = 1;
 		/* Initiate hotplug work */
@@ -1071,8 +1074,8 @@ static ssize_t store_min_cpus_online(struct device *dev,
 	if (ret != 1 || val < 1 || val > stats.total_cpus)
 		return -EINVAL;
 
-	if (hotplug.max_cpus_online < val)
-		hotplug.max_cpus_online = val;
+	if (max_cpus_on < val)
+		max_cpus_on = val;
 
 	hotplug.min_cpus_online = val;
 
@@ -1083,7 +1086,7 @@ static ssize_t show_max_cpus_online(struct device *dev,
 				    struct device_attribute *msm_hotplug_attrs,
 				    char *buf)
 {
-	return sprintf(buf, "%u\n",hotplug.max_cpus_online);
+	return sprintf(buf, "%u\n",max_cpus_on);
 }
 
 static ssize_t store_max_cpus_online(struct device *dev,
@@ -1100,7 +1103,7 @@ static ssize_t store_max_cpus_online(struct device *dev,
 	if (hotplug.min_cpus_online > val)
 		hotplug.min_cpus_online = val;
 
-	hotplug.max_cpus_online = val;
+	max_cpus_on = val;
 
 	return count;
 }
