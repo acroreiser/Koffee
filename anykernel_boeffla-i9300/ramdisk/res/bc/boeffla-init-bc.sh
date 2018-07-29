@@ -120,6 +120,10 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 # Use pyramid cpu scheduler by default
 	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
+# Use bfq io scheduler by default for internal and deadline for external
+	echo "bfq" > /sys/block/mmcblk0/queue/scheduler
+	echo "deadline" > /sys/block/mmcblk1/queue/scheduler
+
 # Enable total 400 MB zRam on 1 device as default
 	echo "1" > /sys/block/zram0/reset
 	echo "209715200" > /sys/block/zram0/disksize
@@ -153,7 +157,7 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
-# reduce nr_requests for emmc
+# enlarge nr_requests for emmc
 	echo 1024 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
 	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
