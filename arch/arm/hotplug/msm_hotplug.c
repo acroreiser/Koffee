@@ -297,15 +297,6 @@ struct loads_tbl {
 
 static struct loads_tbl loads[] = {
 	LOAD_SCALE(400, 0),
-	LOAD_SCALE(40, 20),
-	LOAD_SCALE(140, 75),
-	LOAD_SCALE(300, 200),
-	LOAD_SCALE(410, 170),
-	LOAD_SCALE(0, 0),
-};
-
-static struct loads_tbl loads_mc[] = {
-	LOAD_SCALE(400, 0),
 	LOAD_SCALE(65, 0),
 	LOAD_SCALE(120, 50),
 	LOAD_SCALE(160, 90),
@@ -511,18 +502,6 @@ static void msm_hotplug_work(struct work_struct *work)
 		goto reschedule;
 	}
 
-if(mc_eco == 1)
-{
-	for (i = stats.min_cpus; loads_mc[i].up_threshold; i++) {
-		if (stats.cur_avg_load <= loads_mc[i].up_threshold
-		    && stats.cur_avg_load > loads_mc[i].down_threshold) {
-			target = i;
-			break;
-		}
-	}
-}
-else
-{
 	for (i = stats.min_cpus; loads[i].up_threshold; i++) {
 		if (stats.cur_avg_load <= loads[i].up_threshold
 		    && stats.cur_avg_load > loads[i].down_threshold) {
@@ -530,7 +509,6 @@ else
 			break;
 		}
 	}
-}
 
 	if (target > max_cpus_on)
 		target = max_cpus_on;

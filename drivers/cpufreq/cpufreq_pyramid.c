@@ -224,8 +224,10 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			if (mc_2_4 == 1)
 			{
 				if(cpus > 2)
+				{
 					if(new_freq > 1000000)
 						new_freq = 1000000;	
+				}
 			}
 			else if (mc_auto == 1)
 			{
@@ -240,6 +242,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			     			(int) data);
 						goto rearm;
 					}
+					soft_max = pcpu->policy->max;
 
 					new_freq = pcpu->freq_table[index].frequency;
 				}	
