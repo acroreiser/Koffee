@@ -787,7 +787,7 @@ static ssize_t store_max_cpus_online(struct kobject *kobj, struct attribute *att
 }
 define_one_global_rw(max_cpus_online);
 
-static ssize_t show_max_screenoff_cpus_online(struct kobject *kobj, struct attribute *attr,
+static ssize_t show_screenoff_max_cpus_online(struct kobject *kobj, struct attribute *attr,
 				char *buf)
 {
 	return sprintf(buf, "%u\n", screenoff_max_cpus_on);
