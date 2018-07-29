@@ -81,6 +81,7 @@ static int temp_factor = 1;
 static unsigned int mc_step1 = 1200000;
 static unsigned int mc_step2 = 900000;
 static unsigned int mc_step3 = 600000;
+static unsigned int mc_2_4;
 #endif
 
 /*
@@ -127,6 +128,8 @@ static void cpufreq_pyramid_timer(unsigned long data)
 	unsigned int new_freq;
 	unsigned int index;
 	unsigned long flags;
+
+	unsigned int cpus;
 
 	smp_rmb();
 
@@ -197,6 +200,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 
 	new_freq = pcpu->freq_table[index].frequency;
 
+	cpus = num_online_cpus();
 	if(new_freq == 1704000)
 		new_freq = 1700000;
 
@@ -208,20 +212,27 @@ static void cpufreq_pyramid_timer(unsigned long data)
 		} 
 		if(mc_eco == 1)
 		{
-			if(num_online_cpus() > 1)
+			if (mc_2_4 == 1)
 			{
-				if(new_freq > mc_step1)
-					new_freq = mc_step1;
+				if(cpus > 2)
+					if(new_freq > 1000000)
+						new_freq = 1000000;	
 			}
-			if(num_online_cpus() > 2)
+			else
 			{
-				if(new_freq > mc_step2)
-					new_freq = mc_step2;
-			}
-			if(num_online_cpus() > 3)
-			{
-				if(new_freq > mc_step3)
-					new_freq = mc_step3;
+				switch (cpus){
+					case 2:
+						if(new_freq > mc_step1)
+							new_freq = mc_step1;
+					break;
+					case 3:
+						if(new_freq > mc_step2)
+							new_freq = mc_step2;
+					break;
+					case 4:
+						if(new_freq > mc_step3)
+							new_freq = mc_step3;
+					break;
 			}
 		}
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
@@ -572,6 +583,31 @@ static ssize_t store_screenoff_limit(struct kobject *kobj, struct attribute *att
 
 define_one_global_rw(screenoff_limit);
 
+static ssize_t show_mc_pseudocluster(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_2_4);
+}
+
+static ssize_t store_mc_pseudocluster(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 0 || val > 1)
+		return -EINVAL;
+
+	mc_2_4 = val;
+	return count;
+}
+
+define_one_global_rw(mc_pseudocluster);
+
 static ssize_t show_screenoff_freq(struct kobject *kobj, struct attribute *attr,
 				char *buf)
 {
@@ -736,6 +772,7 @@ static struct attribute *pyramid_attributes[] = {
 	&mc_step_1.attr,
 	&mc_step_2.attr,
 	&mc_step_3.attr,
+	&mc_pseudocluster.attr,
 	NULL,
 };
 
