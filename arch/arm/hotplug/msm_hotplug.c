@@ -308,8 +308,8 @@ static struct loads_tbl loads_mc[] = {
 	LOAD_SCALE(400, 0),
 	LOAD_SCALE(65, 0),
 	LOAD_SCALE(120, 50),
-	LOAD_SCALE(190, 100),
-	LOAD_SCALE(410, 170),
+	LOAD_SCALE(160, 90),
+	LOAD_SCALE(410, 140),
 	LOAD_SCALE(0, 0),
 };
 
