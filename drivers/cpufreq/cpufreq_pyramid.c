@@ -824,6 +824,7 @@ static struct attribute *pyramid_attributes[] = {
 	&screenoff_freq.attr,
 	&screenoff_limit.attr,
 	&screenoff_max_cpus_online.attr,
+	&max_cpus_online.attr,
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 	&temperature_factor.attr,
 #endif
