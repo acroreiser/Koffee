@@ -78,13 +78,14 @@ static struct mutex set_speed_lock;
 static int screenoff_limit_s;
 static int screenoff;
 static int scr_off_freq = 900000;
+static int screenoff_max_cpus_on = 2;
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 static int temp_factor = 1;
+#endif
 static unsigned int mc_step1 = 1200000;
 static unsigned int mc_step2 = 900000;
 static unsigned int mc_step3 = 600000;
 static unsigned int mc_2_4;
-#endif
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
