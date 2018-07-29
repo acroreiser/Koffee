@@ -43,6 +43,12 @@ extern unsigned int msm_enabled;
 extern unsigned int mc_eco;
 extern unsigned int max_cpus_on;
 static unsigned int max_cpus = 4;
+static unsigned int mc_auto;
+static unsigned int mc_eco_factor = 11;
+static unsigned int mc_step1 = 1200000;
+static unsigned int mc_step2 = 900000;
+static unsigned int mc_step3 = 600000;
+static unsigned int mc_2_4;
 
 struct cpufreq_pyramid_cpuinfo {
 	struct timer_list cpu_timer;
@@ -82,10 +88,8 @@ static int screenoff_max_cpus_on = 2;
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 static int temp_factor = 1;
 #endif
-static unsigned int mc_step1 = 1200000;
-static unsigned int mc_step2 = 900000;
-static unsigned int mc_step3 = 600000;
-static unsigned int mc_2_4;
+
+
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
@@ -131,6 +135,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 	unsigned int new_freq;
 	unsigned int index;
 	unsigned long flags;
+	int soft_max;
 
 	unsigned int cpus;
 
@@ -139,6 +144,7 @@ static void cpufreq_pyramid_timer(unsigned long data)
 	if (!pcpu->governor_enabled)
 		goto exit;
 
+	soft_max = pcpu->policy->max;
 	/*
 	 * Once pcpu->timer_run_time is updated to >= pcpu->idle_exit_time,
 	 * this lets idle exit know the current idle time sample has
@@ -221,7 +227,23 @@ static void cpufreq_pyramid_timer(unsigned long data)
 					if(new_freq > 1000000)
 						new_freq = 1000000;	
 			}
-			else
+			else if (mc_auto == 1)
+			{
+				soft_max -= (pcpu->policy->max / 100) * (num_online_cpus() * mc_eco_factor);
+				if(new_freq > soft_max)
+				{
+				 	new_freq = soft_max;
+				 	if (cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table,
+					   new_freq, CPUFREQ_RELATION_H,
+					   &index)) {
+						pr_warn_once("timer %d: cpufreq_frequency_table_target error\n",
+			     			(int) data);
+						goto rearm;
+					}
+
+					new_freq = pcpu->freq_table[index].frequency;
+				}	
+			} else
 			{
 				switch (cpus){
 					case 2:
@@ -763,6 +785,55 @@ static ssize_t store_multicore_eco(struct kobject *kobj, struct attribute *attr,
 }
 define_one_global_rw(multicore_eco);
 
+static ssize_t show_mc_eco_auto(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_auto);
+}
+
+static ssize_t store_mc_eco_auto(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 0 || val > 1)
+		return -EINVAL;
+
+	mc_auto = val;
+	return count;
+}
+define_one_global_rw(mc_eco_auto);
+
+static ssize_t show_mc_auto_factor(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_eco_factor);
+}
+
+static ssize_t store_mc_auto_factor(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 2 || val > 15)
+		return -EINVAL;
+
+	mc_eco_factor = val;
+
+	return count;
+}
+define_one_global_rw(mc_auto_factor);
+
 static ssize_t show_max_cpus_online(struct kobject *kobj, struct attribute *attr,
 				char *buf)
 {
@@ -832,6 +903,8 @@ static struct attribute *pyramid_attributes[] = {
 	&mc_step_1.attr,
 	&mc_step_2.attr,
 	&mc_step_3.attr,
+	&mc_eco_auto.attr,
+	&mc_auto_factor.attr,
 	&mc_pseudocluster.attr,
 	NULL,
 };
