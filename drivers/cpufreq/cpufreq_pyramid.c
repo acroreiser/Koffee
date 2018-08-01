@@ -48,7 +48,7 @@ static unsigned int mc_eco_factor = 11;
 static unsigned int mc_step1 = 1200000;
 static unsigned int mc_step2 = 900000;
 static unsigned int mc_step3 = 600000;
-static unsigned int mc_2_4;
+static unsigned int mc_2_4 = 1;
 static unsigned int mc_2_4_freq = 1000000;
 
 struct cpufreq_pyramid_cpuinfo {
