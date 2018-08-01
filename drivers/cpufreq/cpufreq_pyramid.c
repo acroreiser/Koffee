@@ -49,6 +49,7 @@ static unsigned int mc_step1 = 1200000;
 static unsigned int mc_step2 = 900000;
 static unsigned int mc_step3 = 600000;
 static unsigned int mc_2_4;
+static unsigned int mc_2_4_freq = 1000000;
 
 struct cpufreq_pyramid_cpuinfo {
 	struct timer_list cpu_timer;
@@ -225,8 +226,8 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			{
 				if(cpus > 2)
 				{
-					if(new_freq > 1000000)
-						new_freq = 1000000;	
+					if(new_freq > mc_2_4_freq)
+						new_freq = mc_2_4_freq;	
 				}
 			}
 			else if (mc_auto == 1)
@@ -637,6 +638,31 @@ static ssize_t store_mc_pseudocluster(struct kobject *kobj, struct attribute *at
 
 define_one_global_rw(mc_pseudocluster);
 
+static ssize_t show_mc_pseudocluster_freq(struct kobject *kobj, struct attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "%u\n", mc_2_4_freq);
+}
+
+static ssize_t store_mc_pseudocluster_freq(struct kobject *kobj, struct attribute *attr,
+				 const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	if(val < 200000 || val > 1704000)
+		return -EINVAL;
+
+	mc_2_4_freq = val;
+	return count;
+}
+
+define_one_global_rw(mc_pseudocluster_freq);
+
 static ssize_t show_screenoff_freq(struct kobject *kobj, struct attribute *attr,
 				char *buf)
 {
@@ -909,6 +935,7 @@ static struct attribute *pyramid_attributes[] = {
 	&mc_eco_auto.attr,
 	&mc_auto_factor.attr,
 	&mc_pseudocluster.attr,
+	&mc_pseudocluster_freq.attr,
 	NULL,
 };
 
