@@ -232,7 +232,9 @@ static void cpufreq_pyramid_timer(unsigned long data)
 			}
 			else if (mc_auto == 1)
 			{
-				soft_max -= (pcpu->policy->max / 100) * (num_online_cpus() * mc_eco_factor);
+				if(num_online_cpus() > 1)
+					soft_max -= (pcpu->policy->max / 100) * (num_online_cpus() * mc_eco_factor);
+
 				if(new_freq > soft_max)
 				{
 				 	new_freq = soft_max;
@@ -1140,6 +1142,6 @@ static void __exit cpufreq_pyramid_exit(void)
 
 module_exit(cpufreq_pyramid_exit);
 
-MODULE_AUTHOR("Jaroslav zvezda <acroreiser@gmail.com>");
-MODULE_DESCRIPTION("'cpufreq_pyramid' - A cpufreq/hotplug governor for latency-sensitive workloads");
+MODULE_AUTHOR("Jaroslav Zvezda <acroreiser@gmail.com>");
+MODULE_DESCRIPTION("'Pyramid' - A tunable cpufreq + hotplug governor for many workloads");
 MODULE_LICENSE("GPL");
