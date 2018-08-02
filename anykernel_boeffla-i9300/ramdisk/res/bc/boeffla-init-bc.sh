@@ -136,7 +136,7 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	busybox mkswap /dev/block/zram1
 	busybox swapon /dev/block/zram1
 	echo "100" > /proc/sys/vm/swappiness
-	echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
+
 
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
@@ -153,6 +153,7 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 
 # Fix/restore contexts on boot
 	restorecon -FR /data
+	restorecon -FRD /data
 
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
@@ -160,6 +161,7 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 # enlarge nr_requests for emmc
 	echo 1024 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
+
 	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
 	if [ -f $BOEFFLA_STARTCONFIG ]; then
 		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
