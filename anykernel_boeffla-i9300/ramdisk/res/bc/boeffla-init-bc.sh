@@ -167,6 +167,8 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
 		. $BOEFFLA_STARTCONFIG
 		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
+	else
+		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
 	fi
 
 
