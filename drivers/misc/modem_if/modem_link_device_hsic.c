@@ -591,7 +591,7 @@ static int link_pm_runtime_get_active(struct link_pm_data *pm_data)
 		/* during dpm_suspending..
 		 * if AP get tx data, wake up. */
 		wake_lock(&pm_data->l2_wake);
-		return -EAGAIN;
+		return 0;
 	}
 
 	if (dev->power.runtime_status == RPM_ACTIVE) {
