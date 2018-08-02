@@ -590,7 +590,7 @@ static int link_pm_runtime_get_active(struct link_pm_data *pm_data)
 		mif_err("Kernel in suspending try get_active later\n");
 		/* during dpm_suspending..
 		 * if AP get tx data, wake up. */
-		wake_lock(&pm_data->l2_wake);
+		//wake_lock(&pm_data->l2_wake);
 		return 0;
 	}
 
