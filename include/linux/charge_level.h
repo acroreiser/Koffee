@@ -35,8 +35,8 @@ extern int ignore_safety_margin;
 #define WIRELESS_CHARGE_LEVEL_MIN 0
 #define WIRELESS_CHARGE_LEVEL_MAX 2000
 
-#define IGNORE_UNSTABLE_POWER_DEFAULT 0
-#define IGNORE_SAFETY_MARGIN_DEFAULT 0
+#define IGNORE_UNSTABLE_POWER_DEFAULT 1
+#define IGNORE_SAFETY_MARGIN_DEFAULT 1
 
 extern char charge_info_text[30];
 extern int charge_info_level;
