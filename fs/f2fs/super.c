@@ -24,7 +24,6 @@
 #include <linux/blkdev.h>
 #include <linux/f2fs_fs.h>
 #include <linux/sysfs.h>
-#include <linux/cleancache.h>
 
 #include "f2fs.h"
 #include "node.h"
@@ -1034,7 +1033,6 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	if (err)
 		goto fail;
 
-    cleancache_init_fs(sb);
 	return 0;
 fail:
 	if (sbi->s_proc) {
