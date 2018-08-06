@@ -115,16 +115,15 @@
 	cat /proc/sys/kernel/random/read_wakeup_threshold > /dev/bk_read_wakeup_threshold
 	cat /proc/sys/kernel/random/write_wakeup_threshold > /dev/bk_write_wakeup_threshold
 
-	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
-	if [ -f $BOEFFLA_STARTCONFIG ]; then
-		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
-		. $BOEFFLA_STARTCONFIG
-		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
-	else
-		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
-	fi
 
 ### KOFFEE's TWEAKS AND FIXUPS
+# Use bfq io scheduler by default for internal and deadline for external
+	echo "bfq" > /sys/block/mmcblk0/queue/scheduler
+	echo "deadline" > /sys/block/mmcblk1/queue/scheduler
+
+# Use pyramid cpu scheduler by default
+	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
@@ -141,9 +140,20 @@
 # fix sepolicy for Doze helper at runtime
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
-# reduce nr_requests for emmc
-	echo 32 > /sys/block/mmcblk0/queue/nr_requests
+# enlarge nr_requests for emmc
+	echo 1024 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
+
+	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
+	if [ -f $BOEFFLA_STARTCONFIG ]; then
+		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
+		. $BOEFFLA_STARTCONFIG
+		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
+	else
+		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
+	fi
+
+
 
 # Turn off debugging for certain modules
 	echo 0 > /sys/module/ump/parameters/ump_debug_level
