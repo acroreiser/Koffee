@@ -43,25 +43,11 @@
                   values:[
                      pyramid,
                      pegasusq,
-                     ondemand,
-                     interactive,
-                     wheatley,
-                     intelliactive,
+                     zzmoove,
+                     pegasusqplus,
                      performance,
                      powersave,
                      userspace,
-                  ]
-               }
-            },
-            {
-               SOptionList:{
-                  title:"Multicore powersave",
-                  default:off,
-                  action:"sched_mc /sys/devices/system/cpu/sched_mc_power_savings",
-                  values:[
-                     off,
-                     on,
-                     aggressive,
                   ]
                }
             },

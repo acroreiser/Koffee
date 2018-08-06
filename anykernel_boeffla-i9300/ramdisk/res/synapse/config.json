@@ -38,32 +38,16 @@
             {
                SOptionList:{
                   title:"CPU governor",
-                  default:pegasusq,
+                  default:pyramid,
                   action:"generic /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
                   values:[
-                     interactive,
                      pyramid,
-                     ondemand,
                      lulzactiveq,
                      pegasusq,
                      pegasusqplus,
                      performance,
                      powersave,
-                     smartassV2,
-                     wheatley,
                      zzmoove,
-                  ]
-               }
-            },
-            {
-               SOptionList:{
-                  title:"Multicore powersave",
-                  default:off,
-                  action:"sched_mc /sys/devices/system/cpu/sched_mc_power_savings",
-                  values:[
-                     off,
-                     on,
-                     aggressive,
                   ]
                }
             },
