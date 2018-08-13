@@ -536,7 +536,7 @@ __v7_setup_stack:
 	globl_equ	cpu_v7_bpiall_dcache_clean_area, cpu_v7_dcache_clean_area
 	globl_equ	cpu_v7_bpiall_set_pte_ext,	cpu_v7_set_pte_ext
 	globl_equ	cpu_v7_bpiall_suspend_size,	cpu_v7_suspend_size
-#ifdef CONFIG_ARM_CPU_SUSPEND
+#ifdef CONFIG_ARCH_SUSPEND_POSSIBLE
 	globl_equ	cpu_v7_bpiall_do_suspend,	cpu_v7_do_suspend
 	globl_equ	cpu_v7_bpiall_do_resume,	cpu_v7_do_resume
 #endif
