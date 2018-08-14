@@ -1023,6 +1023,10 @@ config CC_MORE_OPTIMIZATIONS
 config CC_8
 	bool "We use GCC 8"
 
+config KOFFEE_EARLY_SCRIPT
+	bool "Run /koffee.sh script after mounting the /system partition"
+	default n
+
 config SYSCTL
 	bool
 

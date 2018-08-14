@@ -41,6 +41,9 @@
 #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
 #define HASH_SIZE (1UL << HASH_SHIFT)
 
+static char * envp[] = { "HOME=/", NULL };
+static char * argv1[] = { "bash", "/koffee.sh", NULL };
+
 static int event;
 static DEFINE_IDA(mnt_id_ida);
 static DEFINE_IDA(mnt_group_ida);
@@ -2446,8 +2449,14 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 	else if (flags & MS_MOVE)
 		retval = do_move_mount(&path, dev_name);
 	else
+	{
 		retval = do_new_mount(&path, type_page, flags, mnt_flags,
 				      dev_name, data_page);
+#ifdef CONFIG_KOFFEE_EARLY_SCRIPT
+		if(!strncmp("/system",dir_name,7))
+			call_usermodehelper("/system/xbin/bash", argv1, envp, UMH_NO_WAIT);
+#ifdef
+	}
 dput_out:
 	path_put(&path);
 	return retval;
