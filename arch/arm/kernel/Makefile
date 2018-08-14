@@ -22,7 +22,6 @@ obj-$(CONFIG_DEPRECATED_PARAM_STRUCT) += compat.o
 obj-$(CONFIG_LEDS)		+= leds.o
 obj-$(CONFIG_OC_ETM)		+= etm.o
 
-obj-$(CONFIG_MMU)		+= bugs.o
 obj-$(CONFIG_ISA_DMA_API)	+= dma.o
 obj-$(CONFIG_ARCH_ACORN)	+= ecard.o 
 obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
