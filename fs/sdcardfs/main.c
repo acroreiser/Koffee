@@ -258,7 +258,7 @@ static int sdcardfs_read_super(struct super_block *sb, const char *dev_name,
 		err = PTR_ERR(inode);
 		goto out_sput;
 	}
-	sb->s_root = d_make_root(inode);
+	sb->s_root = d_alloc_root(inode);
  	if (!sb->s_root) {
  		err = -ENOMEM;
 		goto out_iput;
