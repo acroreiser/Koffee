@@ -298,7 +298,7 @@ static int sdcardfs_fsync(struct file *file, loff_t start, loff_t end,
 	struct path lower_path;
 	struct dentry *dentry = file->f_path.dentry;
 
-	err = generic_file_fsync(file, start, end, datasync);
+	err = generic_file_fsync(file, datasync);
 	if (err)
 		goto out;
 
