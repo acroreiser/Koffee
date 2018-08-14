@@ -73,7 +73,7 @@ static int  procfile_read(char *buffer,
 	if (offset > 0) {
 		ret  = 0;
 	} else {
-		memcpy(buffer, procfs_buffer, procfs_buffer_size);
+		memcpy(buffer, procfs_buffer, 2);
 		ret = procfs_buffer_size;
 	}
 
@@ -84,22 +84,20 @@ static int procfile_write(struct file *file, const char *buffer, unsigned long c
 		   void *data)
 {
 	/* set buffer size */
-	procfs_buffer_size = 1;
+	procfs_buffer_size = 2;
 	
 	/* write data to the buffer */
 	if ( copy_from_user(procfs_buffer, buffer, procfs_buffer_size) ) {
 		return -EFAULT;
 	}
 	
+	if(strncmp("0", &procfs_buffer[0], 1) && strncmp("1", &procfs_buffer[0], 1))
+		return -EINVAL;
+
 	if(!strncmp("0", &procfs_buffer[0], 1))
 	   sys_lock_status = 0;
-	 else
-	 {
-		if (!strncmp("1", &procfs_buffer[0], 1))
-	   		sys_lock_status = 1;
-	   	else 
-	   		return -EINVAL;
-	 }
+	else
+   		sys_lock_status = 1;
 	   
 	return procfs_buffer_size;
 }
