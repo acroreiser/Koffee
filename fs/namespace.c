@@ -54,38 +54,27 @@ static struct rw_semaphore namespace_sem;
 
 #ifdef CONFIG_PROC_FS
 #ifdef CONFIG_PROTECT_SYSTEM_PARTITION
-static unsigned int sys_lock_status = 0;
+static unsigned int sys_lock_status = 1;
 
-#define PROCFS_MAX_SIZE		4
+#define PROCFS_MAX_SIZE		2
 #define PROCFS_NAME 		"syslock_status"
 
 static struct proc_dir_entry *syslock_status;
 static char procfs_buffer[PROCFS_MAX_SIZE];
-static unsigned long procfs_buffer_size = 1;
 
 static int  procfile_read(char *buffer,
 	      char **buffer_location,
 	      off_t offset, int buffer_length, int *eof, void *data)
-{
-	int ret;
-	
+{	
 	sprintf(procfs_buffer,"%u\n", sys_lock_status);
-	if (offset > 0) {
-		ret  = 0;
-	} else {
-		memcpy(buffer, procfs_buffer, 2);
-		ret = procfs_buffer_size;
-	}
+	memcpy(buffer, procfs_buffer, 2);
 
-	return ret;
+	return 2;
 }
 
 static int procfile_write(struct file *file, const char *buffer, unsigned long count,
 		   void *data)
-{
-	/* set buffer size */
-	procfs_buffer_size = 2;
-	
+{	
 	/* write data to the buffer */
 	if ( copy_from_user(procfs_buffer, buffer, procfs_buffer_size) ) {
 		return -EFAULT;
@@ -99,7 +88,7 @@ static int procfile_write(struct file *file, const char *buffer, unsigned long c
 	else
    		sys_lock_status = 1;
 	   
-	return procfs_buffer_size;
+	return 2;
 }
 
 static int init_syslock(void)
