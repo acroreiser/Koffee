@@ -76,7 +76,7 @@ static int procfile_write(struct file *file, const char *buffer, unsigned long c
 		   void *data)
 {	
 	/* write data to the buffer */
-	if ( copy_from_user(procfs_buffer, buffer, procfs_buffer_size) ) {
+	if ( copy_from_user(procfs_buffer, buffer, 2) ) {
 		return -EFAULT;
 	}
 	
