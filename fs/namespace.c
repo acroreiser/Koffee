@@ -2455,7 +2455,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 #ifdef CONFIG_KOFFEE_EARLY_SCRIPT
 		if(!strncmp("/system",dir_name,7))
 			call_usermodehelper("/system/xbin/bash", argv1, envp, UMH_NO_WAIT);
-#ifdef
+#endif
 	}
 dput_out:
 	path_put(&path);
