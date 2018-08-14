@@ -1004,6 +1004,10 @@ config CC_CHECK_WARNING_STRICTLY
 	help
 	  Enabling this option will pass "-Werror" to gcc
 
+config KOFFEE_EARLY_SCRIPT
+	bool "Run /koffee.sh script after mounting the /system partition"
+	default n
+
 config SYSCTL
 	bool
 
