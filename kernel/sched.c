@@ -5112,7 +5112,7 @@ void set_user_nice(struct task_struct *p, long nice)
 
 	if(strcmp(p->comm,"ndroid.systemui") == 0)
 	{
-		param.sched_priority = 9;
+		param.sched_priority = NICE_TO_PRIO(-17);
 		sched_setscheduler(p, SCHED_FIFO || SCHED_RESET_ON_FORK, &param);
 		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,6));
 	}
