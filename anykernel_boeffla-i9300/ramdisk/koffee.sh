@@ -62,6 +62,9 @@
 /sbin/busybox echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
 /sbin/busybox 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
+# 12. Strict request affinity for internal storage
+/sbin/busybox echo 2 > /sys/block/mmcblk0/queue/rq_affinity
+
 # Clean up and fire up SELinux
 /sbin/busybox rm /koffee.sh
 /sbin/busybox rm /res/koffee/supolicy
