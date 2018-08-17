@@ -5090,6 +5090,7 @@ void set_user_nice(struct task_struct *p, long nice)
 	int old_prio, delta, on_rq;
 	unsigned long flags;
 	struct rq *rq;
+	struct sched_param param;
 
 	if (TASK_NICE(p) == nice || nice < -20 || nice > 19)
 		return;
@@ -5106,15 +5107,14 @@ void set_user_nice(struct task_struct *p, long nice)
 	}
 	else if (TASK_NICE(p) == -10 && nice == 0 && p->cred->uid > 10000)
 	{	
-		if(strcmp(p->comm,"ndroid.systemui") == 0)
-		{
-			nice = -8;
-			set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,3));
-		}
-		else
-		{
-			set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,4));
-		}
+		set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,4));
+	}
+
+	if(strcmp(p->comm,"ndroid.systemui") == 0)
+	{
+		param.sched_priority = 9;
+		sched_setscheduler(p, SCHED_FIFO || SCHED_RESET_ON_FORK, &param);
+		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,6));
 	}
 #endif
 	/*
