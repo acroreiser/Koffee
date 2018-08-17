@@ -64,11 +64,6 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	/sbin/busybox rm -f $BUSYBOX_ENABLER
 
 # Apply Boeffla-Kernel default settings
-
-	# Sdcard buffer tweaks
-	echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
-	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
-
 	echo $(date) Boeffla-Kernel default settings applied >> $BOEFFLA_LOGFILE
 
 # init.d support (enabler only to be considered for Lineage based roms)
@@ -115,52 +110,6 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	cat /sys/block/mmcblk1/bdi/read_ahead_kb > /dev/bk_orig_mmcblk1_read_ahead_kb
 	cat /proc/sys/kernel/random/read_wakeup_threshold > /dev/bk_read_wakeup_threshold
 	cat /proc/sys/kernel/random/write_wakeup_threshold > /dev/bk_write_wakeup_threshold
-
-### KOFFEE's TWEAKS AND FIXUPS	
-# Use pyramid cpu scheduler by default
-	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-
-# Use bfq io scheduler by default for internal and deadline for external
-	echo "bfq" > /sys/block/mmcblk0/queue/scheduler
-	echo "deadline" > /sys/block/mmcblk1/queue/scheduler
-
-# Enable total 400 MB zRam on 1 device as default
-	echo "1" > /sys/block/zram0/reset
-	echo "209715200" > /sys/block/zram0/disksize
-	busybox mkswap /dev/block/zram0
-	busybox swapon /dev/block/zram0
-
-	echo "1" > /sys/block/zram1/reset
-	echo "lzo" > /sys/block/zram1/comp_algorithm
-	echo "419430400" > /sys/block/zram1/disksize
-	busybox mkswap /dev/block/zram1
-	busybox swapon /dev/block/zram1
-	echo "100" > /proc/sys/vm/swappiness
-
-
-# Switch to fq_codel on mobile data and wlan
-	tc qdisc add dev rmnet0 root fq_codel
-	tc qdisc add dev wlan0 root fq_codel
-
-# Enable network security enhacements
-	echo 1 > /proc/sys/net/ipv4/conf/all/drop_unicast_in_l2_multicast
-	echo 1 > /proc/sys/net/ipv6/conf/all/drop_unicast_in_l2_multicast
-	echo 1 > /proc/sys/net/ipv4/conf/all/drop_gratuitous_arp
-	echo 1 > /proc/sys/net/ipv6/conf/all/drop_unsolicited_na
-
-# Tweak scheduler
-	echo 1 > /proc/sys/kernel/sched_child_runs_first
-
-# Fix/restore contexts on boot
-#	restorecon -FR /data
-#	restorecon -FRD /data
-
-# fix sepolicy for Doze helper at runtime
-	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
-
-# enlarge nr_requests for emmc
-	echo 1024 > /sys/block/mmcblk0/queue/nr_requests
-### KOFFEE's TWEAKS AND FIXUPS ###
 
 	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
 	if [ -f $BOEFFLA_STARTCONFIG ]; then
