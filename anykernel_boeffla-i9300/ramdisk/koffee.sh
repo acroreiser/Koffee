@@ -65,6 +65,10 @@
 # 12. Strict request affinity for internal storage
 /sbin/busybox echo 2 > /sys/block/mmcblk0/queue/rq_affinity
 
+# 13. Try to speed up booting using readahead
+/system/bin/toybox readahead /system/lib/*.so
+/system/bin/toybox readahead /data/dalvik-cache/arm/*.dex
+
 # Clean up and fire up SELinux
 /sbin/busybox rm /koffee.sh
 /sbin/busybox rm /res/koffee/supolicy
