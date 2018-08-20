@@ -5116,7 +5116,7 @@ void set_user_nice(struct task_struct *p, long nice)
 #endif
 
 #if defined (CONFIG_IO_PRIO_BOOST)
-	if (nice == -10 && (TASK_NICE(p) == 0 || TASK_NICE(p) == -8) && p->cred->uid > 10000)
+	if (nice == -10 && TASK_NICE(p) == 0 && p->cred->uid > 10000)
 	{
 		set_task_ioprio(p, IOPRIO_PRIO_VALUE(0,1));
 	}
@@ -5127,10 +5127,7 @@ void set_user_nice(struct task_struct *p, long nice)
 
 	if(strcmp(p->comm,"ndroid.systemui") == 0)
 	{
-		param.sched_priority = NICE_TO_PRIO(-19);
-		sched_setscheduler(p, SCHED_FIFO, &param);
 		set_task_ioprio(p, IOPRIO_PRIO_VALUE(1,6));
-		goto out_unlock;
 	}
 #endif
 	/*
