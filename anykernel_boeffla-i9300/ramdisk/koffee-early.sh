@@ -1,5 +1,5 @@
 #!/system/xbin/bash
-# Koffee's startup script
+# Koffee's EARLY startup script
 # running immediatelly after mounting /system
 # do not edit!
 /sbin/busybox mount -o remount,rw /
@@ -51,27 +51,19 @@
 # 8. Tweak scheduler
 /sbin/busybox echo 1 > /proc/sys/kernel/sched_child_runs_first
 
-# 9. Fix Doze helper permissions
-/sbin/busybox chmod 0755 /res/koffee/supolicy
-/res/koffee/supolicy --live "allow kernel system_file file { execute_no_trans }"
-
-# 10. Enlarge nr_requests for emmc
+# 9. Enlarge nr_requests for emmc
 /sbin/busybox echo 2048 > /sys/block/mmcblk0/queue/nr_requests
 
-# 11. Sdcard buffer tweaks
+# 10. Sdcard buffer tweaks
 /sbin/busybox echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
 /sbin/busybox 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
-# 12. Strict request affinity for internal storage
+# 11. Strict request affinity for internal storage
 /sbin/busybox echo 2 > /sys/block/mmcblk0/queue/rq_affinity
 
-# 13. Try to speed up booting using readahead
+# 12. Try to speed up booting using readahead
 /system/bin/toybox readahead /system/lib/*.so
 /system/bin/toybox readahead /data/dalvik-cache/arm/*.dex
 
-# Clean up and fire up SELinux
-/sbin/busybox rm /koffee.sh
-/sbin/busybox rm /res/koffee/supolicy
-/sbin/busybox mount -o remount,ro /libs
+# Exiting
 /sbin/busybox mount -o remount,ro /
-/system/bin/toybox setenforce 1

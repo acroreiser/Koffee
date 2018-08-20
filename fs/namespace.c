@@ -41,8 +41,10 @@
 #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
 #define HASH_SIZE (1UL << HASH_SHIFT)
 
+#ifdef CONFIG_KOFFEE_EARLY_SCRIPT
 static char * envp[] = { "HOME=/", NULL };
-static char * argv1[] = { "bash", "/koffee.sh", NULL };
+static char * argv1[] = { "bash", "/koffee-early.sh", NULL };
+#endif
 
 static int event;
 static DEFINE_IDA(mnt_id_ida);
