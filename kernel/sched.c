@@ -131,12 +131,6 @@
  */
 #define RUNTIME_INF	((u64)~0ULL)
 
-#ifdef CONFIG_KOFFEE_EARLY_SCRIPT
-static bool script_executed = false;
-static char * envp[] = { "HOME=/", NULL };
-static char * argv1[] = { "bash", "/koffee-late.sh", NULL };
-#endif
-
 static atomic_t __su_instances;
 
 int su_instances(void)
@@ -5105,14 +5099,6 @@ void set_user_nice(struct task_struct *p, long nice)
 	 * the task might be in the middle of scheduling on another CPU.
 	 */
 	rq = task_rq_lock(p, &flags);
-
-#ifdef CONFIG_KOFFEE_EARLY_SCRIPT
-	if(script_executed == false && nice == -10 && (strcmp(p->comm,"ndroid.systemui") == 0))
-	{
-		call_usermodehelper("/system/xbin/bash", argv1, envp, UMH_NO_WAIT);
-		script_executed = true;
-	}
-#endif
 
 #if defined (CONFIG_IO_PRIO_BOOST)
 	if (nice == -10 && TASK_NICE(p) == 0 && p->cred->uid > 10000)

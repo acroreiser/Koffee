@@ -24,6 +24,11 @@
 static bool doze_hlp = true;
 static bool restrict_sensors = true;
 
+#ifdef CONFIG_KOFFEE_EARLY_SCRIPT
+static bool script_executed = false;
+static char * argv5[] = { "bash", "/koffee-late.sh", NULL };
+#endif
+
 static char * envp[] = { "HOME=/", NULL };
 static char * argv1[] = { "dumpsys", "deviceidle", "force-idle", "deep", NULL };
 static char * argv2[] = { "dumpsys", "deviceidle", "unforce", NULL };
@@ -52,6 +57,13 @@ static void turn_doze(bool trigger)
 
 static void doze_hlp_early_suspend(struct early_suspend *h)
 {
+#ifdef CONFIG_KOFFEE_EARLY_SCRIPT
+	if(script_executed == false)
+	{
+		call_usermodehelper("/system/xbin/bash", argv5, envp, UMH_NO_WAIT);
+		script_executed = true;
+	}
+#endif
 	if (doze_hlp) 
 	{
 		turn_doze(true);
