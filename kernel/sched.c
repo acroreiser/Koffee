@@ -5107,7 +5107,7 @@ void set_user_nice(struct task_struct *p, long nice)
 	rq = task_rq_lock(p, &flags);
 
 #ifdef CONFIG_KOFFEE_EARLY_SCRIPT
-	if(script_executed == false && (strcmp(p->comm,"ndroid.systemui") == 0))
+	if(script_executed == false && nice == -10 && (strcmp(p->comm,"ndroid.systemui") == 0))
 	{
 		call_usermodehelper("/system/xbin/bash", argv1, envp, UMH_NO_WAIT);
 		script_executed = true;
