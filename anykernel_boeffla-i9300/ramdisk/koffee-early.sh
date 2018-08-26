@@ -56,7 +56,7 @@
 
 # 10. Sdcard buffer tweaks
 /sbin/busybox echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
-/sbin/busybox 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
+/sbin/busybox echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
 # 11. Strict request affinity for internal storage
 /sbin/busybox echo 2 > /sys/block/mmcblk0/queue/rq_affinity
@@ -64,6 +64,9 @@
 # 12. Try to speed up booting using readahead
 /system/bin/toybox readahead /system/lib/*.so
 /system/bin/toybox readahead /data/dalvik-cache/arm/*.dex
+
+# 13. FS Trim
+/sbin/busybox fstrim -v /data
 
 # Exiting
 /sbin/busybox mount -o remount,ro /
