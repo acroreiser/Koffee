@@ -24,16 +24,20 @@ static char * argv5[] = { "bash", "/koffee-late.sh", NULL };
 
 static char * envp[] = { "HOME=/", NULL };
 
-static void koffee_hlp_early_suspend(struct early_suspend *h)
-{
-	call_usermodehelper("/system/xbin/bash", argv5, envp, UMH_NO_WAIT);
-	unregister_early_suspend(&koffee_hlp_early_suspend_handler);
+static void koffee_hlp_early_suspend(struct early_suspend *h);
 
 static struct early_suspend koffee_hlp_early_suspend_handler = 
 {
 	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
 	.suspend = koffee_hlp_early_suspend,
 };
+
+static void koffee_hlp_early_suspend(struct early_suspend *h)
+{
+	call_usermodehelper("/system/xbin/bash", argv5, envp, UMH_NO_WAIT);
+	unregister_early_suspend(&koffee_hlp_early_suspend_handler);
+
+
 
 static int koffee_hlp_init(void)
 {
