@@ -62,6 +62,9 @@ EXPORT_SYMBOL(mc_eco);
 unsigned int max_cpus_on = 4;
 EXPORT_SYMBOL(max_cpus_on);
 
+unsigned int min_cpus_on = 1;
+EXPORT_SYMBOL(min_cpus_on);
+
 /*
  * suspend mode, if set = 1 hotplug will sleep,
  * if set = 0, then hoplug will be active all the time.
@@ -430,7 +433,7 @@ static void offline_cpu(unsigned int target)
 	 * and cancel offline task if target already achieved.
 	 */
 	if (target >= online_cpus ||
-		online_cpus <= hotplug.min_cpus_online)
+		online_cpus <= min_cpus_on)
 		return;
 
 	now = ktime_to_us(ktime_get());
