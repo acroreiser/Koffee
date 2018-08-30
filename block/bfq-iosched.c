@@ -79,11 +79,11 @@ static const int bfq_back_max = 16 * 1024;
 static const int bfq_back_penalty = 2;
 
 /* Idling period duration, in jiffies. */
-static int bfq_slice_idle = HZ / 125;
+static int bfq_slice_idle = 0;
 
 /* Default maximum budget values, in sectors and number of requests. */
-static const int bfq_default_max_budget = 16 * 1024;
-static const int bfq_max_budget_async_rq = 4;
+static const int bfq_default_max_budget = 8 * 1024;
+static const int bfq_max_budget_async_rq = 2;
 
 /*
  * Async to sync throughput distribution is controlled as follows:
@@ -93,7 +93,7 @@ static const int bfq_max_budget_async_rq = 4;
 static const int bfq_async_charge_factor = 10;
 
 /* Default timeout values, in jiffies, approximating CFQ defaults. */
-static const int bfq_timeout_sync = HZ / 8;
+static const int bfq_timeout_sync = HZ / 16;
 static int bfq_timeout_async = HZ / 25;
 
 struct kmem_cache *bfq_pool;
