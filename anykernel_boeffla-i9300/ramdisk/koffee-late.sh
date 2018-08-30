@@ -14,6 +14,9 @@
 # 3. FS Trim [2]
 /sbin/busybox fstrim -v /data
 
+# 4. min free kbytes
+/sbin/busybox echo 40960 > /proc/sys/vm/min_free_kbytes
+
 # Clean up and fire up SELinux
 /sbin/busybox echo 1 > /sys/module/koffee_late/parameters/hooked
 /sbin/busybox rm /koffee-early.sh; /sbin/busybox rm /koffee-late.sh; /sbin/busybox mount -o remount,ro /libs; /sbin/busybox mount -o remount,ro /; /system/bin/toybox setenforce 1
