@@ -76,14 +76,14 @@ static const int bfq_fifo_expire[2] = { HZ / 4, HZ / 8 };
 static const int bfq_back_max = 16 * 1024;
 
 /* Penalty of a backwards seek, in number of sectors. */
-static const int bfq_back_penalty = 2;
+static const int bfq_back_penalty = 4;
 
 /* Idling period duration, in jiffies. */
 static int bfq_slice_idle = 0;
 
 /* Default maximum budget values, in sectors and number of requests. */
 static const int bfq_default_max_budget = 8 * 1024;
-static const int bfq_max_budget_async_rq = 2;
+static const int bfq_max_budget_async_rq = 4;
 
 /*
  * Async to sync throughput distribution is controlled as follows:
