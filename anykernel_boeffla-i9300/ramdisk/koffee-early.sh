@@ -68,6 +68,10 @@
 # 13. FS Trim
 /sbin/busybox fstrim -v /data
 
+# 14. min free kbytes
+/sbin/busybox echo 40960 > /proc/sys/vm/min_free_kbytes
+
+
 # Exiting
 /sbin/busybox mount -o remount,ro /
 exit 0

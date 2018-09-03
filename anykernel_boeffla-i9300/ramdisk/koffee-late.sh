@@ -14,8 +14,9 @@
 # 3. FS Trim [2]
 /sbin/busybox fstrim -v /data
 
-# 4. min free kbytes
-/sbin/busybox echo 40960 > /proc/sys/vm/min_free_kbytes
+# 4. Sdcard buffer tweaks [2]
+/sbin/busybox echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
+/sbin/busybox echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
 # Clean up and fire up SELinux
 /sbin/busybox echo 1 > /sys/module/koffee_late/parameters/hooked

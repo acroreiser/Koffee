@@ -111,6 +111,10 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	cat /proc/sys/kernel/random/read_wakeup_threshold > /dev/bk_read_wakeup_threshold
 	cat /proc/sys/kernel/random/write_wakeup_threshold > /dev/bk_write_wakeup_threshold
 
+# Sdcard buffer tweaks [3]
+	/sbin/busybox echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
+	/sbin/busybox echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
+
 	# if there is a startconfig placed by Boeffla-Config V2 app, execute it;
 	if [ -f $BOEFFLA_STARTCONFIG ]; then
 		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
