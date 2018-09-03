@@ -800,24 +800,6 @@ static ssize_t show_multicore_eco(struct kobject *kobj, struct attribute *attr,
 	return sprintf(buf, "%u\n", mc_eco);
 }
 
-static ssize_t store_multicore_eco(struct kobject *kobj, struct attribute *attr,
-				 const char *buf, size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = strict_strtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-
-	if(val < 0 || val > 1)
-		return -EINVAL;
-
-	mc_eco = val;
-	return count;
-}
-define_one_global_rw(multicore_eco);
-
 static ssize_t show_mc_eco_auto(struct kobject *kobj, struct attribute *attr,
 				char *buf)
 {
@@ -957,7 +939,6 @@ static struct attribute *pyramid_attributes[] = {
 #ifdef CONFIG_EXYNOS4_EXPORT_TEMP
 	&temperature_factor.attr,
 #endif
-	&multicore_eco.attr,
 	&mc_step_1.attr,
 	&mc_step_2.attr,
 	&mc_step_3.attr,
