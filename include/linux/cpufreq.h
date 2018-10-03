@@ -24,9 +24,9 @@
 
 #define CPUFREQ_NAME_LEN 16
 
+/* CPU UV DEFINES */
 #define CPU_UV_MV_MAX 1500000
-#define CPU_UV_MV_MIN 750000
-
+#define CPU_UV_MV_MIN 600000
 
 /*********************************************************************
  *                     CPUFREQ NOTIFIER INTERFACE                    *
@@ -183,8 +183,6 @@ struct cpufreq_governor {
 			will fallback to performance governor */
 	struct list_head	governor_list;
 	struct module		*owner;
-	int disableScalingDuringSuspend;
-	int enableSmoothScaling;
 };
 
 /*
