@@ -159,6 +159,50 @@ out:
 	return ret;
 }
 
+/**
+ * exynos_find_cpufreq_level_by_volt - find cpufreqi_level by requested
+ * arm voltage.
+ *
+ * This function finds the cpufreq_level to set for voltage above req_volt
+ * and return its value.
+ */
+int exynos_find_cpufreq_level_by_volt(unsigned int arm_volt,
+					unsigned int *level)
+{
+	struct cpufreq_frequency_table *table;
+	unsigned int *volt_table = exynos_info->volt_table;
+	int i;
+
+	if (!exynos_cpufreq_init_done)
+		return -EINVAL;
+
+	table = cpufreq_frequency_get_table(0);
+	if (!table) {
+		pr_err("%s: Failed to get the cpufreq table\n", __func__);
+		return -EINVAL;
+	}
+
+	/* check if arm_volt has value or not */
+	if (!arm_volt) {
+		pr_err("%s: req_volt has no value.\n", __func__);
+		return -EINVAL;
+	}
+
+	/* find cpufreq level in volt_table */
+	for (i = exynos_info->min_support_idx;
+			i >= exynos_info->max_support_idx; i--) {
+		if (volt_table[i] >= arm_volt) {
+			*level = (unsigned int)i;
+			return 0;
+		}
+	}
+
+	pr_err("%s: Failed to get level for %u uV\n", __func__, arm_volt);
+
+	return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(exynos_find_cpufreq_level_by_volt);
+
 int exynos_cpufreq_get_level(unsigned int freq, unsigned int *level)
 {
 	struct cpufreq_frequency_table *table;
