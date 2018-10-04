@@ -1,0 +1,22 @@
+ui_print(" Dorimanx-Kernel-V1.0   ");
+ui_print("                        ");
+
+show_progress(0.100000, 0);
+
+# START: Install Kernel
+ui_print("Installing Kernel, please wait a moment...");
+show_progress(0.500000, 40);
+mount("ext4", "EMMC", "/dev/block/mmcblk0p9", "/system");
+package_extract_dir("system", "/system");
+set_perm_recursive(0, 0, 0755, 0755, "/system/lib/modules");
+package_extract_file("boot/flash_image", "/tmp/flash_image");
+set_perm(0, 0, 0777, "/tmp/flash_image");
+assert(package_extract_file("boot/zImage", "/tmp/zImage"),
+run_program("/tmp/flash_image", "/dev/block/mmcblk0p5", "/tmp/zImage"),
+delete("/tmp/zImage"));
+delete("/tmp/flash_image");
+show_progress(0.100000, 0);
+unmount("/system");
+ui_print("Kernel successfully installed");
+# END: Install system
+
