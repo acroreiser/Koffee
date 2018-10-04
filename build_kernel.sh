@@ -4,16 +4,19 @@ export INITRAMFS_SOURCE=`readlink -f $KERNELDIR/../../root`
 export PARENT_DIR=`readlink -f ..`
 export USE_SEC_FIPS_MODE=true
 
+export ARCH=arm
+export CROSS_COMPILE=/media/system1/root/CM14/prebuilts/gcc/linux-x86/arm/arm-eabi-4.9-linaro/bin/arm-eabi-
+
 if [ "${1}" != "" ];then
   export KERNELDIR=`readlink -f ${1}`
 fi
 
 INITRAMFS_TMP="/tmp/initramfs-source"
 
-if [ ! -f $KERNELDIR/.config ];
-then
-  make lineageos_i9300_defconfig
-fi
+#if [ ! -f $KERNELDIR/.config ];
+#then
+  make O=$KERNELDIR lineageos_i9300_defconfig
+#fi
 
 . $KERNELDIR/.config
 
@@ -45,8 +48,6 @@ fi
 rm -f usr/initramfs_data.cpio
 rm -f usr/initramfs_data.o
 
-export ARCH=arm
-export CROSS_COMPILE=/media/system1/root/CM14/prebuilts/gcc/linux-x86/arm/arm-eabi-4.9-linaro/bin/arm-eabi-
 
 cd $KERNELDIR/
 nice -n 10 make -j8 || exit 1
