@@ -19,8 +19,6 @@
 #include <linux/irq.h>
 #include <linux/io.h>
 
-#include <asm/mach/irq.h>
-
 #include <mach/map.h>
 #include <plat/irq-uart.h>
 #include <plat/regs-serial.h>
@@ -33,7 +31,6 @@
 static void s3c_irq_demux_uart(unsigned int irq, struct irq_desc *desc)
 {
 	struct s3c_uart_irq *uirq = desc->irq_data.handler_data;
-	struct irq_chip *chip = irq_get_chip(irq);
 	u32 pend = __raw_readl(uirq->regs + S3C64XX_UINTP);
 	int base = uirq->base_irq;
 	struct irq_chip *chip = irq_get_chip(irq);
@@ -42,8 +39,6 @@ static void s3c_irq_demux_uart(unsigned int irq, struct irq_desc *desc)
 
 	if (!(pend & 0xf))
 		do_bad_IRQ(irq, desc);
-
-	chained_irq_enter(chip, desc);
 
 	if (pend & (1 << 0))
 		generic_handle_irq(base);
