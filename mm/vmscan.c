@@ -330,6 +330,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
 					max_pass, delta, total_scan);
 
 		while (total_scan >= batch_size) {
+			long this_scan = SHRINK_BATCH;
 			int nr_before;
 
 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
@@ -3016,7 +3017,10 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
 		 * them before going back to sleep.
 		 */
 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
-		schedule();
+
+		if (!kthread_should_stop())
+			schedule();
+
 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
 	} else {
 		if (remaining)
