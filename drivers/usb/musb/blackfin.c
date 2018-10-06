@@ -17,7 +17,6 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
-#include <linux/prefetch.h>
 
 #include <asm/cacheflush.h>
 

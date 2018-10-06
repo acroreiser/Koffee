@@ -93,8 +93,8 @@ static int ohci_ath79_probe(struct platform_device *pdev)
 		ret = -ENODEV;
 		goto err_put_hcd;
 	}
-	hcd->rsrc_start = res->start;
-	hcd->rsrc_len = resource_size(res);
+	hcd->rsrc_start	= res->start;
+	hcd->rsrc_len	= res->end - res->start + 1;
 
 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
 		dev_dbg(&pdev->dev, "controller already in use\n");

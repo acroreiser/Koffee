@@ -670,9 +670,6 @@ int mon_text_add(struct mon_bus *mbus, const struct usb_bus *ubus)
 	int busnum = ubus? ubus->busnum: 0;
 	int rc;
 
-	if (mon_dir == NULL)
-		return 0;
-
 	if (ubus != NULL) {
 		rc = snprintf(name, NAMESZ, "%dt", busnum);
 		if (rc <= 0 || rc >= NAMESZ)
@@ -743,12 +740,12 @@ int __init mon_text_init(void)
 
 	mondir = debugfs_create_dir("usbmon", usb_debug_root);
 	if (IS_ERR(mondir)) {
-		/* debugfs not available, but we can use usbmon without it */
-		return 0;
+		printk(KERN_NOTICE TAG ": debugfs is not available\n");
+		return -ENODEV;
 	}
 	if (mondir == NULL) {
 		printk(KERN_NOTICE TAG ": unable to create usbmon directory\n");
-		return -ENOMEM;
+		return -ENODEV;
 	}
 	mon_dir = mondir;
 	return 0;

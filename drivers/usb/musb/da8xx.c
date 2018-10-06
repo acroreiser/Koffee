@@ -172,7 +172,11 @@ static void da8xx_musb_disable(struct musb *musb)
 	musb_writel(reg_base, DA8XX_USB_END_OF_INTR_REG, 0);
 }
 
-#define portstate(stmt)		stmt
+#ifdef CONFIG_USB_MUSB_HDRC_HCD
+#define portstate(stmt) 	stmt
+#else
+#define portstate(stmt)
+#endif
 
 static void da8xx_musb_set_vbus(struct musb *musb, int is_on)
 {
@@ -393,15 +397,21 @@ static int da8xx_musb_set_mode(struct musb *musb, u8 musb_mode)
 
 	cfgchip2 &= ~CFGCHIP2_OTGMODE;
 	switch (musb_mode) {
+#ifdef	CONFIG_USB_MUSB_HDRC_HCD
 	case MUSB_HOST:		/* Force VBUS valid, ID = 0 */
 		cfgchip2 |= CFGCHIP2_FORCE_HOST;
 		break;
+#endif
+#ifdef	CONFIG_USB_GADGET_MUSB_HDRC
 	case MUSB_PERIPHERAL:	/* Force VBUS valid, ID = 1 */
 		cfgchip2 |= CFGCHIP2_FORCE_DEVICE;
 		break;
+#endif
+#ifdef	CONFIG_USB_MUSB_OTG
 	case MUSB_OTG:		/* Don't override the VBUS/ID comparators */
 		cfgchip2 |= CFGCHIP2_NO_OVERRIDE;
 		break;
+#endif
 	default:
 		dev_dbg(musb->controller, "Trying to set unsupported mode %u\n", musb_mode);
 	}
