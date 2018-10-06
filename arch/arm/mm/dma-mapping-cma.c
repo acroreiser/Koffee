@@ -35,7 +35,7 @@
 
 static u64 get_coherent_dma_mask(struct device *dev)
 {
-	u64 mask = ISA_DMA_THRESHOLD;
+	u64 mask = (u64)arm_dma_limit;
 
 	if (dev) {
 		mask = dev->coherent_dma_mask;
@@ -49,10 +49,10 @@ static u64 get_coherent_dma_mask(struct device *dev)
 			return 0;
 		}
 
-		if ((~mask) & ISA_DMA_THRESHOLD) {
+		if ((~mask) & (u64)arm_dma_limit) {
 			dev_warn(dev, "coherent DMA mask %#llx is smaller "
 				 "than system GFP_DMA mask %#llx\n",
-				 mask, (unsigned long long)ISA_DMA_THRESHOLD);
+				 mask, (u64)arm_dma_limit);
 			return 0;
 		}
 	}
