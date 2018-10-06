@@ -316,8 +316,6 @@ static int sdhci_s3c_platform_8bit_width(struct sdhci_host *host, int width)
 			ourhost->pdata->cfg_gpio(ourhost->pdev, 4);
 		break;
 	default:
-		ctrl &= ~SDHCI_CTRL_8BITBUS;
-		ctrl &= ~SDHCI_CTRL_4BITBUS;
 		/* call cfg_gpio with 1bit data bus */
 		if (ourhost->pdata->cfg_gpio)
 			ourhost->pdata->cfg_gpio(ourhost->pdev, 1);
