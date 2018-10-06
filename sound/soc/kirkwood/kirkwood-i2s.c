@@ -424,7 +424,7 @@ static __devinit int kirkwood_i2s_dev_probe(struct platform_device *pdev)
 	if (!priv->mem) {
 		dev_err(&pdev->dev, "request_mem_region failed\n");
 		err = -EBUSY;
-		goto err_alloc;
+		goto error;
 	}
 
 	priv->io = ioremap(priv->mem->start, SZ_16K);

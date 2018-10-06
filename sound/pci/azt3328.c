@@ -2559,7 +2559,7 @@ snd_azf3328_create(struct snd_card *card,
 	codec_setup->name = "I2S_OUT";
 
 	if (request_irq(pci->irq, snd_azf3328_interrupt,
-			IRQF_SHARED, KBUILD_MODNAME, chip)) {
+			IRQF_SHARED, card->shortname, chip)) {
 		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		err = -EBUSY;
 		goto out_err;
@@ -2625,19 +2625,16 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 	int err;
 
 	snd_azf3328_dbgcallenter();
-	if (dev >= SNDRV_CARDS) {
-		err = -ENODEV;
-		goto out;
-	}
+	if (dev >= SNDRV_CARDS)
+		return -ENODEV;
 	if (!enable[dev]) {
 		dev++;
-		err = -ENOENT;
-		goto out;
+		return -ENOENT;
 	}
 
 	err = snd_card_create(index[dev], id[dev], THIS_MODULE, 0, &card);
 	if (err < 0)
-		goto out;
+		return err;
 
 	strcpy(card->driver, "AZF3328");
 	strcpy(card->shortname, "Aztech AZF3328 (PCI168)");
@@ -2863,7 +2860,7 @@ snd_azf3328_resume(struct pci_dev *pci)
 
 
 static struct pci_driver driver = {
-	.name = KBUILD_MODNAME,
+	.name = "AZF3328",
 	.id_table = snd_azf3328_ids,
 	.probe = snd_azf3328_probe,
 	.remove = __devexit_p(snd_azf3328_remove),

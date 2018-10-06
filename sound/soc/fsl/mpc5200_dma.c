@@ -299,11 +299,10 @@ static struct snd_pcm_ops psc_dma_ops = {
 };
 
 static u64 psc_dma_dmamask = 0xffffffff;
-static int psc_dma_new(struct snd_soc_pcm_runtime *rtd)
+static int psc_dma_new(struct snd_card *card, struct snd_soc_dai *dai,
+			   struct snd_pcm *pcm)
 {
-	struct snd_card *card = rtd->card->snd_card;
-	struct snd_soc_dai *dai = rtd->cpu_dai;
-	struct snd_pcm *pcm = rtd->pcm;
+	struct snd_soc_pcm_runtime *rtd = pcm->private_data;
 	struct psc_dma *psc_dma = snd_soc_dai_get_drvdata(rtd->cpu_dai);
 	size_t size = psc_dma_hardware.buffer_bytes_max;
 	int rc = 0;
@@ -369,7 +368,7 @@ static struct snd_soc_platform_driver mpc5200_audio_dma_platform = {
 	.pcm_free	= &psc_dma_free,
 };
 
-static int mpc5200_hpcd_probe(struct platform_device *op)
+static int mpc5200_hpcd_probe(struct of_device *op)
 {
 	phys_addr_t fifo;
 	struct psc_dma *psc_dma;
@@ -385,7 +384,7 @@ static int mpc5200_hpcd_probe(struct platform_device *op)
 		dev_err(&op->dev, "Missing reg property\n");
 		return -ENODEV;
 	}
-	regs = ioremap(res.start, resource_size(&res));
+	regs = ioremap(res.start, 1 + res.end - res.start);
 	if (!regs) {
 		dev_err(&op->dev, "Could not map registers\n");
 		return -ENODEV;
@@ -487,7 +486,7 @@ out_unmap:
 	return ret;
 }
 
-static int mpc5200_hpcd_remove(struct platform_device *op)
+static int mpc5200_hpcd_remove(struct of_device *op)
 {
 	struct psc_dma *psc_dma = dev_get_drvdata(&op->dev);
 
@@ -519,7 +518,7 @@ MODULE_DEVICE_TABLE(of, mpc5200_hpcd_match);
 static struct platform_driver mpc5200_hpcd_of_driver = {
 	.probe		= mpc5200_hpcd_probe,
 	.remove		= mpc5200_hpcd_remove,
-	.driver = {
+	.dev = {
 		.owner		= THIS_MODULE,
 		.name		= "mpc5200-pcm-audio",
 		.of_match_table    = mpc5200_hpcd_match,
