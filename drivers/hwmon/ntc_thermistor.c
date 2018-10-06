@@ -389,8 +389,6 @@ static int __devinit ntc_thermistor_probe(struct platform_device *pdev)
 		goto err_after_sysfs;
 	}
 
-	hwmon_register_properties(data->hwmon_dev, &ntc_attr_group);
-
 	dev_info(&pdev->dev, "Thermistor %s:%d (type: %s/%lu) successfully probed.\n",
 			pdev->name, pdev->id, pdev->id_entry->name,
 			pdev->id_entry->driver_data);
@@ -434,17 +432,19 @@ static struct platform_driver ntc_thermistor_driver = {
 	.id_table = ntc_thermistor_id,
 };
 
-static int __init ntc_thermistor_driver_init(void)
+static int __init ntc_thermistor_init(void)
 {
 	return platform_driver_register(&ntc_thermistor_driver);
 }
-module_init(ntc_thermistor_driver_init);
 
-static void __exit ntc_thermistor_driver_exit(void)
+module_init(ntc_thermistor_init);
+
+static void __exit ntc_thermistor_cleanup(void)
 {
 	platform_driver_unregister(&ntc_thermistor_driver);
 }
-module_exit(ntc_thermistor_driver_exit);
+
+module_exit(ntc_thermistor_cleanup);
 
 MODULE_DESCRIPTION("NTC Thermistor Driver");
 MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");

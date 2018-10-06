@@ -6,7 +6,7 @@ obj-$(CONFIG_IBM_ASM)		+= ibmasm/
 obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
 obj-$(CONFIG_AD525X_DPOT_I2C)	+= ad525x_dpot-i2c.o
 obj-$(CONFIG_AD525X_DPOT_SPI)	+= ad525x_dpot-spi.o
-0bj-$(CONFIG_INTEL_MID_PTI)	+= pti.o
+obj-$(CONFIG_INTEL_MID_PTI)	+= pti.o
 obj-$(CONFIG_ATMEL_PWM)		+= atmel_pwm.o
 obj-$(CONFIG_ATMEL_SSC)		+= atmel-ssc.o
 obj-$(CONFIG_ATMEL_TCLIB)	+= atmel_tclib.o
@@ -90,3 +90,4 @@ obj-$(CONFIG_MACH_M0_CTC)   += cw_tty.o
 CFLAGS_tzic.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
 obj-$(CONFIG_MOBICORE_SUPPORT)  += tzic.o
 obj-$(CONFIG_UID_CPUTIME) += uid_cputime.o
+obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o

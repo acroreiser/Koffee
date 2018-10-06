@@ -31,4 +31,4 @@ typedef unsigned int mmc_pm_flag_t;
 /* ignore mmc suspend.resume for BCM WIFI */
 #define MMC_PM_IGNORE_SUSPEND_RESUME	(1 << 30)
 
-#endif
+#endif /* LINUX_MMC_PM_H */
