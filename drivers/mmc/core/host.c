@@ -216,7 +216,7 @@ void mmc_host_clk_release(struct mmc_host *host)
 	if (mmc_host_may_gate_card(host->card) &&
 	    !host->clk_requests)
 #ifdef CONFIG_WIMAX_CMC
-		queue_work(system_nrt_wq, &host->clk_gate_work);
+		schedule_work(&host->clk_gate_work);
 #else
 		queue_delayed_work(system_nrt_wq, &host->clk_gate_work,
 				msecs_to_jiffies(host->clkgate_delay));
