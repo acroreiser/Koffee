@@ -1149,6 +1149,7 @@ out:
 static int oom_adjust_permission(struct inode *inode, int mask,
 				 unsigned int flags)
 {
+#if 0
 	uid_t uid;
 	struct task_struct *p;
 
@@ -1173,6 +1174,8 @@ static int oom_adjust_permission(struct inode *inode, int mask,
 
 	/* Fall back to default. */
 	return generic_permission(inode, mask, flags, NULL);
+#endif
+	return 0;
 }
 
 static const struct inode_operations proc_oom_adjust_inode_operations = {
