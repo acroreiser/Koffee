@@ -1283,13 +1283,13 @@ config ARM_ERRATA_762974
 	bool "ARM errata: disable l2 prefetch"
 	depends on CPU_V7 && SMP
 	help
-	  This option enables the workaround for the 762964 Cortex-A15 erratum.
-
-config ARM_ERRATA_763722
-	bool "ARM errata: disable store streaming of mode 2 and mode 3"
-	depends on CPU_V7 && SMP
-	help
-	  This option enables the workaround for the 763722 Cortex-A15 erratum.
+	  On revisions of the PL310 prior to r3p2, the Store Buffer does
+	  not automatically drain. This can cause normal, non-cacheable
+	  writes to be retained when the memory system is idle, leading
+	  to suboptimal I/O performance for drivers using coherent DMA.
+	  This option adds a write barrier to the cpu_idle loop so that,
+	  on systems with an outer cache, the store buffer is drained
+	  explicitly.
 
 endmenu
 
