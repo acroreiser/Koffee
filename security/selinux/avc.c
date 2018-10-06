@@ -751,11 +751,9 @@ static noinline int slow_avc_audit(u32 ssid, u32 tsid, u16 tclass,
 	 * during retry. However this is logically just as if the operation
 	 * happened a little later.
 	 */
-#if 0
 	if ((a->type == LSM_AUDIT_DATA_INODE) &&
-	    (mask & MAY_NOT_BLOCK))
+	    (flags & IPERM_FLAG_RCU))
 		return -ECHILD;
-#endif
 
 	a->selinux_audit_data.tclass = tclass;
 	a->selinux_audit_data.requested = requested;
