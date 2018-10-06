@@ -835,8 +835,8 @@ static struct regulator_ops twlsmps_ops = {
 			remap_conf) \
 		TWL_FIXED_LDO(label, offset, mVolts, num, turnon_delay, \
 			remap_conf, TWL4030, twl4030fixed_ops)
-#define TWL6030_FIXED_LDO(label, offset, mVolts, turnon_delay) \
-		TWL_FIXED_LDO(label, offset, mVolts, 0x0, turnon_delay, \
+#define TWL6030_FIXED_LDO(label, offset, mVolts, num, turnon_delay) \
+		TWL_FIXED_LDO(label, offset, mVolts, num, turnon_delay, \
 			0x0, TWL6030, twl6030fixed_ops)
 
 #define TWL4030_ADJUSTABLE_LDO(label, offset, num, turnon_delay, remap_conf) { \
@@ -856,22 +856,24 @@ static struct regulator_ops twlsmps_ops = {
 		}, \
 	}
 
-#define TWL6030_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) { \
+#define TWL6030_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts, num) { \
 	.base = offset, \
+	.id = num, \
 	.min_mV = min_mVolts, \
 	.max_mV = max_mVolts, \
 	.desc = { \
 		.name = #label, \
 		.id = TWL6030_REG_##label, \
-		.n_voltages = (max_mVolts - min_mVolts)/100 + 1, \
+		.n_voltages = (max_mVolts - min_mVolts)/100, \
 		.ops = &twl6030ldo_ops, \
 		.type = REGULATOR_VOLTAGE, \
 		.owner = THIS_MODULE, \
 		}, \
 	}
 
-#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) { \
+#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts, num) { \
 	.base = offset, \
+	.id = num, \
 	.min_mV = min_mVolts, \
 	.max_mV = max_mVolts, \
 	.desc = { \
@@ -901,8 +903,9 @@ static struct regulator_ops twlsmps_ops = {
 		}, \
 	}
 
-#define TWL6030_FIXED_RESOURCE(label, offset, turnon_delay) { \
+#define TWL6030_FIXED_RESOURCE(label, offset, num, turnon_delay) { \
 	.base = offset, \
+	.id = num, \
 	.delay = turnon_delay, \
 	.desc = { \
 		.name = #label, \
@@ -913,8 +916,9 @@ static struct regulator_ops twlsmps_ops = {
 		}, \
 	}
 
-#define TWL6025_ADJUSTABLE_SMPS(label, offset) { \
+#define TWL6025_ADJUSTABLE_SMPS(label, offset, num) { \
 	.base = offset, \
+	.id = num, \
 	.min_mV = 600, \
 	.max_mV = 2100, \
 	.desc = { \
@@ -957,32 +961,32 @@ static struct twlreg_info twl_regs[] = {
 	/* 6030 REG with base as PMC Slave Misc : 0x0030 */
 	/* Turnon-delay and remap configuration values for 6030 are not
 	   verified since the specification is not public */
-	TWL6030_ADJUSTABLE_LDO(VAUX1_6030, 0x54, 1000, 3300),
-	TWL6030_ADJUSTABLE_LDO(VAUX2_6030, 0x58, 1000, 3300),
-	TWL6030_ADJUSTABLE_LDO(VAUX3_6030, 0x5c, 1000, 3300),
-	TWL6030_ADJUSTABLE_LDO(VMMC, 0x68, 1000, 3300),
-	TWL6030_ADJUSTABLE_LDO(VPP, 0x6c, 1000, 3300),
-	TWL6030_ADJUSTABLE_LDO(VUSIM, 0x74, 1000, 3300),
-	TWL6030_FIXED_LDO(VANA, 0x50, 2100, 0),
-	TWL6030_FIXED_LDO(VCXIO, 0x60, 1800, 0),
-	TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 0),
-	TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 0),
-	TWL6030_FIXED_RESOURCE(CLK32KG, 0x8C, 0),
+	TWL6030_ADJUSTABLE_LDO(VAUX1_6030, 0x54, 1000, 3300, 1),
+	TWL6030_ADJUSTABLE_LDO(VAUX2_6030, 0x58, 1000, 3300, 2),
+	TWL6030_ADJUSTABLE_LDO(VAUX3_6030, 0x5c, 1000, 3300, 3),
+	TWL6030_ADJUSTABLE_LDO(VMMC, 0x68, 1000, 3300, 4),
+	TWL6030_ADJUSTABLE_LDO(VPP, 0x6c, 1000, 3300, 5),
+	TWL6030_ADJUSTABLE_LDO(VUSIM, 0x74, 1000, 3300, 7),
+	TWL6030_FIXED_LDO(VANA, 0x50, 2100, 15, 0),
+	TWL6030_FIXED_LDO(VCXIO, 0x60, 1800, 16, 0),
+	TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 17, 0),
+	TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 18, 0),
+	TWL6030_FIXED_RESOURCE(CLK32KG, 0x8C, 48, 0),
 
 	/* 6025 are renamed compared to 6030 versions */
-	TWL6025_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300),
-	TWL6025_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300),
+	TWL6025_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300, 1),
+	TWL6025_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300, 2),
+	TWL6025_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300, 3),
+	TWL6025_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300, 4),
+	TWL6025_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300, 5),
+	TWL6025_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300, 7),
+	TWL6025_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300, 16),
+	TWL6025_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300, 17),
+	TWL6025_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300, 18),
 
-	TWL6025_ADJUSTABLE_SMPS(SMPS3, 0x34),
-	TWL6025_ADJUSTABLE_SMPS(SMPS4, 0x10),
-	TWL6025_ADJUSTABLE_SMPS(VIO, 0x16),
+	TWL6025_ADJUSTABLE_SMPS(SMPS3, 0x34, 1),
+	TWL6025_ADJUSTABLE_SMPS(SMPS4, 0x10, 2),
+	TWL6025_ADJUSTABLE_SMPS(VIO, 0x16, 3),
 };
 
 static u8 twl_get_smps_offset(void)
