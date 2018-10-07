@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
 #include <linux/clk.h>
+#include <linux/module.h>
 #include <linux/err.h>
 #include <linux/mm.h>
 
