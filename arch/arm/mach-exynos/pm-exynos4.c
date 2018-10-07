@@ -302,7 +302,7 @@ static struct sleep_save exynos4_l2cc_save[] = {
 };
 #endif
 
-void exynos4_cpu_suspend(void)
+int exynos4_cpu_suspend(unsigned long arg)
 {
 	unsigned int tmp;
 

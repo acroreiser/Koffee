@@ -28,6 +28,7 @@
 #include <mach/regs-clock.h>
 #include <mach/regs-irq.h>
 #include <asm/irq.h>
+#include <asm/suspend.h>
 
 #include <plat/pm.h>
 #include <mach/pm-core.h>
@@ -243,7 +244,8 @@ static void __maybe_unused s3c_pm_show_resume_irqs(int start,
 }
 
 void (*pm_cpu_prep)(void);
-void (*pm_cpu_sleep)(void);
+
+int (*pm_cpu_sleep)(unsigned long);
 void (*pm_cpu_restore)(void);
 int (*pm_prepare)(void);
 void (*pm_finish)(void);
@@ -351,11 +353,7 @@ static int s3c_pm_enter(suspend_state_t state)
 			__raw_readl(S5P_VA_PMU + 0x2104),
 			__raw_readl(S5P_VA_PMU + 0x2184));
 
-	s3c_cpu_save(0, PLAT_PHYS_OFFSET - PAGE_OFFSET);
-
-	/* restore the cpu state using the kernel's cpu init code. */
-
-	cpu_init();
+	cpu_suspend(/*0, PHYS_OFFSET - PAGE_OFFSET, */0, pm_cpu_sleep);
 
 	s3c_pm_restore_core();
 	s3c_pm_restore_uarts();
