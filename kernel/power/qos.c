@@ -322,6 +322,7 @@ EXPORT_SYMBOL_GPL(pm_qos_remove_request);
  */
 int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier)
 {
+#if 0
 	int retval;
 
 	retval = blocking_notifier_chain_register(
@@ -329,6 +330,8 @@ int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier)
 			notifier);
 
 	return retval;
+#endif
+	return 0;
 }
 EXPORT_SYMBOL_GPL(pm_qos_add_notifier);
 
