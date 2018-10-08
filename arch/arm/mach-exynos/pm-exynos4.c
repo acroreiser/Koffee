@@ -340,6 +340,7 @@ int exynos4_cpu_suspend(unsigned long arg)
 	/* issue the standby signal into the pm unit. */
 	cpu_do_idle();
 #endif
+	return 0;
 }
 
 static int exynos4_pm_prepare(void)
