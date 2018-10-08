@@ -29,7 +29,7 @@
 
 /*#define DEBUG*/
 
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/slab.h>
@@ -265,7 +265,7 @@ int pm_qos_request(int pm_qos_class)
 }
 EXPORT_SYMBOL_GPL(pm_qos_request);
 
-int pm_qos_request_active(struct pm_qos_request_list *req)
+int pm_qos_request_active(struct pm_qos_request *req)
 {
 	return req->pm_qos_class != 0;
 }
@@ -279,12 +279,12 @@ EXPORT_SYMBOL_GPL(pm_qos_request_active);
  *
  * This function inserts a new entry in the pm_qos_class list of requested qos
  * performance characteristics.  It recomputes the aggregate QoS expectations
- * for the pm_qos_class of parameters and initializes the pm_qos_request_list
+ * for the pm_qos_class of parameters and initializes the pm_qos_request
  * handle.  Caller needs to save this handle for later use in updates and
  * removal.
  */
 
-void pm_qos_add_request(struct pm_qos_request_list *dep,
+void pm_qos_add_request(struct pm_qos_request *dep,
 			int pm_qos_class, s32 value)
 {
 	struct pm_qos_object *o =  pm_qos_array[pm_qos_class];
@@ -314,7 +314,7 @@ EXPORT_SYMBOL_GPL(pm_qos_add_request);
  *
  * Attempts are made to make this code callable on hot code paths.
  */
-void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+void pm_qos_update_request(struct pm_qos_request *pm_qos_req,
 			   s32 new_value)
 {
 	s32 temp;
@@ -348,7 +348,7 @@ EXPORT_SYMBOL_GPL(pm_qos_update_request);
  * recompute the current target value for the pm_qos_class.  Call this
  * on slow code paths.
  */
-void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req)
+void pm_qos_remove_request(struct pm_qos_request *pm_qos_req)
 {
 	struct pm_qos_object *o;
 
@@ -411,7 +411,7 @@ static int pm_qos_power_open(struct inode *inode, struct file *filp)
 
 	pm_qos_class = find_pm_qos_object_by_minor(iminor(inode));
 	if (pm_qos_class >= 0) {
-               struct pm_qos_request_list *req = kzalloc(sizeof(*req), GFP_KERNEL);
+               struct pm_qos_request *req = kzalloc(sizeof(*req), GFP_KERNEL);
 		if (!req)
 			return -ENOMEM;
 
@@ -426,7 +426,7 @@ static int pm_qos_power_open(struct inode *inode, struct file *filp)
 
 static int pm_qos_power_release(struct inode *inode, struct file *filp)
 {
-	struct pm_qos_request_list *req;
+	struct pm_qos_request *req;
 
 	req = filp->private_data;
 	pm_qos_remove_request(req);
@@ -442,7 +442,7 @@ static ssize_t pm_qos_power_read(struct file *filp, char __user *buf,
 	s32 value;
 	unsigned long flags;
 	struct pm_qos_object *o;
-	struct pm_qos_request_list *pm_qos_req = filp->private_data;
+	struct pm_qos_request *pm_qos_req = filp->private_data;
 
 	if (!pm_qos_req)
 		return -EINVAL;
@@ -461,7 +461,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
 		size_t count, loff_t *f_pos)
 {
 	s32 value;
-	struct pm_qos_request_list *pm_qos_req;
+	struct pm_qos_request *pm_qos_req;
 
 	if (count == sizeof(s32)) {
 		if (copy_from_user(&value, buf, sizeof(s32)))

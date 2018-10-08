@@ -95,7 +95,7 @@ struct busfreq_data {
 
 	/* Gurantee high freq with high cpu freq */
 	struct notifier_block cpuf_notifier;
-	struct pm_qos_request_list cpuf_enforce;
+	struct pm_qos_request cpuf_enforce;
 
 	struct mutex lock;
 
