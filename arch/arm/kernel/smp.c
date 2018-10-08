@@ -307,20 +307,6 @@ static inline int skip_secondary_calibrate(void)
 }
 
 /*
- * Skip the secondary calibration on architectures sharing clock
- * with primary cpu. Archs can use ARCH_SKIP_SECONDARY_CALIBRATE
- * for this.
- */
-static inline int skip_secondary_calibrate(void)
-{
-#ifdef CONFIG_ARCH_SKIP_SECONDARY_CALIBRATE
-	return 0;
-#else
-	return -ENXIO;
-#endif
-}
-
-/*
  * This is the secondary CPU boot entry.  We're using this CPUs
  * idle thread stack, but a set of temporary page tables.
  */
