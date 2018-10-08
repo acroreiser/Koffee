@@ -19,6 +19,8 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/module.h>
+
 #include "mcDrvModule.h"
 #include "mcDrvModuleLinuxApi.h"
 #include "mcDrvModuleAndroid.h"
