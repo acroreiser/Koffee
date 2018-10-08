@@ -25,7 +25,6 @@
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
 #include <linux/syscalls.h>
-#include <linux/perf_event.h>
 
 #include <asm/opcodes.h>
 #include <asm/traps.h>
@@ -97,8 +96,6 @@ static s32 emulate_sdiv(s32 n, s32  base)
 static int idiv_handler(struct pt_regs *regs, unsigned int instr)
 {
 	long dividend, divisor, dest, res;
-
-	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, regs->ARM_pc);
 
 	res = arm_check_condition(instr, regs->ARM_cpsr);
 
