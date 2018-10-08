@@ -26,7 +26,7 @@
 #include <linux/module.h>
 #include <linux/clk.h>
 #include <linux/devfreq/exynos4_bus.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 
 /* Exynos4 ASV has been in the mailing list, but not upstreamed, yet. */
 
