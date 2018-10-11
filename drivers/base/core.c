@@ -22,6 +22,7 @@
 #include <linux/kallsyms.h>
 #include <linux/mutex.h>
 #include <linux/async.h>
+#include <linux/pm_runtime.h>
 
 #include "base.h"
 #include "power/power.h"
@@ -1743,6 +1744,10 @@ void device_shutdown(void)
 		list_del_init(&dev->kobj.entry);
 		spin_unlock(&devices_kset->list_lock);
 
+		/* Don't allow any more runtime suspends */
+		pm_runtime_get_noresume(dev);
+		pm_runtime_barrier(dev);
+
 #if defined(CONFIG_MACH_Q1_BD) || defined(CONFIG_MACH_PX) || defined(CONFIG_MACH_MIDAS)
 		/* Temporary log to analyze a problem during shutdown */
 		if (dev->bus && dev->bus->shutdown) {
@@ -1778,8 +1783,8 @@ void device_shutdown(void)
 
 #ifdef CONFIG_PRINTK
 
-static int __dev_printk(const char *level, const struct device *dev,
-			struct va_format *vaf)
+int __dev_printk(const char *level, const struct device *dev,
+		 struct va_format *vaf)
 {
 	if (!dev)
 		return printk("%s(NULL device *): %pV", level, vaf);
@@ -1787,6 +1792,7 @@ static int __dev_printk(const char *level, const struct device *dev,
 	return printk("%s%s %s: %pV",
 		      level, dev_driver_string(dev), dev_name(dev), vaf);
 }
+EXPORT_SYMBOL(__dev_printk);
 
 int dev_printk(const char *level, const struct device *dev,
 	       const char *fmt, ...)

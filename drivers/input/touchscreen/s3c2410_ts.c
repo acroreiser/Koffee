@@ -448,7 +448,7 @@ static int __devinit s3c2410ts_probe(struct platform_device *pdev)
 	ts.features = platform_get_device_id(pdev)->driver_data;
 	ts.request_done = true;
 
-	ret = request_irq(ts.irq_tc, stylus_irq, IRQF_DISABLED,
+	ret = request_irq(ts.irq_tc, stylus_irq, 0,
 			  "s3c2410_ts_pen", ts.input);
 	if (ret) {
 		dev_err(dev, "cannot get TC interrupt\n");

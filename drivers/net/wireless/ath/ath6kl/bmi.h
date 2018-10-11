@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2004-2011 Atheros Communications Inc.
- * Copyright (c) 2011 Qualcomm Atheros, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -44,6 +43,12 @@
  *
  * BMI handles all required Target-side cache flushing.
  */
+
+#define MAX_BMI_CMDBUF_SZ (BMI_DATASZ_MAX + \
+			   (sizeof(u32) * 3 /* cmd + addr + len */))
+
+/* Maximum data size used for BMI transfers */
+#define BMI_DATASZ_MAX                      256
 
 /* BMI Commands */
 
@@ -225,8 +230,6 @@ struct ath6kl_bmi_target_info {
 
 int ath6kl_bmi_init(struct ath6kl *ar);
 void ath6kl_bmi_cleanup(struct ath6kl *ar);
-void ath6kl_bmi_reset(struct ath6kl *ar);
-
 int ath6kl_bmi_done(struct ath6kl *ar);
 int ath6kl_bmi_get_target_info(struct ath6kl *ar,
 			       struct ath6kl_bmi_target_info *targ_info);

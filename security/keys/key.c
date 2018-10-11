@@ -21,7 +21,7 @@
 #include <linux/user_namespace.h>
 #include "internal.h"
 
-static struct kmem_cache	*key_jar;
+struct kmem_cache *key_jar;
 struct rb_root		key_serial_tree; /* tree of keys indexed by serial */
 DEFINE_SPINLOCK(key_serial_lock);
 
@@ -36,16 +36,8 @@ unsigned int key_quota_maxbytes = 20000;	/* general key space quota */
 static LIST_HEAD(key_types_list);
 static DECLARE_RWSEM(key_types_sem);
 
-static void key_cleanup(struct work_struct *work);
-static DECLARE_WORK(key_cleanup_task, key_cleanup);
-
 /* We serialise key instantiation and link */
 DEFINE_MUTEX(key_construction_mutex);
-
-/* Any key who's type gets unegistered will be re-typed to this */
-static struct key_type key_type_dead = {
-	.name		= "dead",
-};
 
 #ifdef KEY_DEBUGGING
 void __key_check(const struct key *key)
@@ -670,7 +662,7 @@ void key_put(struct key *key)
 		key_check(key);
 
 		if (atomic_dec_and_test(&key->usage))
-			schedule_work(&key_cleanup_task);
+			queue_work(system_nrt_wq, &key_gc_work);
 	}
 }
 EXPORT_SYMBOL(key_put);
@@ -1048,49 +1040,11 @@ EXPORT_SYMBOL(register_key_type);
  */
 void unregister_key_type(struct key_type *ktype)
 {
-	struct rb_node *_n;
-	struct key *key;
-
 	down_write(&key_types_sem);
-
-	/* withdraw the key type */
 	list_del_init(&ktype->link);
-
-	/* mark all the keys of this type dead */
-	spin_lock(&key_serial_lock);
-
-	for (_n = rb_first(&key_serial_tree); _n; _n = rb_next(_n)) {
-		key = rb_entry(_n, struct key, serial_node);
-
-		if (key->type == ktype) {
-			key->type = &key_type_dead;
-			set_bit(KEY_FLAG_DEAD, &key->flags);
-		}
-	}
-
-	spin_unlock(&key_serial_lock);
-
-	/* make sure everyone revalidates their keys */
-	synchronize_rcu();
-
-	/* we should now be able to destroy the payloads of all the keys of
-	 * this type with impunity */
-	spin_lock(&key_serial_lock);
-
-	for (_n = rb_first(&key_serial_tree); _n; _n = rb_next(_n)) {
-		key = rb_entry(_n, struct key, serial_node);
-
-		if (key->type == ktype) {
-			if (ktype->destroy)
-				ktype->destroy(key);
-			memset(&key->payload, KEY_DESTROY, sizeof(key->payload));
-		}
-	}
-
-	spin_unlock(&key_serial_lock);
-	up_write(&key_types_sem);
-
-	key_schedule_gc(0);
+	downgrade_write(&key_types_sem);
+	key_gc_keytype(ktype);
+	up_read(&key_types_sem);
 }
 EXPORT_SYMBOL(unregister_key_type);
 

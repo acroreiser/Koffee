@@ -30,6 +30,7 @@
 #include "drm_crtc_helper.h"
 
 #include "exynos_drm_drv.h"
+#include "exynos_drm_crtc.h"
 #include "exynos_drm_encoder.h"
 
 #define to_exynos_encoder(x)	container_of(x, struct exynos_drm_encoder,\
@@ -41,19 +42,37 @@
  * @drm_encoder: encoder object.
  * @manager: specific encoder has its own manager to control a hardware
  *	appropriately and we can access a hardware drawing on this manager.
- * @dpms: store the encoder dpms value.
  */
 struct exynos_drm_encoder {
 	struct drm_encoder		drm_encoder;
 	struct exynos_drm_manager	*manager;
-	int dpms;
 };
 
-static void exynos_drm_display_power(struct drm_encoder *encoder, int mode)
+static void exynos_drm_encoder_dpms(struct drm_encoder *encoder, int mode)
 {
 	struct drm_device *dev = encoder->dev;
 	struct drm_connector *connector;
 	struct exynos_drm_manager *manager = exynos_drm_get_manager(encoder);
+	struct exynos_drm_manager_ops *manager_ops = manager->ops;
+
+	DRM_DEBUG_KMS("%s, encoder dpms: %d\n", __FILE__, mode);
+
+	switch (mode) {
+	case DRM_MODE_DPMS_ON:
+		if (manager_ops && manager_ops->commit)
+			manager_ops->commit(manager->dev);
+		break;
+	case DRM_MODE_DPMS_STANDBY:
+	case DRM_MODE_DPMS_SUSPEND:
+	case DRM_MODE_DPMS_OFF:
+		/* TODO */
+		if (manager_ops && manager_ops->disable)
+			manager_ops->disable(manager->dev);
+		break;
+	default:
+		DRM_ERROR("unspecified mode %d\n", mode);
+		break;
+	}
 
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		if (connector->encoder == encoder) {
@@ -68,61 +87,14 @@ static void exynos_drm_display_power(struct drm_encoder *encoder, int mode)
 	}
 }
 
-static void exynos_drm_encoder_dpms(struct drm_encoder *encoder, int mode)
-{
-	struct drm_device *dev = encoder->dev;
-	struct exynos_drm_manager *manager = exynos_drm_get_manager(encoder);
-	struct exynos_drm_manager_ops *manager_ops = manager->ops;
-	struct exynos_drm_encoder *exynos_encoder = to_exynos_encoder(encoder);
-
-	DRM_DEBUG_KMS("%s, encoder dpms: %d\n", __FILE__, mode);
-
-	if (exynos_encoder->dpms == mode) {
-		DRM_DEBUG_KMS("desired dpms mode is same as previous one.\n");
-		return;
-	}
-
-	mutex_lock(&dev->struct_mutex);
-
-	switch (mode) {
-	case DRM_MODE_DPMS_ON:
-		if (manager_ops && manager_ops->apply)
-			manager_ops->apply(manager->dev);
-		exynos_drm_display_power(encoder, mode);
-		exynos_encoder->dpms = mode;
-		break;
-	case DRM_MODE_DPMS_STANDBY:
-	case DRM_MODE_DPMS_SUSPEND:
-	case DRM_MODE_DPMS_OFF:
-		exynos_drm_display_power(encoder, mode);
-		exynos_encoder->dpms = mode;
-		break;
-	default:
-		DRM_ERROR("unspecified mode %d\n", mode);
-		break;
-	}
-
-	mutex_unlock(&dev->struct_mutex);
-}
-
 static bool
 exynos_drm_encoder_mode_fixup(struct drm_encoder *encoder,
 			       struct drm_display_mode *mode,
 			       struct drm_display_mode *adjusted_mode)
 {
-	struct drm_device *dev = encoder->dev;
-	struct drm_connector *connector;
-	struct exynos_drm_manager *manager = exynos_drm_get_manager(encoder);
-	struct exynos_drm_manager_ops *manager_ops = manager->ops;
-
 	DRM_DEBUG_KMS("%s\n", __FILE__);
 
-	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-		if (connector->encoder == encoder)
-			if (manager_ops && manager_ops->mode_fixup)
-				manager_ops->mode_fixup(manager->dev, connector,
-							mode, adjusted_mode);
-	}
+	/* drm framework doesn't check NULL. */
 
 	return true;
 }
@@ -135,16 +107,22 @@ static void exynos_drm_encoder_mode_set(struct drm_encoder *encoder,
 	struct drm_connector *connector;
 	struct exynos_drm_manager *manager = exynos_drm_get_manager(encoder);
 	struct exynos_drm_manager_ops *manager_ops = manager->ops;
+	struct exynos_drm_overlay_ops *overlay_ops = manager->overlay_ops;
+	struct exynos_drm_overlay *overlay = get_exynos_drm_overlay(dev,
+						encoder->crtc);
 
 	DRM_DEBUG_KMS("%s\n", __FILE__);
 
-	exynos_drm_encoder_dpms(encoder, DRM_MODE_DPMS_ON);
+	mode = adjusted_mode;
 
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-		if (connector->encoder == encoder)
+		if (connector->encoder == encoder) {
 			if (manager_ops && manager_ops->mode_set)
-				manager_ops->mode_set(manager->dev,
-							adjusted_mode);
+				manager_ops->mode_set(manager->dev, mode);
+
+			if (overlay_ops && overlay_ops->mode_set)
+				overlay_ops->mode_set(manager->dev, overlay);
+		}
 	}
 }
 
@@ -191,47 +169,13 @@ static void exynos_drm_encoder_destroy(struct drm_encoder *encoder)
 	exynos_encoder->manager->pipe = -1;
 
 	drm_encoder_cleanup(encoder);
+	encoder->dev->mode_config.num_encoder--;
 	kfree(exynos_encoder);
 }
 
 static struct drm_encoder_funcs exynos_encoder_funcs = {
 	.destroy = exynos_drm_encoder_destroy,
 };
-
-static unsigned int exynos_drm_encoder_clones(struct drm_encoder *encoder)
-{
-	struct drm_encoder *clone;
-	struct drm_device *dev = encoder->dev;
-	struct exynos_drm_encoder *exynos_encoder = to_exynos_encoder(encoder);
-	struct exynos_drm_display_ops *display_ops =
-				exynos_encoder->manager->display_ops;
-	unsigned int clone_mask = 0;
-	int cnt = 0;
-
-	list_for_each_entry(clone, &dev->mode_config.encoder_list, head) {
-		switch (display_ops->type) {
-		case EXYNOS_DISPLAY_TYPE_LCD:
-		case EXYNOS_DISPLAY_TYPE_HDMI:
-		case EXYNOS_DISPLAY_TYPE_VIDI:
-			clone_mask |= (1 << (cnt++));
-			break;
-		default:
-			continue;
-		}
-	}
-
-	return clone_mask;
-}
-
-void exynos_drm_encoder_setup(struct drm_device *dev)
-{
-	struct drm_encoder *encoder;
-
-	DRM_DEBUG_KMS("%s\n", __FILE__);
-
-	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head)
-		encoder->possible_clones = exynos_drm_encoder_clones(encoder);
-}
 
 struct drm_encoder *
 exynos_drm_encoder_create(struct drm_device *dev,
@@ -255,7 +199,6 @@ exynos_drm_encoder_create(struct drm_device *dev,
 		return NULL;
 	}
 
-	exynos_encoder->dpms = DRM_MODE_DPMS_ON;
 	exynos_encoder->manager = manager;
 	encoder = &exynos_encoder->drm_encoder;
 	encoder->possible_crtcs = possible_crtcs;
@@ -311,8 +254,8 @@ void exynos_drm_enable_vblank(struct drm_encoder *encoder, void *data)
 	struct exynos_drm_manager_ops *manager_ops = manager->ops;
 	int crtc = *(int *)data;
 
-	if (manager->pipe != crtc)
-		return;
+	if (manager->pipe == -1)
+		manager->pipe = crtc;
 
 	if (manager_ops->enable_vblank)
 		manager_ops->enable_vblank(manager->dev);
@@ -325,41 +268,19 @@ void exynos_drm_disable_vblank(struct drm_encoder *encoder, void *data)
 	struct exynos_drm_manager_ops *manager_ops = manager->ops;
 	int crtc = *(int *)data;
 
-	if (manager->pipe != crtc)
-		return;
+	if (manager->pipe == -1)
+		manager->pipe = crtc;
 
 	if (manager_ops->disable_vblank)
 		manager_ops->disable_vblank(manager->dev);
 }
 
-void exynos_drm_encoder_crtc_dpms(struct drm_encoder *encoder, void *data)
-{
-	struct exynos_drm_encoder *exynos_encoder = to_exynos_encoder(encoder);
-	struct exynos_drm_manager *manager = exynos_encoder->manager;
-	struct exynos_drm_manager_ops *manager_ops = manager->ops;
-	int mode = *(int *)data;
-
-	DRM_DEBUG_KMS("%s\n", __FILE__);
-
-	if (manager_ops && manager_ops->dpms)
-		manager_ops->dpms(manager->dev, mode);
-
-	/*
-	 * if this condition is ok then it means that the crtc is already
-	 * detached from encoder and last function for detaching is properly
-	 * done, so clear pipe from manager to prevent repeated call.
-	 */
-	if (mode > DRM_MODE_DPMS_ON) {
-		if (!encoder->crtc)
-			manager->pipe = -1;
-	}
-}
-
-void exynos_drm_encoder_crtc_pipe(struct drm_encoder *encoder, void *data)
+void exynos_drm_encoder_crtc_commit(struct drm_encoder *encoder, void *data)
 {
 	struct exynos_drm_manager *manager =
 		to_exynos_encoder(encoder)->manager;
-	int pipe = *(int *)data;
+	struct exynos_drm_overlay_ops *overlay_ops = manager->overlay_ops;
+	int crtc = *(int *)data;
 
 	DRM_DEBUG_KMS("%s\n", __FILE__);
 
@@ -367,66 +288,45 @@ void exynos_drm_encoder_crtc_pipe(struct drm_encoder *encoder, void *data)
 	 * when crtc is detached from encoder, this pipe is used
 	 * to select manager operation
 	 */
-	manager->pipe = pipe;
+	manager->pipe = crtc;
+
+	if (overlay_ops && overlay_ops->commit)
+		overlay_ops->commit(manager->dev);
 }
 
-void exynos_drm_encoder_plane_mode_set(struct drm_encoder *encoder, void *data)
+void exynos_drm_encoder_crtc_mode_set(struct drm_encoder *encoder, void *data)
 {
 	struct exynos_drm_manager *manager =
 		to_exynos_encoder(encoder)->manager;
 	struct exynos_drm_overlay_ops *overlay_ops = manager->overlay_ops;
 	struct exynos_drm_overlay *overlay = data;
 
-	DRM_DEBUG_KMS("%s\n", __FILE__);
-
 	if (overlay_ops && overlay_ops->mode_set)
 		overlay_ops->mode_set(manager->dev, overlay);
 }
 
-void exynos_drm_encoder_plane_commit(struct drm_encoder *encoder, void *data)
+void exynos_drm_encoder_crtc_disable(struct drm_encoder *encoder, void *data)
 {
 	struct exynos_drm_manager *manager =
 		to_exynos_encoder(encoder)->manager;
 	struct exynos_drm_overlay_ops *overlay_ops = manager->overlay_ops;
-	int zpos = DEFAULT_ZPOS;
 
-	DRM_DEBUG_KMS("%s\n", __FILE__);
-
-	if (data)
-		zpos = *(int *)data;
-
-	if (overlay_ops && overlay_ops->commit)
-		overlay_ops->commit(manager->dev, zpos);
-}
-
-void exynos_drm_encoder_plane_enable(struct drm_encoder *encoder, void *data)
-{
-	struct exynos_drm_manager *manager =
-		to_exynos_encoder(encoder)->manager;
-	struct exynos_drm_overlay_ops *overlay_ops = manager->overlay_ops;
-	int zpos = DEFAULT_ZPOS;
-
-	DRM_DEBUG_KMS("%s\n", __FILE__);
-
-	if (data)
-		zpos = *(int *)data;
-
-	if (overlay_ops && overlay_ops->enable)
-		overlay_ops->enable(manager->dev, zpos);
-}
-
-void exynos_drm_encoder_plane_disable(struct drm_encoder *encoder, void *data)
-{
-	struct exynos_drm_manager *manager =
-		to_exynos_encoder(encoder)->manager;
-	struct exynos_drm_overlay_ops *overlay_ops = manager->overlay_ops;
-	int zpos = DEFAULT_ZPOS;
-
-	DRM_DEBUG_KMS("%s\n", __FILE__);
-
-	if (data)
-		zpos = *(int *)data;
+	DRM_DEBUG_KMS("\n");
 
 	if (overlay_ops && overlay_ops->disable)
-		overlay_ops->disable(manager->dev, zpos);
+		overlay_ops->disable(manager->dev);
+
+	/*
+	 * crtc is already detached from encoder and last
+	 * function for detaching is properly done, so
+	 * clear pipe from manager to prevent repeated call
+	 */
+	if (!encoder->crtc)
+		manager->pipe = -1;
 }
+
+MODULE_AUTHOR("Inki Dae <inki.dae@samsung.com>");
+MODULE_AUTHOR("Joonyoung Shim <jy0922.shim@samsung.com>");
+MODULE_AUTHOR("Seung-Woo Kim <sw0312.kim@samsung.com>");
+MODULE_DESCRIPTION("Samsung SoC DRM Encoder Driver");
+MODULE_LICENSE("GPL");

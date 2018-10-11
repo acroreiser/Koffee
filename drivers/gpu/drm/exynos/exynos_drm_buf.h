@@ -26,22 +26,15 @@
 #ifndef _EXYNOS_DRM_BUF_H_
 #define _EXYNOS_DRM_BUF_H_
 
-/* create and initialize buffer object. */
-struct exynos_drm_gem_buf *exynos_drm_init_buf(struct drm_device *dev,
-						unsigned int size);
+/* allocate physical memory. */
+struct exynos_drm_gem_buf *exynos_drm_buf_create(struct drm_device *dev,
+		unsigned int size);
 
-/* destroy buffer object. */
-void exynos_drm_fini_buf(struct drm_device *dev,
-				struct exynos_drm_gem_buf *buffer);
+/* get memory information of a drm framebuffer. */
+struct exynos_drm_gem_buf *exynos_drm_fb_get_buf(struct drm_framebuffer *fb);
 
-/* allocate physical memory region and setup sgt and pages. */
-int exynos_drm_alloc_buf(struct drm_device *dev,
-				struct exynos_drm_gem_buf *buf,
-				unsigned int flags);
-
-/* release physical memory region, sgt and pages. */
-void exynos_drm_free_buf(struct drm_device *dev,
-				unsigned int flags,
-				struct exynos_drm_gem_buf *buffer);
+/* remove allocated physical memory. */
+void exynos_drm_buf_destroy(struct drm_device *dev,
+		struct exynos_drm_gem_buf *buffer);
 
 #endif
