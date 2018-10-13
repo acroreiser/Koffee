@@ -18,7 +18,7 @@
 #include <linux/init.h>
 #include <linux/clk.h>
 #include <linux/io.h>
-#include <linux/sysdev.h>
+#include <linux/device.h>
 #include <linux/serial_core.h>
 #include <linux/platform_device.h>
 
@@ -75,17 +75,17 @@ void __init s3c6410_init_irq(void)
 	s3c64xx_init_irq(~0 & ~(1 << 7), ~0);
 }
 
-struct sysdev_class s3c6410_sysclass = {
+struct subsys_system s3c6410_subsys = {
 	.name	= "s3c6410-core",
 };
 
-static struct sys_device s3c6410_sysdev = {
-	.cls	= &s3c6410_sysclass,
+static struct device s3c6410_dev = {
+	.cls	= &s3c6410_subsys,
 };
 
 static int __init s3c6410_core_init(void)
 {
-	return sysdev_class_register(&s3c6410_sysclass);
+	return subsys_system_register(&s3c6410_subsys);
 }
 
 core_initcall(s3c6410_core_init);
@@ -94,5 +94,5 @@ int __init s3c6410_init(void)
 {
 	printk("S3C6410: Initialising architecture\n");
 
-	return sysdev_register(&s3c6410_sysdev);
+	return device_register(&s3c6410_dev);
 }

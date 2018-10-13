@@ -16,7 +16,7 @@
 #include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/dmapool.h>
-#include <linux/sysdev.h>
+#include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
@@ -35,7 +35,7 @@
 /* dma channel state information */
 
 struct s3c64xx_dmac {
-	struct sys_device	 sysdev;
+	struct device	 dev;
 	struct clk		*clk;
 	void __iomem		*regs;
 	struct s3c2410_dma_chan *channels;
@@ -631,7 +631,7 @@ static irqreturn_t s3c64xx_dma_irq(int irq, void *pw)
 	return IRQ_HANDLED;
 }
 
-static struct sysdev_class dma_sysclass = {
+static struct subsys_system dma_subsys = {
 	.name		= "s3c64xx-dma",
 };
 
@@ -651,12 +651,12 @@ static int s3c64xx_dma_init1(int chno, enum dma_ch chbase,
 		return -ENOMEM;
 	}
 
-	dmac->sysdev.id = chno / 8;
-	dmac->sysdev.cls = &dma_sysclass;
+	dmac->dev.id = chno / 8;
+	dmac->dev.cls = &dma_subsys;
 
-	err = sysdev_register(&dmac->sysdev);
+	err = device_register(&dmac->dev);
 	if (err) {
-		printk(KERN_ERR "%s: failed to register sysdevice\n", __func__);
+		printk(KERN_ERR "%s: failed to register device\n", __func__);
 		goto err_alloc;
 	}
 
@@ -667,7 +667,7 @@ static int s3c64xx_dma_init1(int chno, enum dma_ch chbase,
 		goto err_dev;
 	}
 
-	snprintf(clkname, sizeof(clkname), "dma%d", dmac->sysdev.id);
+	snprintf(clkname, sizeof(clkname), "dma%d", dmac->dev.id);
 
 	dmac->clk = clk_get(NULL, clkname);
 	if (IS_ERR(dmac->clk)) {
@@ -715,7 +715,7 @@ err_clk:
 err_map:
 	iounmap(regs);
 err_dev:
-	sysdev_unregister(&dmac->sysdev);
+	dev_unregister(&dmac->device);
 err_alloc:
 	kfree(dmac);
 	return err;
@@ -733,7 +733,7 @@ static int __init s3c64xx_dma_init(void)
 		return -ENOMEM;
 	}
 
-	ret = sysdev_class_register(&dma_sysclass);
+	ret = subsys_system_register(&dma_subsys);
 	if (ret) {
 		printk(KERN_ERR "%s: failed to create sysclass\n", __func__);
 		return -ENOMEM;
