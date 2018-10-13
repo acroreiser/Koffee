@@ -175,7 +175,7 @@ config SYS_HYPERVISOR
 config DMA_SHARED_BUFFER
 	bool "Buffer framework to be shared between drivers"
 	default n
-	depends on ANON_INODES
+	select ANON_INODES
 	help
 	  This option enables the framework for buffer-sharing between
 	  multiple drivers. A buffer is associated with a file using driver
