@@ -1476,14 +1476,8 @@ struct vfsmount *collect_mounts(struct path *path)
 {
 	struct vfsmount *tree;
 	down_write(&namespace_sem);
-	if (!check_mnt(path->mnt))
-		tree = ERR_PTR(-EINVAL);
-	else
-		tree = copy_tree(path->mnt, path->dentry,
-				 CL_COPY_ALL | CL_PRIVATE);
+	tree = copy_tree(path->mnt, path->dentry, CL_COPY_ALL | CL_PRIVATE);
 	up_write(&namespace_sem);
-	if (IS_ERR(tree))
-		return NULL;
 	return tree;
 }
 
