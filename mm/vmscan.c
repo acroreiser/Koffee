@@ -715,13 +715,9 @@ static enum page_references page_check_references(struct page *page,
 		 */
 		SetPageReferenced(page);
 
-#ifndef CONFIG_DMA_CMA
 		if (referenced_page)
 			return PAGEREF_ACTIVATE;
-#else
-		if (referenced_page || referenced_ptes > 1)
-			return PAGEREF_ACTIVATE;
-#endif
+
 		return PAGEREF_KEEP;
 	}
 
@@ -753,7 +749,7 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
 /*
  * shrink_page_list() returns the number of reclaimed pages
  */
-unsigned long shrink_page_list(struct list_head *page_list,
+static unsigned long shrink_page_list(struct list_head *page_list,
 				      struct zone *zone,
 				      struct scan_control *sc,
 				      int priority,
@@ -1061,12 +1057,8 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
 	 * unevictable; only give shrink_page_list evictable pages.
 	 */
 	if (PageUnevictable(page))
-#ifndef CONFIG_DMA_CMA
 		return ret;
-#else
-		printk(KERN_ERR "%s[%d] Unevictable page %p\n",
-					__func__, __LINE__, page);
-#endif
+
 	ret = -EBUSY;
 
 	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
@@ -1252,7 +1244,7 @@ static unsigned long isolate_pages_global(unsigned long nr,
  * clear_active_flags() is a helper for shrink_active_list(), clearing
  * any active bits from the pages in the list.
  */
-unsigned long clear_active_flags(struct list_head *page_list,
+static unsigned long clear_active_flags(struct list_head *page_list,
 					unsigned int *count)
 {
 	int nr_active = 0;
@@ -3022,11 +3014,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 	struct reclaim_state reclaim_state;
 	struct scan_control sc = {
 		.gfp_mask = GFP_HIGHUSER_MOVABLE,
-#if defined(CONFIG_SLP) && defined(CONFIG_FULL_PAGE_RECLAIM)
-		.may_swap = 0,
-#else
 		.may_swap = 1,
-#endif
 		.may_unmap = 1,
 		.may_writepage = 1,
 		.nr_to_reclaim = nr_to_reclaim,
