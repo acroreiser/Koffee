@@ -38,6 +38,7 @@
 #endif
 
 extern void exynos_secondary_startup(void);
+extern unsigned int gic_bank_offset;
 
 struct _cpu_boot_info {
 	void __iomem *power_base;
@@ -77,6 +78,11 @@ static DEFINE_SPINLOCK(boot_lock);
 
 void __cpuinit platform_secondary_init(unsigned int cpu)
 {
+	void __iomem *dist_base = S5P_VA_GIC_DIST +
+				 (gic_bank_offset * cpu);
+	void __iomem *cpu_base = S5P_VA_GIC_CPU +
+				(gic_bank_offset * cpu);
+
 	/* Enable the full line of zero */
 	if (soc_is_exynos4210() || soc_is_exynos4212() || soc_is_exynos4412())
 		enable_cache_foz();

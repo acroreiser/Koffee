@@ -870,7 +870,6 @@ config ARCH_EXYNOS
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select HAVE_SMP
-	select GIC_NON_BANKED
 	select CLKDEV_LOOKUP
 	select ARCH_HAS_CPUFREQ
 	select GENERIC_CLOCKEVENTS
