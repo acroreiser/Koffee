@@ -117,7 +117,7 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 	 * core (e.g. timer irq), then they will not have been enabled
 	 * for us: do so
 	 */
-	exynos4_gic_secondary_init();
+	gic_secondary_init_base(0, dist_base, cpu_base);
 
 	/*
 	 * let the primary processor know we're out of the
