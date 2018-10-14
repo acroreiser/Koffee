@@ -1388,6 +1388,19 @@ out:
 }
 
 /*
+ * Free a list of 0-order pages
+ */
+void free_hot_cold_page_list(struct list_head *list, int cold)
+{
+	struct page *page, *next;
+
+	list_for_each_entry_safe(page, next, list, lru) {
+		trace_mm_page_free_batched(page, cold);
+		free_hot_cold_page(page, cold);
+	}
+}
+
+/*
  * split_page takes a non-compound higher-order page, and splits it into
  * n (1<<order) sub-pages: page[0..n]
  * Each sub-page must be freed individually.
