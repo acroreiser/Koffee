@@ -703,7 +703,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
 	int i;
 	int bad = 0;
 
-	trace_mm_page_free_direct(page, order);
+	trace_mm_page_free(page, order);
 	kmemcheck_free_shadow(page, order);
 
 	if (PageAnon(page))
@@ -2650,7 +2650,7 @@ void __pagevec_free(struct pagevec *pvec)
 	int i = pagevec_count(pvec);
 
 	while (--i >= 0) {
-		trace_mm_pagevec_free(pvec->pages[i], pvec->cold);
+		trace_mm_page_free_batched(pvec->pages[i], pvec->cold);
 		free_hot_cold_page(pvec->pages[i], pvec->cold);
 	}
 }
