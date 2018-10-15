@@ -609,8 +609,7 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
 		sizeof(u32));
 	BUG_ON(!gic->saved_ppi_conf);
 
-	if (gic == &gic_data[0])
-		cpu_pm_register_notifier(&gic_notifier_block);
+	cpu_pm_register_notifier(&gic_notifier_block);
 }
 #else
 static void __init gic_pm_init(struct gic_chip_data *gic)
@@ -694,14 +693,12 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	 * For primary GICs, skip over SGIs.
 	 * For secondary GICs, skip over PPIs, too.
 	 */
-	domain->hwirq_base = 32;
 	if (gic_nr == 0) {
-		if ((irq_start & 31) > 0) {
-			domain->hwirq_base = 16;
-			if (irq_start != -1)
-				irq_start = (irq_start & ~31) + 16;
-		}
-	}
+		domain->hwirq_base = 16;
+		if (irq_start > 0)
+			irq_start = (irq_start & ~31) + 16;
+	} else
+		domain->hwirq_base = 32;
 
 	/*
 	 * Find out how many interrupts are supported.
