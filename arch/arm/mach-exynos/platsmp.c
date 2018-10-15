@@ -24,6 +24,7 @@
 #include <asm/cacheflush.h>
 #include <asm/hardware/gic.h>
 #include <asm/smp_scu.h>
+#include <asm/smp_plat.h>
 #include <asm/unified.h>
 
 #include <mach/hardware.h>
