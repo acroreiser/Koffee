@@ -39,8 +39,7 @@ struct device_node;
 extern void __iomem *gic_cpu_base_addr;
 extern struct irq_chip gic_arch_extn;
 
-void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
-		    u32 offset);
+void gic_init(unsigned int, int, void __iomem *, void __iomem *);
 int gic_of_init(struct device_node *node, struct device_node *parent);
 void gic_secondary_init(unsigned int);
 void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
@@ -62,13 +61,6 @@ struct gic_chip_data {
 #endif
 	unsigned int gic_irqs;
 };
-
-static inline void gic_init(unsigned int nr, int start,
-			    void __iomem *dist , void __iomem *cpu)
-{
-	gic_init_bases(nr, start, dist, cpu, 0);
-}
-
 #endif
 
 #endif
