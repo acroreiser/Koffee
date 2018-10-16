@@ -271,7 +271,6 @@ config ARCH_INTEGRATOR
 	select ARCH_HAS_CPUFREQ
 	select CLKDEV_LOOKUP
 	select HAVE_MACH_CLKDEV
-	select HAVE_TCM
 	select ICST
 	select GENERIC_CLOCKEVENTS
 	select PLAT_VERSATILE
@@ -293,7 +292,6 @@ config ARCH_REALVIEW
 	select ARM_TIMER_SP804
 	select GPIO_PL061 if GPIOLIB
 	select NEED_MACH_MEMORY_H
-	select MULTI_IRQ_HANDLER
 	help
 	  This enables support for ARM Ltd RealView boards.
 
@@ -326,7 +324,6 @@ config ARCH_VEXPRESS
 	select ICST
 	select PLAT_VERSATILE
 	select PLAT_VERSATILE_CLCD
-	select MULTI_IRQ_HANDLER
 	help
 	  This enables support for the ARM Ltd Versatile Express boards.
 
@@ -357,14 +354,11 @@ config ARCH_HIGHBANK
 	select ARM_AMBA
 	select ARM_GIC
 	select ARM_TIMER_SP804
-	select CACHE_L2X0
 	select CLKDEV_LOOKUP
 	select CPU_V7
 	select GENERIC_CLOCKEVENTS
 	select HAVE_ARM_SCU
-	select HAVE_SMP
 	select USE_OF
-	select MULTI_IRQ_HANDLER
 	help
 	  Support for the Calxeda Highbank SoC based boards.
 
@@ -381,10 +375,8 @@ config ARCH_CNS3XXX
 	select CPU_V6K
 	select GENERIC_CLOCKEVENTS
 	select ARM_GIC
-	select MIGHT_HAVE_CACHE_L2X0
 	select MIGHT_HAVE_PCI
 	select PCI_DOMAINS if PCI
-	select MULTI_IRQ_HANDLER
 	help
 	  Support for Cavium Networks CNS3XXX platform.
 
@@ -403,7 +395,6 @@ config ARCH_PRIMA2
 	select GENERIC_CLOCKEVENTS
 	select CLKDEV_LOOKUP
 	select GENERIC_IRQ_CHIP
-	select MIGHT_HAVE_CACHE_L2X0
 	select USE_OF
 	select ZONE_DMA
 	help
@@ -658,8 +649,6 @@ config ARCH_TEGRA
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select HAVE_SCHED_CLOCK
-	select HAVE_SMP
-	select MIGHT_HAVE_CACHE_L2X0
 	select ARCH_HAS_CPUFREQ
 	help
 	  This enables support for NVIDIA Tegra based systems (Tegra APX,
@@ -731,9 +720,7 @@ config ARCH_SHMOBILE
 	select HAVE_CLK
 	select CLKDEV_LOOKUP
 	select HAVE_MACH_CLKDEV
-	select HAVE_SMP
 	select GENERIC_CLOCKEVENTS
-	select MIGHT_HAVE_CACHE_L2X0
 	select NO_IOPORT
 	select SPARSE_IRQ
 	select MULTI_IRQ_HANDLER
@@ -874,6 +861,7 @@ config ARCH_EXYNOS
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select HAVE_SMP
+	select GIC_NON_BANKED
 	select CLKDEV_LOOKUP
 	select ARCH_HAS_CPUFREQ
 	select GENERIC_CLOCKEVENTS
@@ -899,6 +887,16 @@ config ARCH_SHARK
 	help
 	  Support for the StrongARM based Digital DNARD machine, also known
 	  as "Shark" (<http://www.shark-linux.de/shark.html>).
+
+config ARCH_TCC_926
+	bool "Telechips TCC ARM926-based systems"
+	select CLKSRC_MMIO
+	select CPU_ARM926T
+	select HAVE_CLK
+	select CLKDEV_LOOKUP
+	select GENERIC_CLOCKEVENTS
+	help
+	  Support for Telechips TCC ARM926-based systems.
 
 config ARCH_U300
 	bool "ST-Ericsson U300 Series"
@@ -926,8 +924,6 @@ config ARCH_U8500
 	select CLKDEV_LOOKUP
 	select ARCH_REQUIRE_GPIOLIB
 	select ARCH_HAS_CPUFREQ
-	select HAVE_SMP
-	select MIGHT_HAVE_CACHE_L2X0
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
@@ -938,7 +934,6 @@ config ARCH_NOMADIK
 	select CPU_ARM926T
 	select CLKDEV_LOOKUP
 	select GENERIC_CLOCKEVENTS
-	select MIGHT_HAVE_CACHE_L2X0
 	select ARCH_REQUIRE_GPIOLIB
 	help
 	  Support for the Nomadik platform by ST-Ericsson
@@ -998,9 +993,7 @@ config ARCH_ZYNQ
 	select ARM_GIC
 	select ARM_AMBA
 	select ICST
-	select MIGHT_HAVE_CACHE_L2X0
 	select USE_OF
-	select MULTI_IRQ_HANDLER
 	help
 	  Support for Xilinx Zynq ARM Cortex A9 Platform
 endchoice
@@ -1154,11 +1147,6 @@ config ARM_PLD_SIZE
 	int
 	default 64 if ARCH_EXYNOS5
 	default 32
-
-config ARM_NR_BANKS
-	int
-	default 16 if ARCH_EP93XX
-	default 8
 
 config IWMMXT
 	bool "Enable iWMMXt support"
@@ -1504,15 +1492,6 @@ menu "Kernel Features"
 
 source "kernel/time/Kconfig"
 
-config HAVE_SMP
-	bool
-	help
-	  This option should be selected by machines which have an SMP-
-	  capable CPU.
-
-	  The only effect of this option is to make the SMP-related
-	  options available to the user for configuration.
-
 config SMP
 	bool "Symmetric Multi-Processing"
 	depends on CPU_V6K || CPU_V7
@@ -1637,16 +1616,6 @@ config LOCAL_TIMERS
 	  legacy IPI broadcast method.  Local timers allows the system
 	  accounting to be spread across the timer interval, preventing a
 	  "thundering herd" at every timer tick.
-
-config ARCH_NR_GPIO
-	int
-	default 1024 if ARCH_SHMOBILE || ARCH_TEGRA
-	default 350 if ARCH_U8500
-	default 0
-	help
-	  Maximum number of GPIOs in the system.
-
-	  If unsure, leave the default value.
 
 source kernel/Kconfig.preempt
 
@@ -2083,7 +2052,7 @@ endchoice
 
 config XIP_KERNEL
 	bool "Kernel Execute-In-Place from ROM"
-	depends on !ZBOOT_ROM && !ARM_LPAE
+	depends on !ZBOOT_ROM
 	help
 	  Execute-In-Place allows the kernel to run from non-volatile storage
 	  directly addressable by the CPU, such as NOR flash. This saves RAM
@@ -2113,7 +2082,7 @@ config XIP_PHYS_ADDR
 
 config KEXEC
 	bool "Kexec system call (EXPERIMENTAL)"
-	depends on EXPERIMENTAL && (!SMP || HOTPLUG_CPU)
+	depends on EXPERIMENTAL
 	help
 	  kexec is a system call that implements the ability to shutdown your
 	  current kernel, and to start another kernel.  It is like a reboot
