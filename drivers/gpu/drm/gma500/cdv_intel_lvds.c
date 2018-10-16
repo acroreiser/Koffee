@@ -78,14 +78,13 @@ static u32 cdv_intel_lvds_get_max_backlight(struct drm_device *dev)
 
 		gma_power_end(dev);
 	} else
-		retval = ((dev_priv->regs.saveBLC_PWM_CTL &
+		retval = ((dev_priv->saveBLC_PWM_CTL &
 			  BACKLIGHT_MODULATION_FREQ_MASK) >>
 			  BACKLIGHT_MODULATION_FREQ_SHIFT) * 2;
 
 	return retval;
 }
 
-#if 0
 /*
  * Set LVDS backlight level by I2C command
  */
@@ -166,7 +165,6 @@ void cdv_intel_lvds_set_brightness(struct drm_device *dev, int level)
 	else
 		cdv_lvds_pwm_set_brightness(dev, level);
 }
-#endif
 
 /**
  * Sets the backlight level.
@@ -186,9 +184,9 @@ static void cdv_intel_lvds_set_backlight(struct drm_device *dev, int level)
 				(level << BACKLIGHT_DUTY_CYCLE_SHIFT)));
 		gma_power_end(dev);
 	} else {
-		blc_pwm_ctl = dev_priv->regs.saveBLC_PWM_CTL &
+		blc_pwm_ctl = dev_priv->saveBLC_PWM_CTL &
 				~BACKLIGHT_DUTY_CYCLE_MASK;
-		dev_priv->regs.saveBLC_PWM_CTL = (blc_pwm_ctl |
+		dev_priv->saveBLC_PWM_CTL = (blc_pwm_ctl |
 					(level << BACKLIGHT_DUTY_CYCLE_SHIFT));
 	}
 }
@@ -244,7 +242,7 @@ static void cdv_intel_lvds_restore(struct drm_connector *connector)
 {
 }
 
-static int cdv_intel_lvds_mode_valid(struct drm_connector *connector,
+int cdv_intel_lvds_mode_valid(struct drm_connector *connector,
 			      struct drm_display_mode *mode)
 {
 	struct drm_device *dev = connector->dev;
@@ -269,7 +267,7 @@ static int cdv_intel_lvds_mode_valid(struct drm_connector *connector,
 	return MODE_OK;
 }
 
-static bool cdv_intel_lvds_mode_fixup(struct drm_encoder *encoder,
+bool cdv_intel_lvds_mode_fixup(struct drm_encoder *encoder,
 				  struct drm_display_mode *mode,
 				  struct drm_display_mode *adjusted_mode)
 {
@@ -438,7 +436,7 @@ static int cdv_intel_lvds_get_modes(struct drm_connector *connector)
  * Unregister the DDC bus for this connector then free the driver private
  * structure.
  */
-static void cdv_intel_lvds_destroy(struct drm_connector *connector)
+void cdv_intel_lvds_destroy(struct drm_connector *connector)
 {
 	struct psb_intel_encoder *psb_intel_encoder =
 					psb_intel_attached_encoder(connector);
@@ -450,7 +448,7 @@ static void cdv_intel_lvds_destroy(struct drm_connector *connector)
 	kfree(connector);
 }
 
-static int cdv_intel_lvds_set_property(struct drm_connector *connector,
+int cdv_intel_lvds_set_property(struct drm_connector *connector,
 				       struct drm_property *property,
 				       uint64_t value)
 {

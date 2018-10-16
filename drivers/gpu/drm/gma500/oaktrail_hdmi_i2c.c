@@ -24,6 +24,7 @@
  *	Li Peng <peng.li@intel.com>
  */
 
+#include <linux/export.h>
 #include <linux/mutex.h>
 #include <linux/pci.h>
 #include <linux/i2c.h>
@@ -126,7 +127,7 @@ static int oaktrail_hdmi_i2c_access(struct i2c_adapter *adap,
 {
 	struct oaktrail_hdmi_dev *hdmi_dev = i2c_get_adapdata(adap);
 	struct hdmi_i2c_dev *i2c_dev = hdmi_dev->i2c_dev;
-	int i;
+	int i, err = 0;
 
 	mutex_lock(&i2c_dev->i2c_lock);
 
@@ -138,9 +139,9 @@ static int oaktrail_hdmi_i2c_access(struct i2c_adapter *adap,
 	for (i = 0; i < num; i++) {
 		if (pmsg->len && pmsg->buf) {
 			if (pmsg->flags & I2C_M_RD)
-				xfer_read(adap, pmsg);
+				err = xfer_read(adap, pmsg);
 			else
-				xfer_write(adap, pmsg);
+				err = xfer_write(adap, pmsg);
 		}
 		pmsg++;         /* next message */
 	}

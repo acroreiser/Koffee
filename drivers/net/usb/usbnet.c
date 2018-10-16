@@ -35,7 +35,6 @@
 
 #include <linux/module.h>
 #include <linux/init.h>
-#include <linux/if_arp.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/ctype.h>
@@ -50,10 +49,6 @@
 
 #define DRIVER_VERSION		"22-Aug-2005"
 
-#ifdef CONFIG_MDM_HSIC_PM
-#include <linux/mdm_hsic_pm.h>
-static const char rmnet_pm_dev[] = "mdm_hsic_pm0";
-#endif
 
 /*-------------------------------------------------------------------------*/
 
@@ -215,7 +210,6 @@ static int init_status (struct usbnet *dev, struct usb_interface *intf)
 		} else {
 			usb_fill_int_urb(dev->interrupt, dev->udev, pipe,
 				buf, maxp, intr_complete, dev, period);
-			dev->interrupt->transfer_flags |= URB_FREE_BUFFER;
 			dev_dbg(&intf->dev,
 				"status ep%din, %d bytes period %d\n",
 				usb_pipeendpoint(pipe), maxp, period);
@@ -237,9 +231,7 @@ void usbnet_skb_return (struct usbnet *dev, struct sk_buff *skb)
 		return;
 	}
 
-	if (!skb->protocol)
-		skb->protocol = eth_type_trans(skb, dev->net);
-
+	skb->protocol = eth_type_trans (skb, dev->net);
 	dev->net->stats.rx_packets++;
 	dev->net->stats.rx_bytes += skb->len;
 
@@ -254,13 +246,6 @@ void usbnet_skb_return (struct usbnet *dev, struct sk_buff *skb)
 	if (status != NET_RX_SUCCESS)
 		netif_dbg(dev, rx_err, dev->net,
 			  "netif_rx status %d\n", status);
-#ifdef CONFIG_MDM_HSIC_PM
-	if (dev->udev->descriptor.idProduct == 0x9048 ||
-				dev->udev->descriptor.idProduct == 0x904C) {
-		pr_debug("rx fast dormancy wakelock\n");
-		fast_dormancy_wakelock(rmnet_pm_dev);
-	}
-#endif
 }
 EXPORT_SYMBOL_GPL(usbnet_skb_return);
 
@@ -343,16 +328,13 @@ static int rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
 	unsigned long		lockflags;
 	size_t			size = dev->rx_urb_size;
 
-	skb = alloc_skb(size + NET_IP_ALIGN, flags);
+	skb = __netdev_alloc_skb_ip_align(dev->net, size, flags);
 	if (!skb) {
 		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
 		usbnet_defer_kevent (dev, EVENT_RX_MEMORY);
 		usb_free_urb (urb);
 		return -ENOMEM;
 	}
-
-	if (dev->net->type != ARPHRD_RAWIP)
-		skb_reserve(skb, NET_IP_ALIGN);
 
 	entry = (struct skb_data *) skb->cb;
 	entry->urb = urb;
@@ -389,7 +371,6 @@ static int rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
 			tasklet_schedule (&dev->bh);
 			break;
 		case 0:
-			usb_mark_last_busy(dev->udev);
 			__skb_queue_tail (&dev->rxq, skb);
 		}
 	} else {
@@ -512,7 +493,6 @@ block:
 		if (netif_running (dev->net) &&
 		    !test_bit (EVENT_RX_HALT, &dev->flags)) {
 			rx_submit (dev, urb, GFP_ATOMIC);
-			usb_mark_last_busy(dev->udev);
 			return;
 		}
 		usb_free_urb (urb);
@@ -609,6 +589,7 @@ static int unlink_urbs (struct usbnet *dev, struct sk_buff_head *q)
 		entry = (struct skb_data *) skb->cb;
 		urb = entry->urb;
 
+		spin_unlock_irqrestore(&q->lock, flags);
 		// during some PM-driven resume scenarios,
 		// these (async) unlinks complete immediately
 		retval = usb_unlink_urb (urb);
@@ -616,6 +597,7 @@ static int unlink_urbs (struct usbnet *dev, struct sk_buff_head *q)
 			netdev_dbg(dev->net, "unlink urb err, %d\n", retval);
 		else
 			count++;
+		spin_lock_irqsave(&q->lock, flags);
 	}
 	spin_unlock_irqrestore (&q->lock, flags);
 	return count;
@@ -1011,19 +993,8 @@ static void tx_complete (struct urb *urb)
 		if (!(dev->driver_info->flags & FLAG_MULTI_PACKET))
 			dev->net->stats.tx_packets++;
 		dev->net->stats.tx_bytes += entry->length;
-#ifdef CONFIG_MDM_HSIC_PM
-		if (dev->udev->descriptor.idProduct == 0x9048 ||
-				dev->udev->descriptor.idProduct == 0x904C) {
-			pr_debug("set tx wakelock for fd\n");
-			fast_dormancy_wakelock(rmnet_pm_dev);
-		}
-#endif
 	} else {
 		dev->net->stats.tx_errors++;
-		if (dev->udev->descriptor.idProduct == 0x9048 ||
-				dev->udev->descriptor.idProduct == 0x904C)
-			netdev_err(dev->net, "tx err %d, %d\n",
-					urb->status, entry->urb->status);
 
 		switch (urb->status) {
 		case -EPIPE:
@@ -1365,8 +1336,10 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 
 	// set up our own records
 	net = alloc_etherdev(sizeof(*dev));
-	if (!net)
+	if (!net) {
+		dbg ("can't kmalloc dev");
 		goto out;
+	}
 
 	/* netdev_printk() needs this so do it as early as possible */
 	SET_NETDEV_DEV(net, &udev->dev);
@@ -1463,7 +1436,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 
 	status = register_netdev (net);
 	if (status)
-		goto out4;
+		goto out3;
 	netif_info(dev, probe, dev->net,
 		   "register '%s' at usb-%s-%s, %s, %pM\n",
 		   udev->dev.driver->name,
@@ -1481,8 +1454,6 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 
 	return 0;
 
-out4:
-	usb_free_urb(dev->interrupt);
 out3:
 	if (info->unbind)
 		info->unbind (dev, udev);
@@ -1566,7 +1537,7 @@ int usbnet_resume (struct usb_interface *intf)
 
 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
 			if (!(dev->txq.qlen >= TX_QLEN(dev)))
-				netif_tx_wake_all_queues(dev->net);
+				netif_start_queue(dev->net);
 			tasklet_schedule (&dev->bh);
 		}
 	}

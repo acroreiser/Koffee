@@ -34,7 +34,6 @@
 #include "psb_intel_drv.h"
 #include "psb_drv.h"
 #include "psb_intel_reg.h"
-#include "cdv_device.h"
 #include <linux/pm_runtime.h>
 
 /* hdmi control bits */

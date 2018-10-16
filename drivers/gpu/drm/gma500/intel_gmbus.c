@@ -395,7 +395,7 @@ int gma_intel_setup_gmbus(struct drm_device *dev)
 	struct drm_psb_private *dev_priv = dev->dev_private;
 	int ret, i;
 
-	dev_priv->gmbus = kcalloc(GMBUS_NUM_PORTS, sizeof(struct intel_gmbus),
+	dev_priv->gmbus = kcalloc(sizeof(struct intel_gmbus), GMBUS_NUM_PORTS,
 				  GFP_KERNEL);
 	if (dev_priv->gmbus == NULL)
 		return -ENOMEM;

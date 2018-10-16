@@ -124,6 +124,8 @@ source "drivers/vlynq/Kconfig"
 
 source "drivers/virtio/Kconfig"
 
+source "drivers/hv/Kconfig"
+
 source "drivers/xen/Kconfig"
 
 source "drivers/staging/Kconfig"
@@ -172,8 +174,6 @@ source "drivers/felica/Kconfig"
 source "drivers/interceptor/Kconfig"
 
 source "drivers/virt/Kconfig"
-
-source "drivers/hv/Kconfig"
 
 source "drivers/devfreq/Kconfig"
 

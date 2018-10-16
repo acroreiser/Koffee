@@ -18,6 +18,8 @@
 #include <asm/uaccess.h>
 #include "internal.h"
 
+static int logon_vet_description(const char *desc);
+
 /*
  * user defined keys take an arbitrary string as the description and an
  * arbitrary blob of data as the payload
@@ -34,6 +36,24 @@ struct key_type key_type_user = {
 };
 
 EXPORT_SYMBOL_GPL(key_type_user);
+
+/*
+ * This key type is essentially the same as key_type_user, but it does
+ * not define a .read op. This is suitable for storing username and
+ * password pairs in the keyring that you do not want to be readable
+ * from userspace.
+ */
+struct key_type key_type_logon = {
+	.name			= "logon",
+	.instantiate		= user_instantiate,
+	.update			= user_update,
+	.match			= user_match,
+	.revoke			= user_revoke,
+	.destroy		= user_destroy,
+	.describe		= user_describe,
+	.vet_description	= logon_vet_description,
+};
+EXPORT_SYMBOL_GPL(key_type_logon);
 
 /*
  * instantiate a user defined key
@@ -59,7 +79,7 @@ int user_instantiate(struct key *key, const void *data, size_t datalen)
 	/* attach the data */
 	upayload->datalen = datalen;
 	memcpy(upayload->data, data, datalen);
-	rcu_assign_pointer(key->payload.data, upayload);
+	rcu_assign_keypointer(key, upayload);
 	ret = 0;
 
 error:
@@ -136,7 +156,7 @@ void user_revoke(struct key *key)
 	key_payload_reserve(key, 0);
 
 	if (upayload) {
-		rcu_assign_pointer(key->payload.data, NULL);
+		rcu_assign_keypointer(key, NULL);
 		kfree_rcu(upayload, rcu);
 	}
 }
@@ -192,3 +212,20 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
 }
 
 EXPORT_SYMBOL_GPL(user_read);
+
+/* Vet the description for a "logon" key */
+static int logon_vet_description(const char *desc)
+{
+	char *p;
+
+	/* require a "qualified" description string */
+	p = strchr(desc, ':');
+	if (!p)
+		return -EINVAL;
+
+	/* also reject description with ':' as first char */
+	if (p == desc)
+		return -EINVAL;
+
+	return 0;
+}

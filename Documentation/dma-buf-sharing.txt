@@ -21,7 +21,6 @@ The exporter
 - decides about the actual backing storage where this allocation happens,
 - takes care of any migration of scatterlist - for all (shared) users of this
    buffer,
-- optionally, provides mmap capability for drivers that need it.
 
 The buffer-user
 - is one of (many) sharing users of the buffer.
@@ -30,6 +29,11 @@ The buffer-user
    in memory, mapped into its own address space, so it can access the same area
    of memory.
 
+*IMPORTANT*: [see https://lkml.org/lkml/2011/12/20/211 for more details]
+For this first version, A buffer shared using the dma_buf sharing API:
+- *may* be exported to user space using "mmap" *ONLY* by exporter, outside of
+   this framework.
+- may be used *ONLY* by importers that do not need CPU access to the buffer.
 
 The dma_buf buffer sharing API usage contains the following steps:
 
@@ -52,7 +56,7 @@ The dma_buf buffer sharing API usage contains the following steps:
 
    Interface:
       struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
-                                int flags)
+				     size_t size, int flags)
 
    If this succeeds, dma_buf_export allocates a dma_buf structure, and returns a
    pointer to the same. It also associates an anonymous file with this buffer,
@@ -131,6 +135,8 @@ to request use of buffer for allocation.
    accessing at the same time (for reading, maybe), or any other kind of sharing
    that the exporter might wish to make available to buffer-users.
 
+   map_dma_buf() operation can return -EINTR if it is interrupted by a signal.
+
 
 5. When finished, the buffer-user notifies end-of-DMA to exporter
 
@@ -200,10 +206,10 @@ NOTES:
     exporter can handle these constraints, the exporter can just stall on the
     map_dma_buf until all outstanding access is completed (as signalled by
     unmap_dma_buf).
-    Once all ongoing access is completed, the exporter could potentially move
-    the buffer to the stricter backing-storage, and then allow further
-    {map,unmap}_dma_buf operations from any buffer-user from the migrated
-    backing-storage.
+    Once all users have finished accessing and have unmapped this buffer, the
+    exporter could potentially move the buffer to the stricter backing-storage,
+    and then allow further {map,unmap}_dma_buf operations from any buffer-user
+    from the migrated backing-storage.
 
    If the exporter cannot fulfil the backing-storage constraints of the new
    buffer-user device as requested, dma_buf_attach() would return an error to
@@ -213,10 +219,9 @@ NOTES:
    If the exporter chooses not to allow an attach() operation once a
    map_dma_buf() API has been called, it simply returns an error.
 
-- mmap file operation
-   An mmap() file operation is provided for the fd associated with the buffer.
-   If the exporter defines an mmap operation, the mmap() fop calls this to allow
-   mmap for devices that might need it; if not, it returns an error.
+Miscellaneous notes:
+- Any exporters or users of the dma-buf buffer sharing framework must have
+  a 'select DMA_SHARED_BUFFER' in their respective Kconfigs.
 
 References:
 [1] struct dma_buf_ops in include/linux/dma-buf.h
