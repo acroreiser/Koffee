@@ -24,7 +24,7 @@
 #include <asm/cacheflush.h>
 #include <asm/hardware/gic.h>
 #include <asm/smp_scu.h>
-#include <asm/smp_plat.h>
+#include <asm/unified.h>
 
 #include <mach/hardware.h>
 #include <mach/regs-clock.h>
@@ -75,31 +75,6 @@ static void __iomem *scu_base_addr(void)
 }
 
 static DEFINE_SPINLOCK(boot_lock);
-
-static void __cpuinit exynos4_gic_secondary_init(void)
-{
-	void __iomem *dist_base = S5P_VA_GIC_DIST +
-				(gic_bank_offset * smp_processor_id());
-	void __iomem *cpu_base = S5P_VA_GIC_CPU +
-				(gic_bank_offset * smp_processor_id());
-	int i;
-
-	/*
-	 * Deal with the banked PPI and SGI interrupts - disable all
-	 * PPI interrupts, ensure all SGI interrupts are enabled.
-	 */
-	__raw_writel(0xffff0000, dist_base + GIC_DIST_ENABLE_CLEAR);
-	__raw_writel(0x0000ffff, dist_base + GIC_DIST_ENABLE_SET);
-
-	/*
-	 * Set priority on PPI and SGI interrupts
-	 */
-	for (i = 0; i < 32; i += 4)
-		__raw_writel(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
-
-	__raw_writel(0xf0, cpu_base + GIC_CPU_PRIMASK);
-	__raw_writel(1, cpu_base + GIC_CPU_CTRL);
-}
 
 void __cpuinit platform_secondary_init(unsigned int cpu)
 {
@@ -206,7 +181,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 	while (time_before(jiffies, timeout)) {
 		smp_rmb();
 
-		__raw_writel(virt_to_phys(exynos_secondary_startup),
+		__raw_writel(BSYM(virt_to_phys(exynos_secondary_startup)),
 			cpu_boot_info[cpu].boot_base);
 
 #ifdef CONFIG_ARM_TRUSTZONE
