@@ -313,7 +313,8 @@ void __init dma_contiguous_remap(void)
 }
 
 static void *
-__dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot)
+__dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
+	const void *caller)
 {
 	struct arm_vmregion *c;
 	size_t align;
@@ -340,7 +341,7 @@ __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot)
 	 * Allocate a virtual address in the consistent mapping region.
 	 */
 	c = arm_vmregion_alloc(&consistent_head, align, size,
-			    gfp & ~(__GFP_DMA | __GFP_HIGHMEM));
+			    gfp & ~(__GFP_DMA | __GFP_HIGHMEM), caller);
 	if (c) {
 		pte_t *pte;
 		int idx = CONSISTENT_PTE_INDEX(c->vm_start);
@@ -438,7 +439,7 @@ static void __dma_remap(struct page *page, size_t size, pgprot_t prot)
 }
 
 static void *__alloc_remap_buffer(struct device *dev, size_t size, gfp_t gfp,
-				 pgprot_t prot, struct page **ret_page)
+				 pgprot_t prot, struct page **ret_page, const void *caller)
 {
 	struct page *page;
 	void *ptr;
@@ -446,7 +447,7 @@ static void *__alloc_remap_buffer(struct device *dev, size_t size, gfp_t gfp,
 	if (!page)
 		return NULL;
 
-	ptr = __dma_alloc_remap(page, size, gfp, prot);
+	ptr = __dma_alloc_remap(page, size, gfp, prot, caller);
 	if (!ptr) {
 		__dma_free_buffer(page, size);
 		return NULL;
@@ -538,7 +539,7 @@ static void __free_from_contiguous(struct device *dev, struct page *page,
 
 #define nommu() 1
 
-#define __alloc_remap_buffer(dev, size, gfp, prot, ret)	NULL
+#define __alloc_remap_buffer(dev, size, gfp, prot, ret, caller)	NULL
 #define __alloc_from_pool(dev, size, ret_page)		NULL
 #define __alloc_from_contiguous(dev, size, prot, ret)	NULL
 #define __free_from_pool(cpu_addr, size)		0
@@ -562,7 +563,7 @@ static void *__alloc_simple_buffer(struct device *dev, size_t size, gfp_t gfp,
 
 
 static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
-			 gfp_t gfp, pgprot_t prot)
+			 gfp_t gfp, pgprot_t prot, const void *caller)
 {
 	u64 mask = get_coherent_dma_mask(dev);
 	struct page *page;
@@ -603,7 +604,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
 		addr = __alloc_simple_buffer(dev, size, gfp, &page);
 #if 0
 	else if (!IS_ENABLED(CONFIG_DMA_CMA))
-		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page);
+		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
 #endif
 	else if (gfp & GFP_ATOMIC)
 		addr = __alloc_from_pool(dev, size, &page);
@@ -629,7 +630,8 @@ void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle,
 		return memory;
 
 	return __dma_alloc(dev, size, handle, gfp,
-			   pgprot_dmacoherent(pgprot_kernel));
+			   pgprot_dmacoherent(pgprot_kernel),
+			   __builtin_return_address(0));
 }
 EXPORT_SYMBOL(dma_alloc_coherent);
 
@@ -642,7 +644,8 @@ dma_alloc_writecombine(struct device *dev, size_t size, dma_addr_t *handle,
 			 gfp_t gfp)
 {
 	return __dma_alloc(dev, size, handle, gfp,
-			   pgprot_writecombine(pgprot_kernel));
+			   pgprot_writecombine(pgprot_kernel),
+			   __builtin_return_address(0));
 }
 EXPORT_SYMBOL(dma_alloc_writecombine);
 
@@ -957,6 +960,9 @@ EXPORT_SYMBOL(dma_sync_sg_for_device);
 
 static int __init dma_debug_do_init(void)
 {
+#ifdef CONFIG_MMU
+	arm_vmregion_create_proc("dma-mappings", &consistent_head);
+#endif
 	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
 	return 0;
 }
