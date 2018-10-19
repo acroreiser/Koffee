@@ -25,7 +25,6 @@
 #include <linux/list.h>
 #include <linux/printk.h>
 #include <linux/hrtimer.h>
-#include <linux/pm_qos.h>
 #include "governor.h"
 
 struct class *devfreq_class;
@@ -84,7 +83,7 @@ int update_devfreq(struct devfreq *devfreq)
 {
 	unsigned long freq;
 	int err = 0;
-	u32 options = 0;
+	u32 flags = 0;
 
 	if (!mutex_is_locked(&devfreq->lock)) {
 		WARN(true, "devfreq->lock must be locked by the caller.\n");
@@ -100,28 +99,20 @@ int update_devfreq(struct devfreq *devfreq)
 	 * Adjust the freuqency with user freq and QoS.
 	 *
 	 * List from the highest proiority
+	 * max_freq (probably called by thermal when it's too hot)
 	 * min_freq
-	 * max_freq
-	 * qos_min_freq
 	 */
 
-	if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq) {
-		freq = devfreq->qos_min_freq;
-		options &= ~(1 << 0);
-		options |= DEVFREQ_OPTION_FREQ_LUB;
+	if (devfreq->min_freq && freq < devfreq->min_freq) {
+		freq = devfreq->min_freq;
+		flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
 	}
 	if (devfreq->max_freq && freq > devfreq->max_freq) {
 		freq = devfreq->max_freq;
-		options &= ~(1 << 0);
-		options |= DEVFREQ_OPTION_FREQ_GLB;
-	}
-	if (devfreq->min_freq && freq < devfreq->min_freq) {
-		freq = devfreq->min_freq;
-		options &= ~(1 << 0);
-		options |= DEVFREQ_OPTION_FREQ_LUB;
+		flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
 	}
 
-	err = devfreq->profile->target(devfreq->dev.parent, &freq, options);
+	err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
 	if (err)
 		return err;
 
@@ -133,82 +124,18 @@ int update_devfreq(struct devfreq *devfreq)
  * devfreq_notifier_call() - Notify that the device frequency requirements
  *			   has been changed out of devfreq framework.
  * @nb		the notifier_block (supposed to be devfreq->nb)
- * @val		not used.
+ * @type	not used
  * @devp	not used
  *
  * Called by a notifier that uses devfreq->nb.
  */
-static int devfreq_notifier_call(struct notifier_block *nb, unsigned long val,
+static int devfreq_notifier_call(struct notifier_block *nb, unsigned long type,
 				 void *devp)
 {
 	struct devfreq *devfreq = container_of(nb, struct devfreq, nb);
 	int ret;
 
 	mutex_lock(&devfreq->lock);
-	ret = update_devfreq(devfreq);
-	mutex_unlock(&devfreq->lock);
-
-	return ret;
-}
-
-/**
- * devfreq_qos_notifier_call() -
- */
-static int devfreq_qos_notifier_call(struct notifier_block *nb,
-				     unsigned long value, void *devp)
-{
-	struct devfreq *devfreq = container_of(nb, struct devfreq, qos_nb);
-	int ret;
-	int i;
-	unsigned long default_value = 0;
-	struct devfreq_pm_qos_table *qos_list = devfreq->profile->qos_list;
-	bool qos_use_max = devfreq->profile->qos_use_max;
-
-	if (!qos_list)
-		return NOTIFY_DONE;
-
-	mutex_lock(&devfreq->lock);
-
-	switch (devfreq->profile->qos_type) {
-	case PM_QOS_CPU_DMA_LATENCY:
-		default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
-		break;
-	case PM_QOS_NETWORK_LATENCY:
-		default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE;
-		break;
-	case PM_QOS_NETWORK_THROUGHPUT:
-		default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE;
-		break;
-	case PM_QOS_BUS_DMA_THROUGHPUT:
-		default_value = PM_QOS_BUS_DMA_THROUGHPUT_DEFAULT_VALUE;
-		break;
-	case PM_QOS_DISPLAY_FREQUENCY:
-		default_value = PM_QOS_DISPLAY_FREQUENCY_DEFAULT_VALUE;
-		break;
-	default:
-		/* Won't do any check to detect "default" state */
-		break;
-	}
-
-	if (value == default_value) {
-		devfreq->qos_min_freq = 0;
-		goto update;
-	}
-
-	for (i = 0; qos_list[i].freq; i++) {
-		/* QoS Met */
-		if ((qos_use_max && qos_list[i].qos_value >= value) ||
-		    (!qos_use_max && qos_list[i].qos_value <= value)) {
-			devfreq->qos_min_freq = qos_list[i].freq;
-			goto update;
-		}
-	}
-
-	/* Use the highest QoS freq */
-	if (i > 0)
-		devfreq->qos_min_freq = qos_list[i - 1].freq;
-
-update:
 	ret = update_devfreq(devfreq);
 	mutex_unlock(&devfreq->lock);
 
@@ -251,10 +178,6 @@ static void _remove_devfreq(struct devfreq *devfreq, bool skip)
 		return;
 
 	devfreq->being_removed = true;
-
-	if (devfreq->profile->qos_type)
-		pm_qos_remove_notifier(devfreq->profile->qos_type,
-				       &devfreq->qos_nb);
 
 	if (devfreq->profile->exit)
 		devfreq->profile->exit(devfreq->dev.parent);
@@ -466,78 +389,12 @@ struct devfreq *devfreq_add_device(struct device *dev,
 	devfreq->next_polling = devfreq->polling_jiffies
 			      = msecs_to_jiffies(devfreq->profile->polling_ms);
 	devfreq->nb.notifier_call = devfreq_notifier_call;
-	devfreq->qos_nb.notifier_call = devfreq_qos_notifier_call;
-
-	/* Check the sanity of qos_list/qos_type */
-	if (profile->qos_type || profile->qos_list) {
-		int i;
-		bool positive_corelation = false;
-
-		if (profile->qos_type == PM_QOS_CPU_DMA_LATENCY ||
-		    profile->qos_type == PM_QOS_NETWORK_LATENCY) {
-			if (profile->qos_use_max) {
-				dev_err(dev, "qos_use_max value inconsistent\n");
-				err = -EINVAL;
-			}
-		} else {
-			if (!profile->qos_use_max) {
-				dev_err(dev, "qos_use_max value inconsistent\n");
-				err = -EINVAL;
-			}
-		}
-		if (err)
-			goto err_dev;
-
-		if (!profile->qos_type || !profile->qos_list) {
-			dev_err(dev, "QoS requirement partially omitted.\n");
-			err = -EINVAL;
-			goto err_dev;
-		}
-
-		if (!profile->qos_list[0].freq) {
-			dev_err(dev, "The first QoS requirement is the end of list.\n");
-			err = -EINVAL;
-			goto err_dev;
-		}
-
-		for (i = 1; profile->qos_list[i].freq; i++) {
-			if (profile->qos_list[i].freq <=
-			    profile->qos_list[i - 1].freq) {
-				dev_err(dev, "qos_list[].freq not sorted in the ascending order. ([%d]=%lu, [%d]=%lu)\n",
-					i - 1, profile->qos_list[i - 1].freq,
-					i, profile->qos_list[i].freq);
-				err = -EINVAL;
-				goto err_dev;
-			}
-
-			if (i == 1) {
-				if (profile->qos_list[0].qos_value <
-				    profile->qos_list[1].qos_value)
-					positive_corelation = true;
-				continue;
-			}
-
-			if (((profile->qos_list[i - 1].qos_value <=
-			      profile->qos_list[i].qos_value) &&
-			     !positive_corelation)
-			    ||
-			    ((profile->qos_list[i - 1].qos_value >=
-			      profile->qos_list[i].qos_value) &&
-			     positive_corelation)) {
-				dev_err(dev, "qos_list[].qos_value not sorted.\n");
-				err = -EINVAL;
-				goto err_dev;
-			}
-		}
-
-		pm_qos_add_notifier(profile->qos_type, &devfreq->qos_nb);
-	}
 
 	dev_set_name(&devfreq->dev, dev_name(dev));
 	err = device_register(&devfreq->dev);
 	if (err) {
 		put_device(&devfreq->dev);
-		goto err_qos_add;
+		goto err_dev;
 	}
 
 	if (governor->init)
@@ -565,9 +422,6 @@ out:
 
 err_init:
 	device_unregister(&devfreq->dev);
-err_qos_add:
-	if (profile->qos_type || profile->qos_list)
-		pm_qos_remove_notifier(profile->qos_type, &devfreq->qos_nb);
 err_dev:
 	mutex_unlock(&devfreq->lock);
 	kfree(devfreq);
@@ -598,7 +452,6 @@ int devfreq_remove_device(struct devfreq *devfreq)
 	}
 
 	mutex_lock(&devfreq->lock);
-
 	_remove_devfreq(devfreq, false); /* it unlocks devfreq->lock */
 
 	if (central_polling)
@@ -664,13 +517,6 @@ static ssize_t show_central_polling(struct device *dev,
 {
 	return sprintf(buf, "%d\n",
 		       !to_devfreq(dev)->governor->no_central_polling);
-}
-
-static ssize_t show_qos_min_freq(struct device *dev,
-				 struct device_attribute *attr,
-				 char *buf)
-{
-	return sprintf(buf, "%lu\n", to_devfreq(dev)->qos_min_freq);
 }
 
 static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
@@ -749,7 +595,6 @@ static struct device_attribute devfreq_attrs[] = {
 	       store_polling_interval),
 	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
 	__ATTR(max_freq, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq),
-	__ATTR(qos_min_freq, S_IRUGO, show_qos_min_freq, NULL),
 	{ },
 };
 
@@ -798,26 +643,26 @@ module_exit(devfreq_exit);
  *			     freq value given to target callback.
  * @dev		The devfreq user device. (parent of devfreq)
  * @freq	The frequency given to target function
- * @floor	false: find LUB first and use GLB if LUB not available.
- *		true:  find GLB first and use LUB if GLB not available.
- *
- * LUB: least upper bound (at least this freq or above, but the least)
- * GLB: greatest lower bound (at most this freq or below, but the most)
+ * @flags	Flags handed from devfreq framework.
  *
  */
 struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
-				    bool floor)
+				    u32 flags)
 {
 	struct opp *opp;
 
-	if (floor) {
+	if (flags & DEVFREQ_FLAG_LEAST_UPPER_BOUND) {
+		/* The freq is an upper bound. opp should be lower */
 		opp = opp_find_freq_floor(dev, freq);
 
+		/* If not available, use the closest opp */
 		if (opp == ERR_PTR(-ENODEV))
 			opp = opp_find_freq_ceil(dev, freq);
 	} else {
+		/* The freq is an lower bound. opp should be higher */
 		opp = opp_find_freq_ceil(dev, freq);
 
+		/* If not available, use the closest opp */
 		if (opp == ERR_PTR(-ENODEV))
 			opp = opp_find_freq_floor(dev, freq);
 	}
@@ -858,16 +703,6 @@ int devfreq_unregister_opp_notifier(struct device *dev, struct devfreq *devfreq)
 	if (IS_ERR(nh))
 		return PTR_ERR(nh);
 	return srcu_notifier_chain_unregister(nh, &devfreq->nb);
-}
-
-/**
- * In progress (prototyping)
- */
-int devfreq_simple_ondemand_flexrate_do(struct devfreq *devfreq,
-					unsigned long interval,
-					unsigned long number)
-{
-	return 0;
 }
 
 MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");

@@ -6,7 +6,7 @@ struct device;
 struct gpio_keys_button {
 	/* Configuration parameters */
 	unsigned int code;	/* input event code (KEY_*, SW_*) */
-	int gpio;
+	int gpio;		/* -1 if this key does not support gpio */
 	int active_low;
 	const char *desc;
 	unsigned int type;	/* input event type (EV_KEY, EV_SW, EV_ABS) */
@@ -15,6 +15,7 @@ struct gpio_keys_button {
 	bool can_disable;
 	void (*isr_hook)(unsigned int code, int value); /*key callback funtion*/
 	int value;		/* axis value for EV_ABS */
+	unsigned int irq;	/* Irq number in case of interrupt keys */
 };
 
 struct gpio_keys_platform_data {

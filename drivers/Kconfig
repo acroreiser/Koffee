@@ -42,8 +42,6 @@ source "drivers/net/Kconfig"
 
 source "drivers/isdn/Kconfig"
 
-source "drivers/telephony/Kconfig"
-
 # input before char - char/joystick depends on it. As does USB.
 
 source "drivers/input/Kconfig"
@@ -53,6 +51,8 @@ source "drivers/char/Kconfig"
 source "drivers/i2c/Kconfig"
 
 source "drivers/spi/Kconfig"
+
+source "drivers/hsi/Kconfig"
 
 source "drivers/pps/Kconfig"
 
@@ -167,11 +167,9 @@ source "drivers/gud/Kconfig"
 
 source "drivers/iommu/Kconfig"
 
-# FELICA
-source "drivers/felica/Kconfig"
+source "drivers/remoteproc/Kconfig"
 
-# Authentec
-source "drivers/interceptor/Kconfig"
+source "drivers/rpmsg/Kconfig"
 
 source "drivers/virt/Kconfig"
 
