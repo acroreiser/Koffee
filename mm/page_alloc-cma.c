@@ -2257,7 +2257,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 {
 	struct page *page;
 
-	if (!order || compaction_deferred(preferred_zone))
+	if (!order || compaction_deferred(preferred_zone, order))
 		return NULL;
 
 	current->flags |= PF_MEMALLOC;
@@ -2287,7 +2287,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 		 * but not enough to satisfy watermarks.
 		 */
 		count_vm_event(COMPACTFAIL);
-		defer_compaction(preferred_zone);
+		defer_compaction(preferred_zone, order);
 
 		cond_resched();
 	}
@@ -6242,7 +6242,7 @@ static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
 						      NULL);
 		if (!did_some_progress) {
 			/* Exhausted what can be done so it's blamo time */
-			out_of_memory(zonelist, gfp_mask, order, NULL);
+			out_of_memory(zonelist, gfp_mask, order, NULL, false);
 		}
 	}
 
