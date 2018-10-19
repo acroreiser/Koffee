@@ -47,8 +47,6 @@ void gic_handle_irq(struct pt_regs *regs);
 void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
 void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
 
-#define gic_secondary_init(n)	gic_secondary_init_base((n), NULL, NULL)
-
 struct gic_chip_data {
 	unsigned int irq_offset;
 	void __percpu __iomem **dist_base;
