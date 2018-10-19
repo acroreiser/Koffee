@@ -458,7 +458,7 @@ static void *__alloc_remap_buffer(struct device *dev, size_t size, gfp_t gfp,
 }
 
 static void *__alloc_from_pool(struct device *dev, size_t size,
-			       struct page **ret_page)
+			       struct page **ret_page, const void *caller)
 {
 	struct arm_vmregion *c;
 	size_t align;
@@ -476,7 +476,7 @@ static void *__alloc_from_pool(struct device *dev, size_t size,
 	 * size. This helps reduce fragmentation of the DMA space.
 	 */
 	align = PAGE_SIZE << get_order(size);
-	c = arm_vmregion_alloc(&coherent_head, align, size, 0);
+	c = arm_vmregion_alloc(&coherent_head, align, size, 0, caller);
 	if (c) {
 		void *ptr = (void *)c->vm_start;
 		struct page *page = virt_to_page(ptr);
@@ -540,7 +540,7 @@ static void __free_from_contiguous(struct device *dev, struct page *page,
 #define nommu() 1
 
 #define __alloc_remap_buffer(dev, size, gfp, prot, ret, caller)	NULL
-#define __alloc_from_pool(dev, size, ret_page)		NULL
+#define __alloc_from_pool(dev, size, ret_page, caller)		NULL
 #define __alloc_from_contiguous(dev, size, prot, ret)	NULL
 #define __free_from_pool(cpu_addr, size)		0
 #define __free_from_contiguous(dev, page, size)		do { } while (0)
@@ -607,7 +607,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
 		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
 #endif
 	else if (gfp & GFP_ATOMIC)
-		addr = __alloc_from_pool(dev, size, &page);
+		addr = __alloc_from_pool(dev, size, &page, caller);
 	else
 		addr = __alloc_from_contiguous(dev, size, prot, &page);
 
