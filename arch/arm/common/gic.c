@@ -52,13 +52,8 @@ union gic_base {
 
 struct gic_chip_data {
 	unsigned int irq_offset;
-#ifdef CONFIG_GIC_NON_BANKED
-	void __percpu __iomem **dist_base;
-	void __percpu __iomem **cpu_base;
-#else
 	union gic_base dist_base;
 	union gic_base cpu_base;
-#endif
 #ifdef CONFIG_CPU_PM
 	u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
 	u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
@@ -107,14 +102,14 @@ static void __iomem *gic_get_common_base(union gic_base *base)
 	return base->common_base;
 }
 
-static inline void __iomem *gic_data_cpu_base(struct gic_chip_data *data)
-{
-	return *__this_cpu_ptr(data->cpu_base);
-}
-
 static inline void __iomem *gic_data_dist_base(struct gic_chip_data *data)
 {
-	return *__this_cpu_ptr(data->dist_base);
+	return data->get_base(&data->dist_base);
+}
+
+static inline void __iomem *gic_data_cpu_base(struct gic_chip_data *data)
+{
+	return data->get_base(&data->cpu_base);
 }
 
 static inline void gic_set_base_accessor(struct gic_chip_data *data,
@@ -451,7 +446,7 @@ static void gic_dist_save(unsigned int gic_nr)
 		BUG();
 
 	gic_irqs = gic_data[gic_nr].gic_irqs;
-	dist_base = gic_data[gic_nr].dist_base;
+	dist_base = gic_data_dist_base(&gic_data[gic_nr]);
 
 	if (!dist_base)
 		return;
@@ -486,7 +481,7 @@ static void gic_dist_restore(unsigned int gic_nr)
 		BUG();
 
 	gic_irqs = gic_data[gic_nr].gic_irqs;
-	dist_base = gic_data[gic_nr].dist_base;
+	dist_base = gic_data_dist_base(&gic_data[gic_nr]);
 
 	if (!dist_base)
 		return;
@@ -522,8 +517,8 @@ static void gic_cpu_save(unsigned int gic_nr)
 	if (gic_nr >= MAX_GIC_NR)
 		BUG();
 
-	dist_base = gic_data[gic_nr].dist_base;
-	cpu_base = gic_data[gic_nr].cpu_base;
+	dist_base = gic_data_dist_base(&gic_data[gic_nr]);
+	cpu_base = gic_data_cpu_base(&gic_data[gic_nr]);
 
 	if (!dist_base || !cpu_base)
 		return;
@@ -548,8 +543,8 @@ static void gic_cpu_restore(unsigned int gic_nr)
 	if (gic_nr >= MAX_GIC_NR)
 		BUG();
 
-	dist_base = gic_data[gic_nr].dist_base;
-	cpu_base = gic_data[gic_nr].cpu_base;
+	dist_base = gic_data_dist_base(&gic_data[gic_nr]);
+	cpu_base = gic_data_cpu_base(&gic_data[gic_nr]);
 
 	if (!dist_base || !cpu_base)
 		return;
@@ -574,6 +569,11 @@ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
 	int i;
 
 	for (i = 0; i < MAX_GIC_NR; i++) {
+#ifdef CONFIG_GIC_NON_BANKED
+		/* Skip over unused GICs */
+		if (!gic_data[i].get_base)
+			continue;
+#endif
 		switch (cmd) {
 		case CPU_PM_ENTER:
 			gic_cpu_save(i);
@@ -654,7 +654,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	struct gic_chip_data *gic;
 	struct irq_domain *domain;
 	int gic_irqs;
-	int cpu;
 
 	BUG_ON(gic_nr >= MAX_GIC_NR);
 
@@ -662,28 +661,34 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	domain = &gic->domain;
 #ifdef CONFIG_GIC_NON_BANKED
 	if (percpu_offset) { /* Frankein-GIC without banked registers... */
-		gic->dist_base = alloc_percpu(void __iomem *);
-		gic->cpu_base = alloc_percpu(void __iomem *);
-		if (WARN_ON(!gic->dist_base || !gic->cpu_base)) {
-			free_percpu(gic->dist_base);
-			free_percpu(gic->cpu_base);
+		unsigned int cpu;
+
+		gic->dist_base.percpu_base = alloc_percpu(void __iomem *);
+		gic->cpu_base.percpu_base = alloc_percpu(void __iomem *);
+		if (WARN_ON(!gic->dist_base.percpu_base ||
+			    !gic->cpu_base.percpu_base)) {
+			free_percpu(gic->dist_base.percpu_base);
+			free_percpu(gic->cpu_base.percpu_base);
 			return;
 		}
 
 		for_each_possible_cpu(cpu) {
-			*per_cpu_ptr(gic->dist_base, cpu) = dist_base;
-			*per_cpu_ptr(gic->cpu_base, cpu) = cpu_base;
+			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
+			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
+			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
 		}
+
+		gic_set_base_accessor(gic, gic_get_percpu_base);
 	} else
-#else
+#endif
 	{			/* Normal, sane GIC... */
 		WARN(percpu_offset,
 		     "GIC_NON_BANKED not enabled, ignoring %08x offset!",
 		     percpu_offset);
-		gic->dist_base = dist_base;
-		gic->cpu_base = cpu_base;
+		gic->dist_base.common_base = dist_base;
+		gic->cpu_base.common_base = cpu_base;
+		gic_set_base_accessor(gic, gic_get_common_base);
 	}
-#endif
 
 	/*
 	 * For primary GICs, skip over SGIs.
@@ -726,16 +731,10 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	gic_pm_init(gic);
 }
 
-void __cpuinit gic_secondary_init_base(unsigned int gic_nr,
-				       void __iomem *dist_base,
-				       void __iomem *cpu_base)
+void __cpuinit gic_secondary_init(unsigned int gic_nr)
 {
 	BUG_ON(gic_nr >= MAX_GIC_NR);
 
-	if (dist_base)
-		*__this_cpu_ptr(gic_data[gic_nr].dist_base) = dist_base;
-	if (cpu_base)
-		*__this_cpu_ptr(gic_data[gic_nr].cpu_base) = cpu_base;
 	gic_cpu_init(&gic_data[gic_nr]);
 }
 
