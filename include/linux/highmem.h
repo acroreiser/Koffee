@@ -122,7 +122,7 @@ static inline void kmap_atomic_idx_pop(void)
 #define NARG_(_2, _1, n, ...) n
 #define NARG(...) NARG_(__VA_ARGS__, 2, 1, :)
 
-static inline void __deprecated *kmap_atomic_deprecated(struct page *page,
+static inline void *kmap_atomic_deprecated(struct page *page,
 							enum km_type km)
 {
 	return kmap_atomic(page);
@@ -132,7 +132,7 @@ static inline void __deprecated *kmap_atomic_deprecated(struct page *page,
 #define kmap_atomic2(...) kmap_atomic_deprecated(__VA_ARGS__)
 #define kmap_atomic(...) PASTE2(kmap_atomic, NARG(__VA_ARGS__)(__VA_ARGS__))
 
-static inline void __deprecated __kunmap_atomic_deprecated(void *addr,
+static inline void __kunmap_atomic_deprecated(void *addr,
 							enum km_type km)
 {
 	__kunmap_atomic(addr);
