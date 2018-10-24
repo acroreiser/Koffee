@@ -24,6 +24,10 @@ enum ab5500_devid {
 	AB5500_DEVID_VIDEO,
 	AB5500_DEVID_DBIECI,
 	AB5500_DEVID_ONSWA,
+	AB5500_DEVID_CHARGALG,
+	AB5500_DEVID_BTEMP,
+	AB5500_DEVID_TEMPMON,
+	AB5500_DEVID_ACCDET,
 	AB5500_NUM_DEVICES,
 };
 
@@ -92,8 +96,9 @@ enum ab5500_banks_addr {
 #define AB5500_IT_SOURCE21_REG		0x35
 #define AB5500_IT_SOURCE22_REG		0x36
 #define AB5500_IT_SOURCE23_REG		0x37
+#define AB5500_IT_SOURCE24_REG		0x38
 
-#define AB5500_NUM_IRQ_REGS		23
+#define AB5500_NUM_IRQ_REGS		25
 
 /**
  * struct ab5500
@@ -118,6 +123,7 @@ struct ab5500 {
 	char chip_name[32];
 	u8 chip_id;
 	struct mutex irq_lock;
+	u32 num_event_reg;
 	u32 abb_events;
 	u8 mask[AB5500_NUM_IRQ_REGS];
 	u8 oldmask[AB5500_NUM_IRQ_REGS];
@@ -129,12 +135,31 @@ struct ab5500 {
 #endif
 };
 
+#ifndef CONFIG_AB5500_CORE
+static inline int ab5500_clock_rtc_enable(int num, bool enable)
+{
+	return -ENOSYS;
+}
+#else
+extern int ab5500_clock_rtc_enable(int num, bool enable);
+#endif
+
+/* Forward Declaration */
+struct ab5500_regulator_platform_data;
+
 struct ab5500_platform_data {
 	struct {unsigned int base; unsigned int count; } irq;
 	void *dev_data[AB5500_NUM_DEVICES];
+	size_t dev_data_sz[AB5500_NUM_DEVICES];
 	struct abx500_init_settings *init_settings;
 	unsigned int init_settings_sz;
 	bool pm_power_off;
+	struct ab5500_regulator_platform_data *regulator;
+	struct ab5500_usbgpio_platform_data *usb;
+	struct abx500_accdet_platform_data *accdet;
 };
 
+struct ab5500_ponkey_platform_data {
+	u8 shutdown_secs;
+};
 #endif /* MFD_AB5500_H */

@@ -11,6 +11,9 @@ struct led_pwm {
 	u8 		active_low;
 	unsigned 	max_brightness;
 	unsigned	pwm_period_ns;
+	unsigned int    lth_brightness;
+	unsigned int    dutycycle_steps;
+	unsigned int    period_steps;
 };
 
 struct led_pwm_platform_data {

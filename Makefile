@@ -458,7 +458,7 @@ asm-generic:
 no-dot-config-targets := clean mrproper distclean \
 			 cscope gtags TAGS tags help %docs check% coccicheck \
 			 include/linux/version.h headers_% archheaders archscripts \
-			 kernelversion %src-pkg
+			 kernelrelease kernelversion %src-pkg
 
 config-targets := 0
 mixed-targets  := 0
@@ -970,7 +970,7 @@ $(vmlinux-dirs): prepare scripts
 # Store (new) KERNELRELASE string in include/config/kernel.release
 include/config/kernel.release: include/config/auto.conf FORCE
 	$(Q)rm -f $@
-	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))" > $@
+	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion -s $(srctree) -t v$(KERNELVERSION))" > $@
 
 
 # Things we need to do before we recursively start building the kernel
@@ -1489,7 +1489,7 @@ checkstack:
 	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
 
 kernelrelease:
-	@echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
+	@echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion -s $(srctree) -t v$(KERNELVERSION))"
 
 kernelversion:
 	@echo $(KERNELVERSION)

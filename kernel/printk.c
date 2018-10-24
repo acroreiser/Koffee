@@ -41,6 +41,7 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/rculist.h>
+#include <trace/stm.h>
 
 #include <asm/uaccess.h>
 #include <mach/sec_debug.h>
@@ -57,7 +58,7 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
 
 #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
 
-#ifdef        CONFIG_DEBUG_LL
+#ifdef CONFIG_PRINTK_LL
 extern void printascii(char *);
 #endif
 
@@ -989,7 +990,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	printed_len += vscnprintf(printk_buf + printed_len,
 				  sizeof(printk_buf) - printed_len, fmt, args);
 
-#ifdef	CONFIG_DEBUG_LL
+#ifdef	CONFIG_PRINTK_LL
 	printascii(printk_buf);
 #endif
 
@@ -1013,6 +1014,9 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 			}
 		}
 	}
+
+	/* Send printk buffer to MIPI STM trace hardware too if enable */
+	stm_dup_printk(printk_buf, printed_len);
 
 	/*
 	 * Copy the output into log_buf. If the caller didn't provide
@@ -1276,7 +1280,6 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
 	switch (action) {
 	case CPU_ONLINE:
 	case CPU_DEAD:
-	case CPU_DYING:
 	case CPU_DOWN_FAILED:
 	case CPU_UP_CANCELED:
 		console_lock();

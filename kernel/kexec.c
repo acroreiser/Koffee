@@ -48,6 +48,8 @@ u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
 size_t vmcoreinfo_size;
 size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
 
+ATOMIC_NOTIFIER_HEAD(crash_percpu_notifier_list);
+
 /* Location of the reserved area for the crash kernel */
 struct resource crashk_res = {
 	.name  = "Crash kernel",
@@ -1080,6 +1082,7 @@ asmlinkage long compat_sys_kexec_load(unsigned long entry,
 
 void crash_kexec(struct pt_regs *regs)
 {
+	struct pt_regs fixed_regs;
 	/* Take the kexec_mutex here to prevent sys_kexec_load
 	 * running on one cpu from replacing the crash kernel
 	 * we are using after a panic on a different cpu.
@@ -1090,13 +1093,20 @@ void crash_kexec(struct pt_regs *regs)
 	 */
 	if (mutex_trylock(&kexec_mutex)) {
 		if (kexec_crash_image) {
-			struct pt_regs fixed_regs;
 
 			crash_setup_regs(&fixed_regs, regs);
 			crash_save_vmcoreinfo();
 			machine_crash_shutdown(&fixed_regs);
 			machine_kexec(kexec_crash_image);
 		}
+#ifdef CONFIG_CRASH_SWRESET
+		else {
+			crash_setup_regs(&fixed_regs, regs);
+			crash_save_vmcoreinfo();
+			machine_crash_shutdown(&fixed_regs);
+			machine_crash_swreset();
+		}
+#endif
 		mutex_unlock(&kexec_mutex);
 	}
 }

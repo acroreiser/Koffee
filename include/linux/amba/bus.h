@@ -128,3 +128,23 @@ struct amba_device name##_device = {				\
 	module_driver(__amba_drv, amba_driver_register, amba_driver_unregister)
 
 #endif
+
+#ifdef CONFIG_SUSPEND
+extern int amba_pm_suspend(struct device *dev);
+extern int amba_pm_resume(struct device *dev);
+#else
+#define amba_pm_suspend		NULL
+#define amba_pm_resume		NULL
+#endif
+
+#ifdef CONFIG_HIBERNATE_CALLBACKS
+extern int amba_pm_freeze(struct device *dev);
+extern int amba_pm_thaw(struct device *dev);
+extern int amba_pm_poweroff(struct device *dev);
+extern int amba_pm_restore(struct device *dev);
+#else
+#define amba_pm_freeze		NULL
+#define amba_pm_thaw		NULL
+#define amba_pm_poweroff	NULL
+#define amba_pm_restore		NULL
+#endif

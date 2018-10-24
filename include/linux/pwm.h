@@ -28,4 +28,14 @@ int pwm_enable(struct pwm_device *pwm);
  */
 void pwm_disable(struct pwm_device *pwm);
 
+/*
+ * pwm_config_blink - configure PWM blinking
+ */
+int pwm_config_blink(struct pwm_device *pwm, int duty_ns, int period_ns);
+
+/*
+ * pwm_blink_ctrl - Enable/Disable PWM blinking
+ */
+int pwm_blink_ctrl(struct pwm_device *pwm , int enable);
+
 #endif /* __LINUX_PWM_H */

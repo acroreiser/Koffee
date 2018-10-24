@@ -120,6 +120,7 @@ struct kimage {
 
 /* kexec interface functions */
 extern void machine_kexec(struct kimage *image);
+extern void machine_crash_swreset(void);
 extern int machine_kexec_prepare(struct kimage *image);
 extern void machine_kexec_cleanup(struct kimage *image);
 extern asmlinkage long sys_kexec_load(unsigned long entry,
@@ -170,6 +171,7 @@ unsigned long paddr_vmcoreinfo_note(void);
 
 extern struct kimage *kexec_image;
 extern struct kimage *kexec_crash_image;
+extern struct atomic_notifier_head crash_percpu_notifier_list;
 
 #ifndef kexec_flush_icache_page
 #define kexec_flush_icache_page(page)

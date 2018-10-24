@@ -68,6 +68,25 @@ config ACORN_PARTITION_RISCIX
 	  of machines called RISCiX.  If you say 'Y' here, Linux will be able
 	  to read disks partitioned under RISCiX.
 
+config BLKDEV_PARTITION
+	bool "Blockdev commandline partition support" if PARTITION_ADVANCED
+	default n
+	help
+	  Say Y if you like to setup partitions for block devices by reading
+	  from the kernel command line (kernel boot arguments).
+
+	  The format of the partitions on the command line:
+	  blkdevparts=<blkdev-def>[;<blkdev-def>]
+	  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
+	  <partdef>    := <size>[@<offset>]
+
+	  <blkdev-id>  := unique id used to map driver to blockdev name
+	  <size>       := size in numbers of sectors
+	  <offset>     := offset in sectors for partition to start at
+
+	  Example:
+	  blkdevparts=mmc0:1024@0,524288@1024;mmc1:8192@0,8192@8192
+
 config OSF_PARTITION
 	bool "Alpha OSF partition support" if PARTITION_ADVANCED
 	default y if ALPHA

@@ -174,8 +174,10 @@ enum {
 #define ESCO_2EV5	0x0100
 #define ESCO_3EV5	0x0200
 
-#define SCO_ESCO_MASK  (ESCO_HV1 | ESCO_HV2 | ESCO_HV3)
-#define EDR_ESCO_MASK  (ESCO_2EV3 | ESCO_3EV3 | ESCO_2EV5 | ESCO_3EV5)
+#define SCO_ESCO_MASK	(ESCO_HV1 | ESCO_HV2 | ESCO_HV3)
+#define EDR_ESCO_MASK	(ESCO_2EV3 | ESCO_3EV3 | ESCO_2EV5 | ESCO_3EV5)
+#define ALL_ESCO_MASK	(SCO_ESCO_MASK | ESCO_EV3 | ESCO_EV4 | ESCO_EV5 | \
+			EDR_ESCO_MASK)
 
 /* ACL flags */
 #define ACL_START_NO_FLUSH	0x00
@@ -457,6 +459,21 @@ struct hci_cp_setup_sync_conn {
 	__u8     retrans_effort;
 	__le16   pkt_type;
 } __packed;
+
+/* Air coding format types */
+#define HCI_SYNC_AIR_CODING_CVSD	0x00
+#define HCI_SYNC_AIR_CODING_ULAW	0x01
+#define HCI_SYNC_AIR_CODING_ALAW	0x02
+#define HCI_SYNC_AIR_CODING_TRANSPARENT	0x03
+
+/* Max latency constants */
+#define HCI_SYNC_MAX_LATENCY_DONTCARE	0xffff
+
+/* Retransmission effort constants */
+#define HCI_SYNC_RETRANS_EFFORT_NO	0x00
+#define HCI_SYNC_RETRANS_EFFORT_POWER	0x01
+#define HCI_SYNC_RETRANS_EFFORT_QUALITY	0x02
+#define HCI_SYNC_RETRANS_EFFORT_DONTCARE	0xff
 
 #define HCI_OP_ACCEPT_SYNC_CONN_REQ	0x0429
 struct hci_cp_accept_sync_conn_req {
@@ -1392,6 +1409,9 @@ struct hci_conn_info {
 	__u8     out;
 	__u16    state;
 	__u32    link_mode;
+	__u32    mtu;
+	__u32    cnt;
+	__u32    pkts;
 };
 
 struct hci_dev_req {
@@ -1419,6 +1439,7 @@ struct hci_conn_info_req {
 struct hci_auth_info_req {
 	bdaddr_t bdaddr;
 	__u8     type;
+	__u8     sec_level;
 };
 
 struct hci_inquiry_req {
