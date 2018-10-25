@@ -162,9 +162,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 	if (!idle_exit_time)
 		goto exit;
 
-	delta_idle = (unsigned int) cputime64_sub(now_idle, time_in_idle);
-	delta_time = (unsigned int) cputime64_sub(pcpu->timer_run_time,
-						  idle_exit_time);
+	delta_idle = (unsigned int)(now_idle - time_in_idle);
+	delta_time = (unsigned int)(pcpu->timer_run_time - idle_exit_time);
 
 	/*
 	 * If timer ran less than 1ms after short-term sample started, retry.
@@ -177,10 +176,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 	else
 		cpu_load = 100 * (delta_time - delta_idle) / delta_time;
 
-	delta_idle = (unsigned int) cputime64_sub(now_idle,
-						pcpu->target_set_time_in_idle);
-	delta_time = (unsigned int) cputime64_sub(pcpu->timer_run_time,
-						  pcpu->target_set_time);
+	delta_idle = (unsigned int)(now_idle - pcpu->target_set_time_in_idle);
+	delta_time = (unsigned int)(pcpu->timer_run_time - pcpu->target_set_time);
 
 	if ((delta_time == 0) || (delta_idle > delta_time))
 		load_since_change = 0;
@@ -207,8 +204,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 			if (pcpu->target_freq == hispeed_freq &&
 			    new_freq > hispeed_freq &&
-			    cputime64_sub(pcpu->timer_run_time,
-					  pcpu->hispeed_validate_time)
+			    (pcpu->timer_run_time - pcpu->hispeed_validate_time)
 			    < above_hispeed_delay_val) {
 				trace_cpufreq_interactive_notyet(data, cpu_load,
 								 pcpu->target_freq,
@@ -238,8 +234,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	 * floor frequency for the minimum sample time since last validated.
 	 */
 	if (new_freq < pcpu->floor_freq) {
-		if (cputime64_sub(pcpu->timer_run_time,
-				  pcpu->floor_validate_time)
+		if ((pcpu->timer_run_time - pcpu->floor_validate_time)
 		    < min_sample_time) {
 			trace_cpufreq_interactive_notyet(data, cpu_load,
 					 pcpu->target_freq, new_freq);
