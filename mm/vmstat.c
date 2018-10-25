@@ -19,6 +19,9 @@
 #include <linux/math64.h>
 #include <linux/writeback.h>
 #include <linux/compaction.h>
+#include <linux/mm_inline.h>
+
+#include "internal.h"
 
 #ifdef CONFIG_VM_EVENT_COUNTERS
 DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
@@ -78,11 +81,7 @@ void vm_events_fold_cpu(int cpu)
  *
  * vm_stat contains the global counters
  */
-#ifndef CONFIG_DMA_CMA
-atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
-#else
 atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
-#endif
 EXPORT_SYMBOL(vm_stat);
 
 #ifdef CONFIG_SMP
@@ -617,7 +616,7 @@ static char * const migratetype_names[MIGRATE_TYPES] = {
 	"Reclaimable",
 	"Movable",
 	"Reserve",
-#ifdef CONFIG_DMA_CMA
+#ifdef CONFIG_CMA
 	"CMA",
 #endif
 	"Isolate",
@@ -726,9 +725,7 @@ const char * const vmstat_text[] = {
 	"numa_other",
 #endif
 	"nr_anon_transparent_hugepages",
-#ifdef CONFIG_DMA_CMA
 	"nr_free_cma",
-#endif
 	"nr_dirty_threshold",
 	"nr_dirty_background_threshold",
 
@@ -1029,7 +1026,7 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
 		   "\n  all_unreclaimable: %u"
 		   "\n  start_pfn:         %lu"
 		   "\n  inactive_ratio:    %u",
-		   zone->all_unreclaimable,
+		   !zone_reclaimable(zone),
 		   zone->zone_start_pfn,
 		   zone->inactive_ratio);
 	seq_putc(m, '\n');

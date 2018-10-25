@@ -212,6 +212,7 @@ config SW_SYNC_USER
 config DMA_CMA
 	bool "Contiguous Memory Allocator (EXPERIMENTAL)"
 	default n
+	depends on HAVE_DMA_CONTIGUOUS && HAVE_MEMBLOCK
 	select MIGRATION
 	help
 	  This enables the Contiguous Memory Allocator which allows drivers
@@ -220,6 +221,19 @@ config DMA_CMA
 
 	  For more information see <include/linux/dma-contiguous.h>.
 	  If unsure, say "n".
+
+config CMA
+	def_bool DMA_CMA
+
+config CMA_BEST_FIT
+	bool "CMA best-fit allocator"
+	depends on CMA
+	help
+	 This is a best-fit algorithm running in O(n log n) time where
+	 n is the number of existing holes (which is never greater then
+	 the number of allocated regions and usually much smaller).  It
+	 allocates area from the smallest hole that is big enough for
+	 allocation in question.
 
 if DMA_CMA
 
