@@ -167,7 +167,7 @@ static void __init exynos4_clocksource_init(void)
 	if (clocksource_register_hz(&mct_frc, clk_rate))
 		panic("%s: can't register clocksource\n", mct_frc.name);
 
-	//setup_sched_clock_needs_suspend(exynos4_read_sched_clock, 32, clk_rate);
+	setup_sched_clock_needs_suspend(exynos4_read_sched_clock, 32, clk_rate);
 }
 
 static void exynos4_mct_comp0_stop(void)
@@ -402,7 +402,7 @@ static struct irqaction mct_tick1_event_irq = {
 	.handler	= exynos4_mct_tick_isr,
 };
 
-int __cpuinit local_timer_setup(struct clock_event_device *evt)
+static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
 {
 	struct mct_clock_event_device *mevt;
 	unsigned int cpu = smp_processor_id();
@@ -448,7 +448,7 @@ int __cpuinit local_timer_setup(struct clock_event_device *evt)
 	return 0;
 }
 
-void local_timer_stop(struct clock_event_device *evt)
+static void exynos4_local_timer_stop(struct clock_event_device *evt)
 {
 	evt->mode = CLOCK_EVT_MODE_UNUSED;
 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
@@ -458,12 +458,10 @@ void local_timer_stop(struct clock_event_device *evt)
 		disable_percpu_irq(IRQ_MCT_LOCALTIMER);
 }
 
-#if 0
 static struct local_timer_ops exynos4_mct_tick_ops __cpuinitdata = {
 	.setup	= exynos4_local_timer_setup,
 	.stop	= exynos4_local_timer_stop,
 };
-#endif
 
 static void __init exynos4_local_timer_init(void)
 {
@@ -494,16 +492,13 @@ static void __init exynos4_timer_resources(void)
 		     IRQ_MCT_LOCALTIMER, err);
 	}
 
-	//local_timer_register(&exynos4_mct_tick_ops);
+	local_timer_register(&exynos4_mct_tick_ops);
 #endif /* CONFIG_LOCAL_TIMERS */
 }
 
 static void __init exynos4_timer_init(void)
 {
-	if (soc_is_exynos4210() || soc_is_exynos5250())
-		mct_int_type = MCT_INT_SPI;
-	else
-		mct_int_type = MCT_INT_PPI;
+	mct_int_type = MCT_INT_PPI;
 
 	exynos4_timer_resources();
 #ifdef CONFIG_LOCAL_TIMERS
