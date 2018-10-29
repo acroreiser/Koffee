@@ -21,7 +21,6 @@
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
 
-#include "power/power.h"
 #include "base.h"
 
 #define to_platform_driver(drv)	(container_of((drv), struct platform_driver, \
@@ -719,6 +718,25 @@ int platform_pm_suspend(struct device *dev)
 	return ret;
 }
 
+int platform_pm_suspend_noirq(struct device *dev)
+{
+	struct device_driver *drv = dev->driver;
+	int ret = 0;
+
+	if (!drv)
+		return 0;
+
+	if (drv->pm) {
+		if (drv->pm->suspend_noirq) {
+			printk(KERN_DEBUG "%s: %s+\n", __func__, dev_name(dev));
+			ret = drv->pm->suspend_noirq(dev);
+			printk(KERN_DEBUG "%s: %s-\n", __func__, dev_name(dev));
+		}
+	}
+
+	return ret;
+}
+
 int platform_pm_resume(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
@@ -945,7 +963,6 @@ void __init early_platform_add_devices(struct platform_device **devs, int num)
 		dev = &devs[i]->dev;
 
 		if (!dev->devres_head.next) {
-			pm_runtime_early_init(dev);
 			INIT_LIST_HEAD(&dev->devres_head);
 			list_add_tail(&dev->devres_head,
 				      &early_platform_device_list);

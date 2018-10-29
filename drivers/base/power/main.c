@@ -28,9 +28,7 @@
 #include <linux/sched.h>
 #include <linux/async.h>
 #include <linux/suspend.h>
-#include <linux/timer.h>
-#include <trace/events/power.h>
-#include <linux/cpuidle.h>
+
 #include "../base.h"
 #include "power.h"
 
@@ -47,59 +45,32 @@ typedef int (*pm_callback_t)(struct device *);
  */
 
 LIST_HEAD(dpm_list);
-static LIST_HEAD(dpm_prepared_list);
-static LIST_HEAD(dpm_suspended_list);
-static LIST_HEAD(dpm_late_early_list);
-static LIST_HEAD(dpm_noirq_list);
+LIST_HEAD(dpm_prepared_list);
+LIST_HEAD(dpm_suspended_list);
+LIST_HEAD(dpm_late_early_list);
+LIST_HEAD(dpm_noirq_list);
 
 struct suspend_stats suspend_stats;
 static DEFINE_MUTEX(dpm_list_mtx);
 static pm_message_t pm_transition;
 
-static void dpm_drv_timeout(unsigned long data);
-struct dpm_drv_wd_data {
-	struct device *dev;
-	struct task_struct *tsk;
-};
-
 static int async_error;
 
-static char *pm_verb(int event)
-{
-	switch (event) {
-	case PM_EVENT_SUSPEND:
-		return "suspend";
-	case PM_EVENT_RESUME:
-		return "resume";
-	case PM_EVENT_FREEZE:
-		return "freeze";
-	case PM_EVENT_QUIESCE:
-		return "quiesce";
-	case PM_EVENT_HIBERNATE:
-		return "hibernate";
-	case PM_EVENT_THAW:
-		return "thaw";
-	case PM_EVENT_RESTORE:
-		return "restore";
-	case PM_EVENT_RECOVER:
-		return "recover";
-	default:
-		return "(unknown PM event)";
-	}
-}
-
 /**
- * device_pm_sleep_init - Initialize system suspend-related device fields.
+ * device_pm_init - Initialize the PM-related part of a device object.
  * @dev: Device object being initialized.
  */
-void device_pm_sleep_init(struct device *dev)
+void device_pm_init(struct device *dev)
 {
 	dev->power.is_prepared = false;
 	dev->power.is_suspended = false;
 	init_completion(&dev->power.completion);
 	complete_all(&dev->power.completion);
 	dev->power.wakeup = NULL;
+	spin_lock_init(&dev->power.lock);
+	pm_runtime_init(dev);
 	INIT_LIST_HEAD(&dev->power.entry);
+	dev->power.power_state = PMSG_INVALID;
 }
 
 /**
@@ -131,6 +102,7 @@ void device_pm_add(struct device *dev)
 		dev_warn(dev, "parent %s should not be sleeping\n",
 			dev_name(dev->parent));
 	list_add_tail(&dev->power.entry, &dpm_list);
+	dev_pm_qos_constraints_init(dev);
 	mutex_unlock(&dpm_list_mtx);
 }
 
@@ -144,6 +116,7 @@ void device_pm_remove(struct device *dev)
 		 dev->bus ? dev->bus->name : "No Bus", dev_name(dev));
 	complete_all(&dev->power.completion);
 	mutex_lock(&dpm_list_mtx);
+	dev_pm_qos_constraints_destroy(dev);
 	list_del_init(&dev->power.entry);
 	mutex_unlock(&dpm_list_mtx);
 	device_wakeup_disable(dev);
@@ -193,7 +166,7 @@ static ktime_t initcall_debug_start(struct device *dev)
 {
 	ktime_t calltime = ktime_set(0, 0);
 
-	if (pm_print_times_enabled) {
+	if (initcall_debug) {
 		pr_info("calling  %s+ @ %i, parent: %s\n",
 			dev_name(dev), task_pid_nr(current),
 			dev->parent ? dev_name(dev->parent) : "none");
@@ -204,21 +177,16 @@ static ktime_t initcall_debug_start(struct device *dev)
 }
 
 static void initcall_debug_report(struct device *dev, ktime_t calltime,
-				  int error, pm_message_t state, char *info)
+				  int error)
 {
-	ktime_t rettime;
-	s64 nsecs;
+	ktime_t delta, rettime;
 
-	rettime = ktime_get();
-	nsecs = (s64) ktime_to_ns(ktime_sub(rettime, calltime));
-
-	if (pm_print_times_enabled) {
+	if (initcall_debug) {
+		rettime = ktime_get();
+		delta = ktime_sub(rettime, calltime);
 		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
-			error, (unsigned long long)nsecs >> 10);
+			error, (unsigned long long)ktime_to_ns(delta) >> 10);
 	}
-
-	trace_device_pm_report_time(dev, info, nsecs, pm_verb(state.event),
-				    error);
 }
 
 /**
@@ -346,6 +314,30 @@ static pm_callback_t pm_noirq_op(const struct dev_pm_ops *ops, pm_message_t stat
 	return NULL;
 }
 
+static char *pm_verb(int event)
+{
+	switch (event) {
+	case PM_EVENT_SUSPEND:
+		return "suspend";
+	case PM_EVENT_RESUME:
+		return "resume";
+	case PM_EVENT_FREEZE:
+		return "freeze";
+	case PM_EVENT_QUIESCE:
+		return "quiesce";
+	case PM_EVENT_HIBERNATE:
+		return "hibernate";
+	case PM_EVENT_THAW:
+		return "thaw";
+	case PM_EVENT_RESTORE:
+		return "restore";
+	case PM_EVENT_RECOVER:
+		return "recover";
+	default:
+		return "(unknown PM event)";
+	}
+}
+
 static void pm_dev_dbg(struct device *dev, pm_message_t state, char *info)
 {
 	dev_dbg(dev, "%s%s%s\n", info, pm_verb(state.event),
@@ -392,7 +384,7 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
 	error = cb(dev);
 	suspend_report_result(cb, error);
 
-	initcall_debug_report(dev, calltime, error, state, info);
+	initcall_debug_report(dev, calltime, error);
 
 	return error;
 }
@@ -412,22 +404,9 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
 	pm_callback_t callback = NULL;
 	char *info = NULL;
 	int error = 0;
-	struct timer_list timer;
-	struct dpm_drv_wd_data data;
-
-	data.dev = dev;
-	data.tsk = get_current();
-	init_timer_on_stack(&timer);
-	timer.expires = jiffies + HZ * 12;
-	timer.function = dpm_drv_timeout;
-	timer.data = (unsigned long)&data;
-	add_timer(&timer);
 
 	TRACE_DEVICE(dev);
 	TRACE_RESUME(0);
-
-	if (dev->power.syscore)
-		goto Out;
 
 	if (dev->pm_domain) {
 		info = "noirq power domain ";
@@ -448,12 +427,8 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
 		callback = pm_noirq_op(dev->driver->pm, state);
 	}
 
-	del_timer_sync(&timer);
-	destroy_timer_on_stack(&timer);
-
 	error = dpm_run_callback(callback, dev, state, info);
 
- Out:
 	TRACE_RESUME(error);
 	return error;
 }
@@ -492,7 +467,6 @@ static void dpm_resume_noirq(pm_message_t state)
 	mutex_unlock(&dpm_list_mtx);
 	dpm_show_time(starttime, state, "noirq");
 	resume_device_irqs();
-	cpuidle_resume();
 }
 
 /**
@@ -510,9 +484,6 @@ static int device_resume_early(struct device *dev, pm_message_t state)
 
 	TRACE_DEVICE(dev);
 	TRACE_RESUME(0);
-
-	if (dev->power.syscore)
-		goto Out;
 
 	if (dev->pm_domain) {
 		info = "early power domain ";
@@ -535,10 +506,7 @@ static int device_resume_early(struct device *dev, pm_message_t state)
 
 	error = dpm_run_callback(callback, dev, state, info);
 
- Out:
 	TRACE_RESUME(error);
-
-	pm_runtime_enable(dev);
 	return error;
 }
 
@@ -596,25 +564,12 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 	pm_callback_t callback = NULL;
 	char *info = NULL;
 	int error = 0;
-	struct timer_list timer;
-	struct dpm_drv_wd_data data;
+	bool put = false;
 
 	TRACE_DEVICE(dev);
 	TRACE_RESUME(0);
 
-	if (dev->power.syscore)
-		goto Complete;
-
 	dpm_wait(dev->parent, async);
-
-	data.dev = dev;
-	data.tsk = get_current();
-	init_timer_on_stack(&timer);
-	timer.expires = jiffies + HZ * 12;
-	timer.function = dpm_drv_timeout;
-	timer.data = (unsigned long)&data;
-	add_timer(&timer);
-
 	device_lock(dev);
 
 	/*
@@ -625,6 +580,9 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 
 	if (!dev->power.is_suspended)
 		goto Unlock;
+
+	pm_runtime_enable(dev);
+	put = true;
 
 	if (dev->pm_domain) {
 		info = "power domain ";
@@ -673,14 +631,12 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 
  Unlock:
 	device_unlock(dev);
-
- Complete:
-	del_timer_sync(&timer);
-	destroy_timer_on_stack(&timer);
-
 	complete_all(&dev->power.completion);
 
 	TRACE_RESUME(error);
+
+	if (put)
+		pm_runtime_put_sync(dev);
 
 	return error;
 }
@@ -703,30 +659,6 @@ static bool is_async(struct device *dev)
 }
 
 /**
- *	dpm_drv_timeout - Driver suspend / resume watchdog handler
- *	@data: struct device which timed out
- *
- * 	Called when a driver has timed out suspending or resuming.
- * 	There's not much we can do here to recover so
- * 	BUG() out for a crash-dump
- *
- */
-static void dpm_drv_timeout(unsigned long data)
-{
-	struct dpm_drv_wd_data *wd_data = (void *)data;
-	struct device *dev = wd_data->dev;
-	struct task_struct *tsk = wd_data->tsk;
-
-	printk(KERN_EMERG "**** DPM device timeout: %s (%s)\n", dev_name(dev),
-	       (dev->driver ? dev->driver->name : "no driver"));
-
-	printk(KERN_EMERG "dpm suspend stack:\n");
-	show_stack(tsk, NULL);
-
-	BUG();
-}
-
-/**
  * dpm_resume - Execute "resume" callbacks for non-sysdev devices.
  * @state: PM transition of the system being carried out.
  *
@@ -745,7 +677,7 @@ void dpm_resume(pm_message_t state)
 	async_error = 0;
 
 	list_for_each_entry(dev, &dpm_suspended_list, power.entry) {
-		reinit_completion(&dev->power.completion);
+		INIT_COMPLETION(dev->power.completion);
 		if (is_async(dev)) {
 			get_device(dev);
 			async_schedule(async_resume, dev);
@@ -789,9 +721,6 @@ static void device_complete(struct device *dev, pm_message_t state)
 	void (*callback)(struct device *) = NULL;
 	char *info = NULL;
 
-	if (dev->power.syscore)
-		return;
-
 	device_lock(dev);
 
 	if (dev->pm_domain) {
@@ -819,8 +748,6 @@ static void device_complete(struct device *dev, pm_message_t state)
 	}
 
 	device_unlock(dev);
-
-	pm_runtime_put(dev);
 }
 
 /**
@@ -905,52 +832,25 @@ static int device_suspend_noirq(struct device *dev, pm_message_t state)
 {
 	pm_callback_t callback = NULL;
 	char *info = NULL;
-	struct timer_list timer;
-	struct dpm_drv_wd_data data;
-
-	data.dev = dev;
-	data.tsk = get_current();
-	init_timer_on_stack(&timer);
-	timer.expires = jiffies + HZ * 12;
-	timer.function = dpm_drv_timeout;
-	timer.data = (unsigned long)&data;
-	add_timer(&timer);
-
-	if (dev->power.syscore)
-		return 0;
 
 	if (dev->pm_domain) {
 		info = "noirq power domain ";
 		callback = pm_noirq_op(&dev->pm_domain->ops, state);
-		if (callback)
-			goto callback;
 	} else if (dev->type && dev->type->pm) {
 		info = "noirq type ";
 		callback = pm_noirq_op(dev->type->pm, state);
-		if (callback)
-			goto callback;
 	} else if (dev->class && dev->class->pm) {
 		info = "noirq class ";
 		callback = pm_noirq_op(dev->class->pm, state);
-		if (callback)
-			goto callback;
 	} else if (dev->bus && dev->bus->pm) {
 		info = "noirq bus ";
 		callback = pm_noirq_op(dev->bus->pm, state);
-		if (callback)
-			goto callback;
 	}
 
 	if (!callback && dev->driver && dev->driver->pm) {
 		info = "noirq driver ";
 		callback = pm_noirq_op(dev->driver->pm, state);
-		if (callback)
-			goto callback;
 	}
-
-callback:
-	del_timer_sync(&timer);
-	destroy_timer_on_stack(&timer);
 
 	return dpm_run_callback(callback, dev, state, info);
 }
@@ -967,7 +867,6 @@ static int dpm_suspend_noirq(pm_message_t state)
 	ktime_t starttime = ktime_get();
 	int error = 0;
 
-	cpuidle_pause();
 	suspend_device_irqs();
 	mutex_lock(&dpm_list_mtx);
 	while (!list_empty(&dpm_late_early_list)) {
@@ -990,11 +889,6 @@ static int dpm_suspend_noirq(pm_message_t state)
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_noirq_list);
 		put_device(dev);
-
-		if (pm_wakeup_pending()) {
-			error = -EBUSY;
-			break;
-		}
 	}
 	mutex_unlock(&dpm_list_mtx);
 	if (error)
@@ -1015,11 +909,6 @@ static int device_suspend_late(struct device *dev, pm_message_t state)
 {
 	pm_callback_t callback = NULL;
 	char *info = NULL;
-
-	__pm_runtime_disable(dev, false);
-
-	if (dev->power.syscore)
-		return 0;
 
 	if (dev->pm_domain) {
 		info = "late power domain ";
@@ -1073,11 +962,6 @@ static int dpm_suspend_late(pm_message_t state)
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_late_early_list);
 		put_device(dev);
-
-		if (pm_wakeup_pending()) {
-			error = -EBUSY;
-			break;
-		}
 	}
 	mutex_unlock(&dpm_list_mtx);
 	if (error)
@@ -1095,16 +979,8 @@ static int dpm_suspend_late(pm_message_t state)
 int dpm_suspend_end(pm_message_t state)
 {
 	int error = dpm_suspend_late(state);
-	if (error)
-		return error;
 
-	error = dpm_suspend_noirq(state);
-	if (error) {
-		dpm_resume_early(resume_event(state));
-		return error;
-	}
-
-	return 0;
+	return error ? : dpm_suspend_noirq(state);
 }
 EXPORT_SYMBOL_GPL(dpm_suspend_end);
 
@@ -1115,8 +991,7 @@ EXPORT_SYMBOL_GPL(dpm_suspend_end);
  * @cb: Suspend callback to execute.
  */
 static int legacy_suspend(struct device *dev, pm_message_t state,
-			  int (*cb)(struct device *dev, pm_message_t state),
-			  char *info)
+			  int (*cb)(struct device *dev, pm_message_t state))
 {
 	int error;
 	ktime_t calltime;
@@ -1126,7 +1001,7 @@ static int legacy_suspend(struct device *dev, pm_message_t state,
 	error = cb(dev, state);
 	suspend_report_result(cb, error);
 
-	initcall_debug_report(dev, calltime, error, state, info);
+	initcall_debug_report(dev, calltime, error);
 
 	return error;
 }
@@ -1142,38 +1017,21 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 	pm_callback_t callback = NULL;
 	char *info = NULL;
 	int error = 0;
-	struct timer_list timer;
-	struct dpm_drv_wd_data data;
 
 	dpm_wait_for_children(dev, async);
 
-	data.dev = dev;
-	data.tsk = get_current();
-	init_timer_on_stack(&timer);
-	timer.expires = jiffies + HZ * 12;
-	timer.function = dpm_drv_timeout;
-	timer.data = (unsigned long)&data;
-	add_timer(&timer);
-
 	if (async_error)
-		goto Complete;
+		return 0;
 
-	/*
-	 * If a device configured to wake up the system from sleep states
-	 * has been suspended at run time and there's a resume request pending
-	 * for it, this is equivalent to the device signaling wakeup, so the
-	 * system suspend operation should be aborted.
-	 */
+	pm_runtime_get_noresume(dev);
 	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
 		pm_wakeup_event(dev, 0);
 
 	if (pm_wakeup_pending()) {
+		pm_runtime_put_sync(dev);
 		async_error = -EBUSY;
-		goto Complete;
+		return 0;
 	}
-
-	if (dev->power.syscore)
-		goto Complete;
 
 	device_lock(dev);
 
@@ -1196,8 +1054,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 			goto Run;
 		} else if (dev->class->suspend) {
 			pm_dev_dbg(dev, state, "legacy class ");
-			error = legacy_suspend(dev, state, dev->class->suspend,
-						"legacy class ");
+			error = legacy_suspend(dev, state, dev->class->suspend);
 			goto End;
 		}
 	}
@@ -1208,8 +1065,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 			callback = pm_op(dev->bus->pm, state);
 		} else if (dev->bus->suspend) {
 			pm_dev_dbg(dev, state, "legacy bus ");
-			error = legacy_suspend(dev, state, dev->bus->suspend,
-						"legacy bus ");
+			error = legacy_suspend(dev, state, dev->bus->suspend);
 			goto End;
 		}
 	}
@@ -1231,14 +1087,14 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 	}
 
 	device_unlock(dev);
-
- Complete:
-	del_timer_sync(&timer);
-	destroy_timer_on_stack(&timer);
-
 	complete_all(&dev->power.completion);
-	if (error)
+
+	if (error) {
+		pm_runtime_put_sync(dev);
 		async_error = error;
+	} else if (dev->power.is_suspended) {
+		__pm_runtime_disable(dev, false);
+	}
 
 	return error;
 }
@@ -1259,7 +1115,7 @@ static void async_suspend(void *data, async_cookie_t cookie)
 
 static int device_suspend(struct device *dev)
 {
-	reinit_completion(&dev->power.completion);
+	INIT_COMPLETION(dev->power.completion);
 
 	if (pm_async_enabled && dev->power.async_suspend) {
 		get_device(dev);
@@ -1274,9 +1130,6 @@ static int device_suspend(struct device *dev)
  * dpm_suspend - Execute "suspend" callbacks for all non-sysdev devices.
  * @state: PM transition of the system being carried out.
  */
-#ifdef CONFIG_FAST_BOOT
-extern bool fake_shut_down;
-#endif
 int dpm_suspend(pm_message_t state)
 {
 	ktime_t starttime = ktime_get();
@@ -1299,18 +1152,8 @@ int dpm_suspend(pm_message_t state)
 		if (error) {
 			pm_dev_err(dev, state, "", error);
 			dpm_save_failed_dev(dev_name(dev));
-#ifdef CONFIG_FAST_BOOT
-			if (fake_shut_down) {
-				pr_info("%s: fake shut down\n", __func__);
-				error = 0;
-			} else {
-				put_device(dev);
-				break;
-			}
-#else
 			put_device(dev);
 			break;
-#endif
 		}
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_suspended_list);
@@ -1344,17 +1187,6 @@ static int device_prepare(struct device *dev, pm_message_t state)
 	char *info = NULL;
 	int error = 0;
 
-	if (dev->power.syscore)
-		return 0;
-
-	/*
-	 * If a device's parent goes into runtime suspend at the wrong time,
-	 * it won't be possible to resume the device.  To prevent this we
-	 * block runtime suspend here, during the prepare phase, and allow
-	 * it again during the complete phase.
-	 */
-	pm_runtime_get_noresume(dev);
-
 	device_lock(dev);
 
 	dev->power.wakeup_path = device_may_wakeup(dev);
@@ -1384,9 +1216,6 @@ static int device_prepare(struct device *dev, pm_message_t state)
 	}
 
 	device_unlock(dev);
-
-	if (error)
-		pm_runtime_put(dev);
 
 	return error;
 }
@@ -1473,25 +1302,3 @@ int device_pm_wait_for_dev(struct device *subordinate, struct device *dev)
 	return async_error;
 }
 EXPORT_SYMBOL_GPL(device_pm_wait_for_dev);
-
-/**
- * dpm_for_each_dev - device iterator.
- * @data: data for the callback.
- * @fn: function to be called for each device.
- *
- * Iterate over devices in dpm_list, and call @fn for each device,
- * passing it @data.
- */
-void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
-{
-	struct device *dev;
-
-	if (!fn)
-		return;
-
-	device_pm_lock();
-	list_for_each_entry(dev, &dpm_list, power.entry)
-		fn(dev, data);
-	device_pm_unlock();
-}
-EXPORT_SYMBOL_GPL(dpm_for_each_dev);

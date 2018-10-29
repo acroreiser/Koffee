@@ -17,11 +17,9 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/rtc.h>
+#include <linux/syscalls.h> /* sys_sync */
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
-#ifdef CONFIG_FAST_BOOT
-#include <linux/fake_shut_down.h>
-#endif
 
 #include "power.h"
 
@@ -53,7 +51,9 @@ static int state;
 static void sync_system(struct work_struct *work)
 {
 	pr_info("%s +\n", __func__);
-	suspend_sys_sync_queue();
+	wake_lock(&sync_wake_lock);
+	sys_sync();
+	wake_unlock(&sync_wake_lock);
 	pr_info("%s -\n", __func__);
 }
 
@@ -119,7 +119,12 @@ static void early_suspend(struct work_struct *work)
 	}
 	mutex_unlock(&early_suspend_lock);
 
-	suspend_sys_sync_queue();
+	if (debug_mask & DEBUG_SUSPEND)
+		pr_info("early_suspend: sync\n");
+
+	/* sys_sync(); */
+	queue_work(sync_work_queue, &sync_system_work);
+
 abort:
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
@@ -198,12 +203,8 @@ void request_suspend_state(suspend_state_t new_state)
 		queue_work(suspend_work_queue, &early_suspend_work);
 	} else if (old_sleep && new_state == PM_SUSPEND_ON) {
 #ifdef CONFIG_FAST_BOOT
-		if (fake_shut_down) {
-			pr_info("%s : end of fake shut down\n", __func__);
+		if (fake_shut_down)
 			fake_shut_down = false;
-			raw_notifier_call_chain(&fsd_notifier_list,
-					FAKE_SHUT_DOWN_CMD_OFF, NULL);
-		}
 #endif
 		state &= ~SUSPEND_REQUESTED;
 		wake_lock(&main_wake_lock);

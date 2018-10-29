@@ -352,7 +352,7 @@ static int create_mem_extents(struct list_head *list, gfp_t gfp_mask)
 		struct mem_extent *ext, *cur, *aux;
 
 		zone_start = zone->zone_start_pfn;
-		zone_end = zone_end_pfn(zone);
+		zone_end = zone->zone_start_pfn + zone->spanned_pages;
 
 		list_for_each_entry(ext, list, hook)
 			if (zone_start <= ext->end)
@@ -637,14 +637,13 @@ __register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
 		BUG_ON(!region);
 	} else
 		/* This allocation cannot fail */
-		region = memblock_virt_alloc(sizeof(struct nosave_region), 0);
+		region = alloc_bootmem(sizeof(struct nosave_region));
 	region->start_pfn = start_pfn;
 	region->end_pfn = end_pfn;
 	list_add_tail(&region->list, &nosave_regions);
  Report:
-	printk(KERN_INFO "PM: Registered nosave memory: [mem %#010llx-%#010llx]\n",
-		(unsigned long long) start_pfn << PAGE_SHIFT,
-		((unsigned long long) end_pfn << PAGE_SHIFT) - 1);
+	printk(KERN_INFO "PM: Registered nosave memory: %016lx - %016lx\n",
+		start_pfn << PAGE_SHIFT, end_pfn << PAGE_SHIFT);
 }
 
 /*
@@ -743,10 +742,7 @@ int create_basic_memory_bitmaps(void)
 	struct memory_bitmap *bm1, *bm2;
 	int error = 0;
 
-	if (forbidden_pages_map && free_pages_map)
-		return 0;
-	else
-		BUG_ON(forbidden_pages_map || free_pages_map);
+	BUG_ON(forbidden_pages_map || free_pages_map);
 
 	bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
 	if (!bm1)
@@ -792,8 +788,7 @@ void free_basic_memory_bitmaps(void)
 {
 	struct memory_bitmap *bm1, *bm2;
 
-	if (WARN_ON(!(forbidden_pages_map && free_pages_map)))
-		return;
+	BUG_ON(!(forbidden_pages_map && free_pages_map));
 
 	bm1 = forbidden_pages_map;
 	bm2 = free_pages_map;
@@ -888,7 +883,7 @@ static unsigned int count_highmem_pages(void)
 			continue;
 
 		mark_free_pages(zone);
-		max_zone_pfn = zone_end_pfn(zone);
+		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
 			if (saveable_highmem_page(zone, pfn))
 				n++;
@@ -952,7 +947,7 @@ static unsigned int count_data_pages(void)
 			continue;
 
 		mark_free_pages(zone);
-		max_zone_pfn = zone_end_pfn(zone);
+		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
 			if (saveable_page(zone, pfn))
 				n++;
@@ -1045,7 +1040,7 @@ copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
 		unsigned long max_zone_pfn;
 
 		mark_free_pages(zone);
-		max_zone_pfn = zone_end_pfn(zone);
+		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
 			if (page_is_saveable(zone, pfn))
 				memory_bm_set_bit(orig_bm, pfn);
@@ -1097,7 +1092,7 @@ void swsusp_free(void)
 	unsigned long pfn, max_zone_pfn;
 
 	for_each_populated_zone(zone) {
-		max_zone_pfn = zone_end_pfn(zone);
+		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
 			if (pfn_valid(pfn)) {
 				struct page *page = pfn_to_page(pfn);
@@ -1285,6 +1280,79 @@ static unsigned long minimum_image_size(unsigned long saveable)
 	return saveable <= size ? 0 : saveable - size;
 }
 
+#ifdef CONFIG_FULL_PAGE_RECLAIM
+static int is_exist_entry(pgd_t *pgd, int i)
+{
+	pmd_t *pmd;
+
+	pgd = pgd+i;
+
+	if (pgd_none(*pgd))
+		return 0;
+
+	if (pgd_bad(*pgd))
+		return 0;
+
+	pmd = pmd_offset(pgd, 0);
+
+	if (pmd_none(*pmd))
+		return 0;
+
+	if (pmd_bad(*pmd))
+		return 0;
+
+	return 1;
+}
+
+static int show_process_pte_size(void)
+{
+	struct task_struct *p;
+	int i;
+	int count;
+	int tot_count = 0;
+	int kernel_did = 0;
+	int k_count = 0;
+	int task_struct_size = 0;
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		count = 0;
+		task_struct_size += sizeof(struct task_struct);
+		if (p->comm[0] == '[') {
+			printk(KERN_DEBUG "%s skip\n", p->comm);
+			continue;
+		}
+		if (p->mm == NULL) {
+			printk(KERN_DEBUG "%s skip\n", p->comm);
+			continue;
+		}
+		if (p->mm->pgd == NULL)
+			continue;
+
+		for (i = 0; i < 1536; i++) {
+			if (is_exist_entry(p->mm->pgd, i))
+				count++;
+		}
+		if (!kernel_did) {
+			for (i = 1536; i < 2048; i++) {
+				if (is_exist_entry(p->mm->pgd, i))
+					k_count++;
+			}
+			kernel_did = 1;
+		}
+		printk(KERN_INFO "%s : pgd entry count = %d, size = %d K\n",
+					p->comm, count, (16 + count * 4));
+		tot_count = tot_count + (16 + count * 4);
+	}
+	printk(KERN_INFO "PAGE TABLE ==> total size = %d K , kernel = %d K\n",
+			tot_count, k_count * 4);
+	printk(KERN_INFO "task_struct_size = %d K\n", task_struct_size / 1024);
+	read_unlock(&tasklist_lock);
+
+	return 0;
+}
+#endif /* CONFIG_FULL_PAGE_RECLAIM */
+
 /**
  * hibernate_preallocate_memory - Preallocate memory for hibernation image
  *
@@ -1317,6 +1385,16 @@ int hibernate_preallocate_memory(void)
 
 	printk(KERN_INFO "PM: Preallocating image memory... ");
 	do_gettimeofday(&start);
+
+#ifdef CONFIG_FULL_PAGE_RECLAIM
+	/* First of all, throw out unnecessary page frames for saving */
+	do {
+		pages = shrink_all_memory(ULONG_MAX);
+		printk(KERN_INFO "\bdone (%lu pages freed)\n", pages);
+	/* shrink all pages */
+	} while (pages);
+	show_process_pte_size();
+#endif
 
 	error = memory_bm_create(&orig_bm, GFP_IMAGE, PG_ANY);
 	if (error)
@@ -1403,11 +1481,7 @@ int hibernate_preallocate_memory(void)
 	 * highmem and non-highmem zones separately.
 	 */
 	pages_highmem = preallocate_image_highmem(highmem / 2);
-	alloc = count - max_size;
-	if (alloc > pages_highmem)
-		alloc -= pages_highmem;
-	else
-		alloc = 0;
+	alloc = (count - max_size) - pages_highmem;
 	pages = preallocate_image_memory(alloc, avail_normal);
 	if (pages < alloc) {
 		/* We have exhausted non-highmem pages, try highmem. */
@@ -1660,7 +1734,7 @@ unsigned long snapshot_get_image_size(void)
 static int init_header(struct swsusp_info *info)
 {
 	memset(info, 0, sizeof(struct swsusp_info));
-	info->num_physpages = get_num_physpages();
+	info->num_physpages = num_physpages;
 	info->image_pages = nr_copy_pages;
 	info->pages = snapshot_get_image_size();
 	info->size = info->pages;
@@ -1763,7 +1837,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
 
 	/* Clear page flags */
 	for_each_populated_zone(zone) {
-		max_zone_pfn = zone_end_pfn(zone);
+		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
 			if (pfn_valid(pfn))
 				swsusp_unset_page_free(pfn_to_page(pfn));
@@ -1804,7 +1878,7 @@ static int check_header(struct swsusp_info *info)
 	char *reason;
 
 	reason = check_image_kernel(info);
-	if (!reason && info->num_physpages != get_num_physpages())
+	if (!reason && info->num_physpages != num_physpages)
 		reason = "memory size";
 	if (reason) {
 		printk(KERN_ERR "PM: Image mismatch: %s\n", reason);

@@ -8,18 +8,13 @@
 #include <linux/notifier.h>
 #include <linux/miscdevice.h>
 #include <linux/device.h>
-#include <linux/workqueue.h>
 
 #define PM_QOS_RESERVED 0
 #define PM_QOS_CPU_DMA_LATENCY 1
 #define PM_QOS_NETWORK_LATENCY 2
 #define PM_QOS_NETWORK_THROUGHPUT 3
-#define PM_QOS_BUS_DMA_THROUGHPUT 4
-#define PM_QOS_DISPLAY_FREQUENCY 5
-#define PM_QOS_BUS_QOS 6
-#define PM_QOS_DVFS_RESPONSE_LATENCY 7
 
-#define PM_QOS_NUM_CLASSES 7
+#define PM_QOS_NUM_CLASSES 4
 #define PM_QOS_DEFAULT_VALUE -1
 
 #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
@@ -30,7 +25,6 @@
 struct pm_qos_request {
 	struct plist_node node;
 	int pm_qos_class;
-	struct delayed_work work; /* for pm_qos_update_request_timeout */
 };
 
 struct dev_pm_qos_request {
@@ -69,14 +63,13 @@ static inline int dev_pm_qos_request_active(struct dev_pm_qos_request *req)
 	return req->dev != 0;
 }
 
+#ifdef CONFIG_PM
 int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
 			 enum pm_qos_req_action action, int value);
 void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
 			s32 value);
 void pm_qos_update_request(struct pm_qos_request *req,
 			   s32 new_value);
-void pm_qos_update_request_timeout(struct pm_qos_request *req,
-				   s32 new_value, unsigned long timeout_us);
 void pm_qos_remove_request(struct pm_qos_request *req);
 
 int pm_qos_request(int pm_qos_class);
@@ -85,8 +78,6 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
 int pm_qos_request_active(struct pm_qos_request *req);
 s32 pm_qos_read_value(struct pm_qos_constraints *c);
 
-#ifdef CONFIG_PM
-s32 __dev_pm_qos_read_value(struct device *dev);
 s32 dev_pm_qos_read_value(struct device *dev);
 int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
 			   s32 value);
@@ -100,11 +91,34 @@ int dev_pm_qos_add_global_notifier(struct notifier_block *notifier);
 int dev_pm_qos_remove_global_notifier(struct notifier_block *notifier);
 void dev_pm_qos_constraints_init(struct device *dev);
 void dev_pm_qos_constraints_destroy(struct device *dev);
-int dev_pm_qos_add_ancestor_request(struct device *dev,
-				    struct dev_pm_qos_request *req, s32 value);
 #else
-static inline s32 __dev_pm_qos_read_value(struct device *dev)
+static inline int pm_qos_update_target(struct pm_qos_constraints *c,
+				       struct plist_node *node,
+				       enum pm_qos_req_action action,
+				       int value)
 			{ return 0; }
+static inline void pm_qos_add_request(struct pm_qos_request *req,
+				      int pm_qos_class, s32 value)
+			{ return; }
+static inline void pm_qos_update_request(struct pm_qos_request *req,
+					 s32 new_value)
+			{ return; }
+static inline void pm_qos_remove_request(struct pm_qos_request *req)
+			{ return; }
+
+static inline int pm_qos_request(int pm_qos_class)
+			{ return 0; }
+static inline int pm_qos_add_notifier(int pm_qos_class,
+				      struct notifier_block *notifier)
+			{ return 0; }
+static inline int pm_qos_remove_notifier(int pm_qos_class,
+					 struct notifier_block *notifier)
+			{ return 0; }
+static inline int pm_qos_request_active(struct pm_qos_request *req)
+			{ return 0; }
+static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
+			{ return 0; }
+
 static inline s32 dev_pm_qos_read_value(struct device *dev)
 			{ return 0; }
 static inline int dev_pm_qos_add_request(struct device *dev,
@@ -136,18 +150,6 @@ static inline void dev_pm_qos_constraints_destroy(struct device *dev)
 {
 	dev->power.power_state = PMSG_INVALID;
 }
-static inline int dev_pm_qos_add_ancestor_request(struct device *dev,
-				    struct dev_pm_qos_request *req, s32 value)
-			{ return 0; }
-#endif
-
-#ifdef CONFIG_PM_RUNTIME
-int dev_pm_qos_expose_latency_limit(struct device *dev, s32 value);
-void dev_pm_qos_hide_latency_limit(struct device *dev);
-#else
-static inline int dev_pm_qos_expose_latency_limit(struct device *dev, s32 value)
-			{ return 0; }
-static inline void dev_pm_qos_hide_latency_limit(struct device *dev) {}
 #endif
 
 #endif

@@ -24,8 +24,6 @@
 #include <linux/export.h>
 #include <linux/suspend.h>
 #include <linux/syscore_ops.h>
-#include <linux/ftrace.h>
-#include <linux/rtc.h>
 #include <trace/events/power.h>
 
 #include "power.h"
@@ -34,37 +32,11 @@ const char *const pm_states[PM_SUSPEND_MAX] = {
 #ifdef CONFIG_EARLYSUSPEND
 	[PM_SUSPEND_ON]		= "on",
 #endif
-	[PM_SUSPEND_FREEZE]	= "freeze",
 	[PM_SUSPEND_STANDBY]	= "standby",
 	[PM_SUSPEND_MEM]	= "mem",
 };
 
 static const struct platform_suspend_ops *suspend_ops;
-
-static bool need_suspend_ops(suspend_state_t state)
-{
-	return !!(state > PM_SUSPEND_FREEZE);
-}
-
-static DECLARE_WAIT_QUEUE_HEAD(suspend_freeze_wait_head);
-static bool suspend_freeze_wake;
-
-static void freeze_begin(void)
-{
-	suspend_freeze_wake = false;
-}
-
-static void freeze_enter(void)
-{
-	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
-}
-
-void freeze_wake(void)
-{
-	suspend_freeze_wake = true;
-	wake_up(&suspend_freeze_wait_head);
-}
-EXPORT_SYMBOL_GPL(freeze_wake);
 
 /**
  * suspend_set_ops - Set the global suspend method table.
@@ -80,23 +52,8 @@ EXPORT_SYMBOL_GPL(suspend_set_ops);
 
 bool valid_state(suspend_state_t state)
 {
-	if (state == PM_SUSPEND_FREEZE) {
-#ifdef CONFIG_PM_DEBUG
-		if (pm_test_level != TEST_NONE &&
-		    pm_test_level != TEST_FREEZER &&
-		    pm_test_level != TEST_DEVICES &&
-		    pm_test_level != TEST_PLATFORM) {
-			printk(KERN_WARNING "Unsupported pm_test mode for "
-					"freeze state, please choose "
-					"none/freezer/devices/platform.\n");
-			return false;
-		}
-#endif
-			return true;
-	}
 	/*
-	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEMORY states need lowlevel
-	 * support and need to be valid to the lowlevel
+	 * All states need lowlevel support and need to be valid to the lowlevel
 	 * implementation, no valid callback implies that none are valid.
 	 */
 	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
@@ -134,11 +91,11 @@ static int suspend_test(int level)
  * hibernation).  Run suspend notifiers, allocate the "suspend" console and
  * freeze processes.
  */
-static int suspend_prepare(suspend_state_t state)
+static int suspend_prepare(void)
 {
 	int error;
 
-	if (need_suspend_ops(state) && (!suspend_ops || !suspend_ops->enter))
+	if (!suspend_ops || !suspend_ops->enter)
 		return -EPERM;
 
 	pm_prepare_console();
@@ -171,6 +128,12 @@ void __attribute__ ((weak)) arch_suspend_enable_irqs(void)
 	local_irq_enable();
 }
 
+#if !defined(CONFIG_CPU_EXYNOS4210)
+#define CHECK_POINT printk(KERN_DEBUG "%s:%d\n", __func__, __LINE__)
+#else
+#define CHECK_POINT
+#endif
+
 /**
  * suspend_enter - Make the system enter the given sleep state.
  * @state: System sleep state to enter.
@@ -182,11 +145,15 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 {
 	int error;
 
-	if (need_suspend_ops(state) && suspend_ops->prepare) {
+	CHECK_POINT;
+
+	if (suspend_ops->prepare) {
 		error = suspend_ops->prepare();
 		if (error)
 			goto Platform_finish;
 	}
+
+	CHECK_POINT;
 
 	error = dpm_suspend_end(PMSG_SUSPEND);
 	if (error) {
@@ -194,7 +161,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		goto Platform_finish;
 	}
 
-	if (need_suspend_ops(state) && suspend_ops->prepare_late) {
+	CHECK_POINT;
+
+	if (suspend_ops->prepare_late) {
 		error = suspend_ops->prepare_late();
 		if (error)
 			goto Platform_wake;
@@ -203,26 +172,19 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	if (suspend_test(TEST_PLATFORM))
 		goto Platform_wake;
 
-	/*
-	 * PM_SUSPEND_FREEZE equals
-	 * frozen processes + suspended devices + idle processors.
-	 * Thus we should invoke freeze_enter() soon after
-	 * all the devices are suspended.
-	 */
-	if (state == PM_SUSPEND_FREEZE) {
-		freeze_enter();
-		goto Platform_wake;
-	}
-
-	ftrace_stop();
 	error = disable_nonboot_cpus();
 	if (error || suspend_test(TEST_CPUS))
 		goto Enable_cpus;
+
+	CHECK_POINT;
 
 	arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
 
 	error = syscore_suspend();
+
+	CHECK_POINT;
+
 	if (!error) {
 		*wakeup = pm_wakeup_pending();
 		if (!(suspend_test(TEST_CORE) || *wakeup)) {
@@ -237,16 +199,15 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
  Enable_cpus:
 	enable_nonboot_cpus();
-	ftrace_start();
 
  Platform_wake:
-	if (need_suspend_ops(state) && suspend_ops->wake)
+	if (suspend_ops->wake)
 		suspend_ops->wake();
 
 	dpm_resume_start(PMSG_RESUME);
 
  Platform_finish:
-	if (need_suspend_ops(state) && suspend_ops->finish)
+	if (suspend_ops->finish)
 		suspend_ops->finish();
 
 	return error;
@@ -261,11 +222,11 @@ int suspend_devices_and_enter(suspend_state_t state)
 	int error;
 	bool wakeup = false;
 
-	if (need_suspend_ops(state) && !suspend_ops)
+	if (!suspend_ops)
 		return -ENOSYS;
 
 	trace_machine_suspend(state);
-	if (need_suspend_ops(state) && suspend_ops->begin) {
+	if (suspend_ops->begin) {
 		error = suspend_ops->begin(state);
 		if (error)
 			goto Close;
@@ -274,7 +235,7 @@ int suspend_devices_and_enter(suspend_state_t state)
 	suspend_test_start();
 	error = dpm_suspend_start(PMSG_SUSPEND);
 	if (error) {
-		pr_err("PM: Some devices failed to suspend, or early wake event detected\n");
+		printk(KERN_ERR "PM: Some devices failed to suspend\n");
 		goto Recover_platform;
 	}
 	suspend_test_finish("suspend devices");
@@ -283,7 +244,7 @@ int suspend_devices_and_enter(suspend_state_t state)
 
 	do {
 		error = suspend_enter(state, &wakeup);
-	} while (!error && !wakeup && need_suspend_ops(state)
+	} while (!error && !wakeup
 		&& suspend_ops->suspend_again && suspend_ops->suspend_again());
 
  Resume_devices:
@@ -292,13 +253,13 @@ int suspend_devices_and_enter(suspend_state_t state)
 	suspend_test_finish("resume devices");
 	resume_console();
  Close:
-	if (need_suspend_ops(state) && suspend_ops->end)
+	if (suspend_ops->end)
 		suspend_ops->end();
 	trace_machine_suspend(PWR_EVENT_EXIT);
 	return error;
 
  Recover_platform:
-	if (need_suspend_ops(state) && suspend_ops->recover)
+	if (suspend_ops->recover)
 		suspend_ops->recover();
 	goto Resume_devices;
 }
@@ -351,14 +312,12 @@ void pm_wd_del_timer(struct timer_list *timer)
 #endif
 
 /**
- *	enter_state - Do common work of entering low-power state.
- *	@state:		pm_state structure for state we're entering.
+ * enter_state - Do common work needed to enter system sleep state.
+ * @state: System sleep state to enter.
  *
- *	Make sure we're the only ones trying to enter a sleep state. Fail
- *	if someone has beat us to it, since we don't want anything weird to
- *	happen when we wake up.
- *	Then, do the setup for suspend, enter the state, and cleaup (after
- *	we've woken up).
+ * Make sure that no one else is trying to put the system into a sleep state.
+ * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
+ * system enter the given sleep state and clean up after wakeup.
  */
 static int enter_state(suspend_state_t state)
 {
@@ -372,15 +331,12 @@ static int enter_state(suspend_state_t state)
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;
 
-	if (state == PM_SUSPEND_FREEZE)
-		freeze_begin();
-
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
-	suspend_sys_sync_queue();
+	sys_sync();
 	printk("done.\n");
 
 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
-	error = suspend_prepare(state);
+	error = suspend_prepare();
 	if (error)
 		goto Unlock;
 
@@ -404,18 +360,6 @@ static int enter_state(suspend_state_t state)
 	return error;
 }
 
-static void pm_suspend_marker(char *annotation)
-{
-	struct timespec ts;
-	struct rtc_time tm;
-
-	getnstimeofday(&ts);
-	rtc_time_to_tm(ts.tv_sec, &tm);
-	pr_info("PM: suspend %s %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
-		annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
-}
-
 /**
  * pm_suspend - Externally visible function for suspending the system.
  * @state: System sleep state to enter.
@@ -430,7 +374,6 @@ int pm_suspend(suspend_state_t state)
 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
 		return -EINVAL;
 
-	pm_suspend_marker("entry");
 	error = enter_state(state);
 	if (error) {
 		suspend_stats.fail++;
@@ -438,7 +381,6 @@ int pm_suspend(suspend_state_t state)
 	} else {
 		suspend_stats.success++;
 	}
-	pm_suspend_marker("exit");
 	return error;
 }
 EXPORT_SYMBOL(pm_suspend);
