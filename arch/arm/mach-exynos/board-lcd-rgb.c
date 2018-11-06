@@ -1,5 +1,5 @@
 /*
- * midas-lcd.c - lcd driver of MIDAS Project
+ * board-lcd-rgb.c - lcd driver of MIDAS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
-#include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/regulator/consumer.h>
 #include <linux/lcd.h>
@@ -34,21 +33,20 @@
 #include <linux/ld9040.h>
 #endif
 
-#ifdef CONFIG_FB_S5P_MIPI_DSIM
-#include <mach/mipi_ddi.h>
-#include <mach/dsim.h>
-#endif
-
-
 #ifdef CONFIG_FB_S5P_MDNIE
 #include <linux/mdnie.h>
 #endif
 
 struct s3c_platform_fb fb_platform_data;
+static struct platform_mdnie_data mdnie_data;
+
 unsigned int lcdtype;
 static int __init lcdtype_setup(char *str)
 {
 	get_option(&str, &lcdtype);
+#if defined(CONFIG_FB_S5P_S6C1372)
+	mdnie_data.display_type = lcdtype;
+#endif
 	return 1;
 }
 __setup("lcdtype=", lcdtype_setup);
@@ -199,7 +197,7 @@ static int lcd_gpio_cfg_lateresume(struct lcd_device *ld)
 	return 0;
 }
 
-static struct s3cfb_lcd ld9040_info = {
+static struct s3cfb_lcd panel_data = {
 	.width = 480,
 	.height = 800,
 	.p_width = 56,
@@ -354,14 +352,19 @@ int s6c1372_panel_gpio_init(void)
 	return 0;
 }
 
-static struct s3cfb_lcd s6c1372 = {
+static struct s3cfb_lcd panel_data = {
 	.width = 1280,
 	.height = 800,
 	.p_width = 217,
 	.p_height = 135,
 	.bpp = 24,
-
+#if defined(CONFIG_MACH_P4NOTELTE_USA_SPR) || \
+	defined(CONFIG_MACH_P4NOTELTE_USA_VZW) || \
+	defined(CONFIG_MACH_P4NOTELTE_USA_USCC)
+	.freq = 55,
+#else
 	.freq = 60,
+#endif
 	.timing = {
 		.h_fp = 18,
 		.h_bp = 36,
@@ -384,6 +387,10 @@ static struct s3cfb_lcd s6c1372 = {
 static int lcd_power_on(struct lcd_device *ld, int enable)
 {
 	if (enable) {
+		/* s5c1372_ldi_enable */
+		gpio_set_value(GPIO_LCD_EN, GPIO_LEVEL_HIGH);
+		msleep(40);
+
 		/* LVDS_N_SHDN to high*/
 		mdelay(1);
 		gpio_set_value(GPIO_LVDS_NSHDN, GPIO_LEVEL_HIGH);
@@ -398,419 +405,36 @@ static int lcd_power_on(struct lcd_device *ld, int enable)
 		/* LVDS_nSHDN low*/
 		gpio_set_value(GPIO_LVDS_NSHDN, GPIO_LEVEL_LOW);
 		msleep(40);
-}
+
+		/* s5c1372_ldi_disable */
+		s3c_gpio_cfgpin(GPIO_LCD_PCLK, S3C_GPIO_OUTPUT);
+		s3c_gpio_setpull(GPIO_LCD_PCLK, S3C_GPIO_PULL_NONE);
+		gpio_set_value(GPIO_LCD_PCLK, GPIO_LEVEL_LOW);
+
+		msleep(40);
+		gpio_set_value(GPIO_LCD_EN, GPIO_LEVEL_LOW);
+
+		msleep(600);
+	}
 
 	return 0;
 }
 
-static struct lcd_platform_data s6c1372_platform_data = {
+static struct lcd_platform_data panel_platform_data = {
 	.power_on	= lcd_power_on,
+#if defined(CONFIG_MACH_TAB3)
+	.pdata		= "SMD_LTL101AL06"
+#else
+	.pdata		= "SEC_LTL101AL01-002/003"
+#endif
 };
 
 struct platform_device lcd_s6c1372 = {
-	.name   = "s6c1372",
+	.name   = "lvds_lcd",
 	.id	= -1,
-	.dev.platform_data = &s6c1372_platform_data,
+	.dev.platform_data = &panel_platform_data,
 };
 
-#endif
-
-#ifdef CONFIG_FB_S5P_LMS501KF03
-static struct s3c_platform_fb lms501kf03_data __initdata = {
-	.hw_ver = 0x70,
-	.clk_name = "sclk_lcd",
-	.nr_wins = 5,
-	.default_win = CONFIG_FB_S5P_DEFAULT_WINDOW,
-	.swap = FB_SWAP_HWORD | FB_SWAP_WORD,
-};
-
-#define		LCD_BUS_NUM	3
-#define		DISPLAY_CS	EXYNOS4_GPB(5)
-#define		DISPLAY_CLK	EXYNOS4_GPB(4)
-#define		DISPLAY_SI	EXYNOS4_GPB(7)
-
-static struct spi_board_info spi_board_info[] __initdata = {
-	{
-		.modalias	 = "lms501kf03",
-		.platform_data  = NULL,
-		.max_speed_hz	 = 1200000,
-		.bus_num	 = LCD_BUS_NUM,
-		.chip_select	 = 0,
-		.mode		 = SPI_MODE_3,
-		.controller_data = (void *)DISPLAY_CS,
-	}
-};
-
-static struct spi_gpio_platform_data lms501kf03_spi_gpio_data = {
-	.sck	 = DISPLAY_CLK,
-	.mosi	 = DISPLAY_SI,
-	.miso	 = -1,
-	.num_chipselect = 1,
-};
-
-static struct platform_device s3c_device_spi_gpio = {
-	.name	 = "spi_gpio",
-	.id = LCD_BUS_NUM,
-	.dev	 = {
-		.parent	 = &s3c_device_fb.dev,
-		.platform_data  = &lms501kf03_spi_gpio_data,
-	},
-};
-#endif
-
-#ifdef CONFIG_FB_S5P_MIPI_DSIM
-#ifdef CONFIG_FB_S5P_S6E8AA0
-/* for Geminus based on MIPI-DSI interface */
-static struct s3cfb_lcd s6e8aa0 = {
-	.name = "s6e8aa0",
-	.width = 720,
-	.height = 1280,
-	.p_width = 60,		/* 59.76 mm */
-	.p_height = 106,	 /* 106.24 mm */
-	.bpp = 24,
-
-	.freq = 60,
-
-	/* minumun value is 0 except for wr_act time. */
-	.cpu_timing = {
-		.cs_setup = 0,
-		.wr_setup = 0,
-		.wr_act = 1,
-		.wr_hold = 0,
-	},
-
-	.timing = {
-		.h_fp = 5,
-		.h_bp = 5,
-		.h_sw = 5,
-		.v_fp = 13,
-		.v_fpe = 1,
-		.v_bp = 1,
-		.v_bpe = 1,
-		.v_sw = 2,
-		.cmd_allow_len = 11,	 /* v_fp=stable_vfp + cmd_allow_len */
-		.stable_vfp = 2,
-	},
-
-	.polarity = {
-		.rise_vclk = 1,
-		.inv_hsync = 0,
-		.inv_vsync = 0,
-		.inv_vden = 0,
-	},
-};
-#endif
-
-#ifdef CONFIG_FB_S5P_S6E63M0
-/* for Geminus based on MIPI-DSI interface */
-static struct s3cfb_lcd s6e63m0 = {
-	.name = "s6e63m0",
-	.width = 480,
-#if 1 /* Only for S6E63M0X03 DDI */
-	.height = 802,		/* Originally 800 (due to 2 Line in LCD below issue) */
-#else
-	.height = 800,
-#endif
-	.p_width = 60,		/* 59.76 mm */
-	.p_height = 106,	 /* 106.24 mm */
-	.bpp = 24,
-
-	.freq = 56,
-
-	/* minumun value is 0 except for wr_act time. */
-	.cpu_timing = {
-		.cs_setup = 0,
-		.wr_setup = 0,
-		.wr_act = 1,
-		.wr_hold = 0,
-	},
-
-	.timing = {
-		.h_fp = 16,
-		.h_bp = 14,
-		.h_sw = 2,
-		.v_fp = 28,
-		.v_fpe = 1,
-		.v_bp = 1,
-		.v_bpe = 1,
-		.v_sw = 2,
-		.cmd_allow_len = 11,	 /* v_fp=stable_vfp + cmd_allow_len */
-		.stable_vfp = 2,
-	},
-
-	.polarity = {
-		.rise_vclk = 1,
-		.inv_hsync = 0,
-		.inv_vsync = 0,
-		.inv_vden = 0,
-	},
-};
-#endif
-
-#ifdef CONFIG_FB_S5P_S6E39A0
-static struct s3cfb_lcd s6e39a0 = {
-	.name = "s6e8aa0",
-	.width = 540,
-	.height = 960,
-	.p_width = 58,
-	.p_height = 103,
-	.bpp = 24,
-
-	.freq = 60,
-
-	/* minumun value is 0 except for wr_act time. */
-	.cpu_timing = {
-		.cs_setup = 0,
-		.wr_setup = 0,
-		.wr_act = 1,
-		.wr_hold = 0,
-	},
-
-	.timing = {
-		.h_fp = 0x48,
-		.h_bp = 12,
-		.h_sw = 4,
-		.v_fp = 13,
-		.v_fpe = 1,
-		.v_bp = 1,
-		.v_bpe = 1,
-		.v_sw = 2,
-		.cmd_allow_len = 0x4,
-	},
-
-	.polarity = {
-		.rise_vclk = 1,
-		.inv_hsync = 0,
-		.inv_vsync = 0,
-		.inv_vden = 0,
-	},
-};
-#endif
-
-#ifdef CONFIG_FB_S5P_S6D6AA1
-/* for Geminus based on MIPI-DSI interface */
-static struct s3cfb_lcd s6d6aa1 = {
-	.name = "s6d6aa1",
-	.width = 720,
-	.height = 1280,
-	.p_width = 63,		/* 63.2 mm */
-	.p_height = 114,	/* 114.19 mm */
-	.bpp = 24,
-
-	.freq = 60,
-
-	/* minumun value is 0 except for wr_act time. */
-	.cpu_timing = {
-		.cs_setup = 0,
-		.wr_setup = 0,
-		.wr_act = 1,
-		.wr_hold = 0,
-	},
-
-	.timing = {
-		.h_fp = 50,
-		.h_bp = 15,
-		.h_sw = 3,
-		.v_fp = 3,
-		.v_fpe = 1,
-		.v_bp = 2,
-		.v_bpe = 1,
-		.v_sw = 2,
-		.cmd_allow_len = 11,	 /* v_fp=stable_vfp + cmd_allow_len */
-		.stable_vfp = 2,
-	},
-
-	.polarity = {
-		.rise_vclk = 1,
-		.inv_hsync = 0,
-		.inv_vsync = 0,
-		.inv_vden = 0,
-	},
-};
-#endif
-
-static int reset_lcd(void)
-{
-	int err;
-
-	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
-	if (err) {
-		printk(KERN_ERR "failed to request GPY4(5) for "
-			"lcd reset control\n");
-		return -EINVAL;
-	}
-
-	gpio_direction_output(GPIO_MLCD_RST, 1);
-	usleep_range(5000, 5000);
-	gpio_set_value(GPIO_MLCD_RST, 0);
-	usleep_range(5000, 5000);
-	gpio_set_value(GPIO_MLCD_RST, 1);
-	usleep_range(5000, 5000);
-	gpio_free(GPIO_MLCD_RST);
-	return 0;
-}
-
-static void lcd_cfg_gpio(void)
-{
-	/* MLCD_RST */
-	s3c_gpio_cfgpin(GPIO_MLCD_RST, S3C_GPIO_OUTPUT);
-	s3c_gpio_setpull(GPIO_MLCD_RST, S3C_GPIO_PULL_NONE);
-
-	/* LCD_EN */
-	s3c_gpio_cfgpin(GPIO_LCD_22V_EN_00, S3C_GPIO_OUTPUT);
-	s3c_gpio_setpull(GPIO_LCD_22V_EN_00, S3C_GPIO_PULL_NONE);
-
-	return;
-}
-
-static int lcd_power_on(void *ld, int enable)
-{
-	struct regulator *regulator;
-	int err;
-
-	printk(KERN_INFO "%s : enable=%d\n", __func__, enable);
-
-	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
-	if (err) {
-		printk(KERN_ERR "failed to request GPY4[5] for "
-			"MLCD_RST control\n");
-		return -EPERM;
-	}
-
-	err = gpio_request(GPIO_LCD_22V_EN_00, "LCD_EN");
-	if (err) {
-		printk(KERN_ERR "failed to request GPM4[4] for "
-			"LCD_2.2V_EN control\n");
-		return -EPERM;
-	}
-
-	if (enable) {
-		gpio_set_value(GPIO_LCD_22V_EN_00, GPIO_LEVEL_HIGH);
-
-		regulator = regulator_get(NULL, "vlcd_2.8v");
-		if (IS_ERR(regulator))
-			goto out;
-		regulator_enable(regulator);
-		regulator_put(regulator);
-	} else {
-		regulator = regulator_get(NULL, "vlcd_2.8v");
-		if (IS_ERR(regulator))
-			goto out;
-		if (regulator_is_enabled(regulator))
-			regulator_force_disable(regulator);
-		regulator_put(regulator);
-
-		gpio_set_value(GPIO_LCD_22V_EN_00, GPIO_LEVEL_LOW);
-		gpio_set_value(GPIO_MLCD_RST, 0);
-	}
-
-out:
-/* Release GPIO */
-	gpio_free(GPIO_MLCD_RST);
-	gpio_free(GPIO_LCD_22V_EN_00);
-return 0;
-}
-
-static void s5p_dsim_mipi_power_control(int enable)
-{
-	struct regulator *regulator;
-	int power_en = 0;
-
-	if (power_en == 1) {
-		printk(KERN_INFO "%s : enable=%d\n", __func__, enable);
-
-		if (enable) {
-				regulator = regulator_get(NULL, "vmipi_1.0v");
-			if (IS_ERR(regulator))
-				goto out;
-			regulator_enable(regulator);
-			regulator_put(regulator);
-
-			regulator = regulator_get(NULL, "vmipi_1.8v");
-			if (IS_ERR(regulator))
-				goto out;
-			regulator_enable(regulator);
-			regulator_put(regulator);
-		} else {
-			regulator = regulator_get(NULL, "vmipi_1.8v");
-			if (IS_ERR(regulator))
-				goto out;
-			if (regulator_is_enabled(regulator))
-				regulator_disable(regulator);
-			regulator_put(regulator);
-
-			regulator = regulator_get(NULL, "vmipi_1.0v");
-			if (IS_ERR(regulator))
-				goto out;
-			if (regulator_is_enabled(regulator))
-				regulator_disable(regulator);
-			regulator_put(regulator);
-		}
-out:
-	return ;
-	} else {
-		return ;
-	}
-}
-
-void __init mipi_fb_init(void)
-{
-	struct s5p_platform_dsim *dsim_pd = NULL;
-	struct mipi_ddi_platform_data *mipi_ddi_pd = NULL;
-	struct dsim_lcd_config *dsim_lcd_info = NULL;
-
-	/* set platform data */
-
-	/* gpio pad configuration for rgb and spi interface. */
-	lcd_cfg_gpio();
-
-	/*
-	* register lcd panel data.
-	*/
-	printk(KERN_INFO "%s :: fb_platform_data.hw_ver = 0x%x\n",
-		__func__, fb_platform_data.hw_ver);
-
-	dsim_pd = (struct s5p_platform_dsim *)
-		s5p_device_dsim.dev.platform_data;
-
-	dsim_pd->platform_rev = 1;
-	dsim_pd->mipi_power = s5p_dsim_mipi_power_control;
-
-	dsim_lcd_info = dsim_pd->dsim_lcd_info;
-
-#if defined(CONFIG_FB_S5P_S6E8AA0)
-	dsim_lcd_info->lcd_panel_info = (void *)&s6e8aa0;
-#endif
-#if defined(CONFIG_FB_S5P_S6D6AA1)
-	dsim_lcd_info->lcd_panel_info = (void *)&s6d6aa1;
-#endif
-
-#ifdef CONFIG_FB_S5P_S6E63M0
-	dsim_lcd_info->lcd_panel_info = (void *)&s6e63m0;
-	dsim_pd->dsim_info->e_no_data_lane = DSIM_DATA_LANE_2;
-	/* 320Mbps */
-	dsim_pd->dsim_info->p = 3;
-	dsim_pd->dsim_info->m = 80;
-	dsim_pd->dsim_info->s = 1;
-#else
-	/* 500Mbps */
-	dsim_pd->dsim_info->p = 3;
-	dsim_pd->dsim_info->m = 125;
-	dsim_pd->dsim_info->s = 1;
-#endif
-
-	mipi_ddi_pd = (struct mipi_ddi_platform_data *)
-	dsim_lcd_info->mipi_ddi_pd;
-	mipi_ddi_pd->lcd_reset = reset_lcd;
-	mipi_ddi_pd->lcd_power_on = lcd_power_on;
-#if defined(CONFIG_S5P_DSIM_SWITCHABLE_DUAL_LCD)
-	mipi_ddi_pd->lcd_sel_pin = GPIO_LCD_SEL;
-#endif	/* CONFIG_S5P_DSIM_SWITCHABLE_DUAL_LCD */
-	platform_device_register(&s5p_device_dsim);
-
-	/*s3cfb_set_platdata(&fb_platform_data);*/
-}
-#endif
 #endif
 
 struct s3c_platform_fb fb_platform_data __initdata = {
@@ -823,42 +447,25 @@ struct s3c_platform_fb fb_platform_data __initdata = {
 	.default_win	= 0,
 #endif
 	.swap		= FB_SWAP_HWORD | FB_SWAP_WORD,
-#if defined(CONFIG_FB_S5P_S6E8AA0)
-	.lcd		= &s6e8aa0
-#endif
-#if defined(CONFIG_FB_S5P_S6E63M0)
-	.lcd		= &s6e63m0
-#endif
-#if defined(CONFIG_FB_S5P_S6E39A0)
-	.lcd		= &s6e39a0
-#endif
-#if defined(CONFIG_FB_S5P_LD9040)
-	.lcd		= &ld9040_info
-#endif
-#if defined(CONFIG_FB_S5P_S6C1372)
-	.lcd		= &s6c1372
-#endif
-#if defined(CONFIG_FB_S5P_S6D6AA1)
-	.lcd		= &s6d6aa1
-#endif
+	.lcd		= &panel_data
 };
+#endif
 
 #ifdef CONFIG_FB_S5P_MDNIE
 static struct platform_mdnie_data mdnie_data = {
-	.display_type	= -1,
+	.display_type	= 0,
 #if defined(CONFIG_FB_S5P_S6C1372)
-	.lcd_pd		= &s6c1372_platform_data,
+	.lcd_pd		= &panel_platform_data,
 #endif
 };
-#endif
 
 struct platform_device mdnie_device = {
 		.name		 = "mdnie",
 		.id	 = -1,
 		.dev		 = {
 			.parent = &exynos4_device_pd[PD_LCD0].dev,
-#ifdef CONFIG_FB_S5P_MDNIE
 			.platform_data = &mdnie_data,
-#endif
 	},
 };
+#endif
+
