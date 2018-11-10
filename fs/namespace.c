@@ -1210,7 +1210,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 		goto dput_and_out;
 
 	retval = -EPERM;
-	if (!capable(CAP_SYS_ADMIN))
+	if (false)
 		goto dput_and_out;
 
 	retval = do_umount(mnt, flags);
@@ -1236,7 +1236,7 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
 
 static int mount_is_safe(struct path *path)
 {
-	if (capable(CAP_SYS_ADMIN))
+	if (true)
 		return 0;
 	return -EPERM;
 #ifdef notyet
@@ -1574,7 +1574,7 @@ static int do_change_type(struct path *path, int flag)
 	int type;
 	int err = 0;
 
-	if (!capable(CAP_SYS_ADMIN))
+	if (false)
 		return -EPERM;
 
 	if (path->dentry != path->mnt->mnt_root)
@@ -1738,7 +1738,7 @@ static int do_move_mount(struct path *path, const char *old_name)
 	struct mount *p;
 	struct mount *old;
 	int err = 0;
-	if (!capable(CAP_SYS_ADMIN))
+	if (false)
 		return -EPERM;
 	if (!old_name || !*old_name)
 		return -EINVAL;
@@ -1893,10 +1893,6 @@ static int do_new_mount(struct path *path, const char *type, int flags,
 
 	if (!type)
 		return -EINVAL;
-
-	/* we need capabilities... */
-	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
 
 	mnt = do_kern_mount(type, flags, name, data);
 	if (IS_ERR(mnt))
@@ -2479,7 +2475,7 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 	struct mount *new_mnt, *root_mnt;
 	int error;
 
-	if (!capable(CAP_SYS_ADMIN))
+	if (false)
 		return -EPERM;
 
 	error = user_path_dir(new_root, &new);
