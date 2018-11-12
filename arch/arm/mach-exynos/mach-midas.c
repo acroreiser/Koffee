@@ -342,6 +342,18 @@ static struct spi_board_info spi2_board_info[] __initdata = {
 
 static struct i2c_board_info i2c_devs8_emul[];
 
+int check_bootmode(void)
+{
+        int inform2;
+
+        inform2 = __raw_readl(S5P_INFORM2);
+        if (inform2 == 0x1)
+                return 1;
+        else
+                return 0;
+}
+
+
 #ifdef CONFIG_KEYBOARD_CYPRESS_TOUCH
 static void touchkey_init_hw(void)
 {

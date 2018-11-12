@@ -43,11 +43,6 @@ static DECLARE_WORK(sync_system_work, sync_system);
 static DECLARE_WORK(early_suspend_work, early_suspend);
 static DECLARE_WORK(late_resume_work, late_resume);
 static DEFINE_SPINLOCK(state_lock);
-enum {
-	SUSPEND_REQUESTED = 0x1,
-	SUSPENDED = 0x2,
-	SUSPEND_REQUESTED_AND_SUSPENDED = SUSPEND_REQUESTED | SUSPENDED,
-};
 static int state;
 
 static void sync_system(struct work_struct *work)
