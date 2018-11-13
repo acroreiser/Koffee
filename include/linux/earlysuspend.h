@@ -20,9 +20,6 @@
 #include <linux/list.h>
 #endif
 
-//#include <include/linux/suspend.h>
-typedef int __bitwise suspend_state_t;
-
 /* The early_suspend structure defines suspend and resume hooks to be called
  * when the user visible sleep state of the system changes, and a level to
  * control the order. They can be used to turn off the screen and input
@@ -38,7 +35,6 @@ enum {
 	EARLY_SUSPEND_LEVEL_STOP_DRAWING = 100,
 	EARLY_SUSPEND_LEVEL_DISABLE_FB = 150,
 };
-
 struct early_suspend {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct list_head link;
@@ -47,14 +43,6 @@ struct early_suspend {
 	void (*resume)(struct early_suspend *h);
 #endif
 };
-
-enum {
-	SUSPEND_REQUESTED = 0x1,
-	SUSPENDED = 0x2,
-	SUSPEND_REQUESTED_AND_SUSPENDED = SUSPEND_REQUESTED | SUSPENDED,
-};
-
-suspend_state_t get_suspend_state(void);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 void register_early_suspend(struct early_suspend *handler);
