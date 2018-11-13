@@ -63,7 +63,7 @@
 #endif
 
 #if defined(CONFIG_SENSORS_K330)
-static u8 stm_get_position(void);
+static int stm_get_position(void);
 static bool gyro_en;
 
 static struct accel_platform_data accel_pdata = {
@@ -81,7 +81,7 @@ static struct gyro_platform_data gyro_pdata = {
 
 #if defined(CONFIG_SENSORS_LSM330DLC) ||\
 	defined(CONFIG_SENSORS_K3DH)
-static u8 stm_get_position(void);
+static int stm_get_position(void);
 
 static struct accel_platform_data accel_pdata = {
 	.accel_get_position = stm_get_position,
@@ -269,7 +269,7 @@ static void ssp_get_positions(int *acc, int *mag)
 #endif
 
 #if defined(CONFIG_SENSORS_K330)
-static u8 stm_get_position(void)
+static int stm_get_position(void)
 {
 	u8 position;
 
@@ -284,7 +284,7 @@ static u8 stm_get_position(void)
 
 #if defined(CONFIG_SENSORS_LSM330DLC) || \
 	defined(CONFIG_SENSORS_K3DH)
-static u8 stm_get_position(void)
+static int stm_get_position(void)
 {
 	int position = 0;
 
