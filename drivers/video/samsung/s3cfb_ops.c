@@ -1096,7 +1096,7 @@ int s3cfb_blank(int blank_mode, struct fb_info *fb)
 	return 0;
 }
 
-extern int check_bootmode(void);
+extern unsigned int lpcharge;
 extern int s6e8ax0_suspended;
 extern int s6e8ax0_fix_fence;
 
@@ -1121,7 +1121,7 @@ int s3cfb_pan_display(struct fb_var_screeninfo *var, struct fb_info *fb)
 #ifdef DEBUG
 	pr_err("[FB] s6e8ax0_fix_fence = %d", s6e8ax0_fix_fence);
 #endif
-	if (s6e8ax0_fix_fence || check_bootmode()) {
+	if (s6e8ax0_fix_fence || lpcharge) {
 		/* support LPM (off charging mode) display based on FBIOPAN_DISPLAY */
 		s3cfb_check_var(var, fb);
 		s3cfb_set_par(fb);

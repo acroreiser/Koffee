@@ -342,6 +342,8 @@ static struct spi_board_info spi2_board_info[] __initdata = {
 
 static struct i2c_board_info i2c_devs8_emul[];
 
+unsigned int lpcharge;
+
 int check_bootmode(void)
 {
         int inform2;
@@ -352,7 +354,6 @@ int check_bootmode(void)
         else
                 return 0;
 }
-
 
 #ifdef CONFIG_KEYBOARD_CYPRESS_TOUCH
 static void touchkey_init_hw(void)
@@ -3564,6 +3565,8 @@ static void __init midas_machine_init(void)
 #endif
 	__raw_writel((__raw_readl(EXYNOS4_CLKDIV_FSYS1) & 0xfff0fff0)
 		     | 0x80008, EXYNOS4_CLKDIV_FSYS1);
+
+	lpcharge = check_bootmode();
 }
 
 #ifdef CONFIG_EXYNOS_C2C
