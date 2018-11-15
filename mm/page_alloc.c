@@ -147,11 +147,25 @@ void pm_restrict_gfp_mask(void)
 	gfp_allowed_mask &= ~GFP_IOFS;
 }
 
+static bool pm_suspending(void)
+{
+	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
+		return false;
+	return true;
+}
+
 bool pm_suspended_storage(void)
 {
 	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
 		return false;
 	return true;
+}
+
+#else
+
+static bool pm_suspending(void)
+{
+	return false;
 }
 #endif /* CONFIG_PM_SLEEP */
 
