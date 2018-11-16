@@ -60,7 +60,6 @@ struct clksrc_clk {
 	struct clksrc_sources	*sources;
 
 	struct clksrc_reg	reg_src;
-	struct clksrc_reg	reg_src_stat;
 	struct clksrc_reg	reg_div;
 };
 

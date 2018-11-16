@@ -18,7 +18,6 @@
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/io.h>
-#include <linux/spinlock.h>
 
 #include <mach/hardware.h>
 #include <mach/map.h>
@@ -28,7 +27,7 @@
 #include <plat/cpu.h>
 
 #include <plat/regs-timer.h>
-#include <plat/pwm-clock.h>
+#include <mach/pwm-clock.h>
 
 /* Each of the timers 0 through 5 go through the following
  * clock tree, with the inputs depending on the timers.
@@ -75,7 +74,6 @@
 */
 
 static struct clk clk_timer_scaler[];
-static spinlock_t pwm_clock_spinlock;
 
 static unsigned long clk_pwm_scaler_get_rate(struct clk *clk)
 {
@@ -115,7 +113,7 @@ static int clk_pwm_scaler_set_rate(struct clk *clk, unsigned long rate)
 	divisor = clk_get_rate(clk->parent) / round;
 	divisor--;
 
-	spin_lock_irqsave(&pwm_clock_spinlock, flags);
+	local_irq_save(flags);
 	tcfg0 = __raw_readl(S3C2410_TCFG0);
 
 	if (clk == &clk_timer_scaler[1]) {
@@ -127,7 +125,7 @@ static int clk_pwm_scaler_set_rate(struct clk *clk, unsigned long rate)
 	}
 
 	__raw_writel(tcfg0, S3C2410_TCFG0);
-	spin_unlock_irqrestore(&pwm_clock_spinlock, flags);
+	local_irq_restore(flags);
 
 	return 0;
 }
@@ -216,24 +214,21 @@ static unsigned long clk_pwm_tdiv_bits(struct pwm_tdiv_clk *divclk)
 	return pwm_tdiv_div_bits(divclk->divisor);
 }
 
-static void clk_pwm_tdiv_update(struct pwm_tdiv_clk *divclk, unsigned long div)
+static void clk_pwm_tdiv_update(struct pwm_tdiv_clk *divclk)
 {
-	unsigned long tcfg1;
-	unsigned long bits;
+	unsigned long tcfg1 = __raw_readl(S3C2410_TCFG1);
+	unsigned long bits = clk_pwm_tdiv_bits(divclk);
 	unsigned long flags;
 	unsigned long shift =  S3C2410_TCFG1_SHIFT(divclk->clk.id);
 
-	spin_lock_irqsave(&pwm_clock_spinlock, flags);
-
-	divclk->divisor = div;
-	bits = clk_pwm_tdiv_bits(divclk);
+	local_irq_save(flags);
 
 	tcfg1 = __raw_readl(S3C2410_TCFG1);
 	tcfg1 &= ~(S3C2410_TCFG1_MUX_MASK << shift);
 	tcfg1 |= bits << shift;
 	__raw_writel(tcfg1, S3C2410_TCFG1);
 
-	spin_unlock_irqrestore(&pwm_clock_spinlock, flags);
+	local_irq_restore(flags);
 }
 
 static int clk_pwm_tdiv_set_rate(struct clk *clk, unsigned long rate)
@@ -252,11 +247,13 @@ static int clk_pwm_tdiv_set_rate(struct clk *clk, unsigned long rate)
 	if (divisor > 16)
 		return -EINVAL;
 
+	divclk->divisor = divisor;
+
 	/* Update the current MUX settings if we are currently
 	 * selected as the clock source for this clock. */
 
 	if (!pwm_cfg_src_is_tclk(tcfg1))
-		clk_pwm_tdiv_update(divclk, divisor);
+		clk_pwm_tdiv_update(divclk);
 
 	return 0;
 }
@@ -271,7 +268,6 @@ static struct pwm_tdiv_clk clk_timer_tdiv[] = {
 	[0]	= {
 		.clk	= {
 			.name	= "pwm-tdiv",
-			.devname	= "s3c24xx-pwm.0",
 			.ops	= &clk_tdiv_ops,
 			.parent	= &clk_timer_scaler[0],
 		},
@@ -279,7 +275,6 @@ static struct pwm_tdiv_clk clk_timer_tdiv[] = {
 	[1]	= {
 		.clk	= {
 			.name	= "pwm-tdiv",
-			.devname	= "s3c24xx-pwm.1",
 			.ops	= &clk_tdiv_ops,
 			.parent	= &clk_timer_scaler[0],
 		}
@@ -287,7 +282,6 @@ static struct pwm_tdiv_clk clk_timer_tdiv[] = {
 	[2]	= {
 		.clk	= {
 			.name	= "pwm-tdiv",
-			.devname	= "s3c24xx-pwm.2",
 			.ops	= &clk_tdiv_ops,
 			.parent	= &clk_timer_scaler[1],
 		},
@@ -295,7 +289,6 @@ static struct pwm_tdiv_clk clk_timer_tdiv[] = {
 	[3]	= {
 		.clk	= {
 			.name	= "pwm-tdiv",
-			.devname	= "s3c24xx-pwm.3",
 			.ops	= &clk_tdiv_ops,
 			.parent	= &clk_timer_scaler[1],
 		},
@@ -303,7 +296,6 @@ static struct pwm_tdiv_clk clk_timer_tdiv[] = {
 	[4]	= {
 		.clk	= {
 			.name	= "pwm-tdiv",
-			.devname	= "s3c24xx-pwm.4",
 			.ops	= &clk_tdiv_ops,
 			.parent	= &clk_timer_scaler[1],
 		},
@@ -342,31 +334,22 @@ static int clk_pwm_tin_set_parent(struct clk *clk, struct clk *parent)
 	unsigned long bits;
 	unsigned long shift = S3C2410_TCFG1_SHIFT(id);
 
-	unsigned long mux_tclk;
-
-	if (soc_is_s3c24xx())
-		mux_tclk = S3C2410_TCFG1_MUX_TCLK;
-	else if (soc_is_s5p6440() || soc_is_s5p6450())
-		mux_tclk = 0;
-	else
-		mux_tclk = S3C64XX_TCFG1_MUX_TCLK;
-
 	if (parent == s3c24xx_pwmclk_tclk(id))
-		bits = mux_tclk << shift;
+		bits = S3C_TCFG1_MUX_TCLK << shift;
 	else if (parent == s3c24xx_pwmclk_tdiv(id))
 		bits = clk_pwm_tdiv_bits(to_tdiv(parent)) << shift;
 	else
 		return -EINVAL;
 
-	spin_lock_irqsave(&pwm_clock_spinlock, flags);
-
 	clk->parent = parent;
+
+	local_irq_save(flags);
 
 	tcfg1 = __raw_readl(S3C2410_TCFG1);
 	tcfg1 &= ~(S3C2410_TCFG1_MUX_MASK << shift);
 	__raw_writel(tcfg1 | bits, S3C2410_TCFG1);
 
-	spin_unlock_irqrestore(&pwm_clock_spinlock, flags);
+	local_irq_restore(flags);
 
 	return 0;
 }
@@ -378,31 +361,26 @@ static struct clk_ops clk_tin_ops = {
 static struct clk clk_tin[] = {
 	[0]	= {
 		.name	= "pwm-tin",
-		.devname	= "s3c24xx-pwm.0",
 		.id	= 0,
 		.ops	= &clk_tin_ops,
 	},
 	[1]	= {
 		.name	= "pwm-tin",
-		.devname	= "s3c24xx-pwm.1",
 		.id	= 1,
 		.ops	= &clk_tin_ops,
 	},
 	[2]	= {
 		.name	= "pwm-tin",
-		.devname	= "s3c24xx-pwm.2",
 		.id	= 2,
 		.ops	= &clk_tin_ops,
 	},
 	[3]	= {
 		.name	= "pwm-tin",
-		.devname	= "s3c24xx-pwm.3",
 		.id	= 3,
 		.ops	= &clk_tin_ops,
 	},
 	[4]	= {
 		.name	= "pwm-tin",
-		.devname	= "s3c24xx-pwm.4",
 		.id	= 4,
 		.ops	= &clk_tin_ops,
 	},
@@ -445,8 +423,6 @@ __init void s3c_pwmclk_init(void)
 	struct clk *clk_timers;
 	unsigned int clk;
 	int ret;
-
-	spin_lock_init(&pwm_clock_spinlock);
 
 	clk_timers = clk_get(NULL, "timers");
 	if (IS_ERR(clk_timers)) {
