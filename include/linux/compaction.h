@@ -25,6 +25,10 @@ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
 			bool sync);
 extern int compact_pgdat(pg_data_t *pgdat, int order);
 extern unsigned long compaction_suitable(struct zone *zone, int order);
+#ifndef CONFIG_DMA_CMA
+extern unsigned long compact_zone_order(struct zone *zone, int order,
+					gfp_t gfp_mask, bool sync);
+#endif
 
 /* Do not skip compaction more than 64 times */
 #define COMPACT_MAX_DEFER_SHIFT 6

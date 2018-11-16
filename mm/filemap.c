@@ -769,23 +769,12 @@ struct page *find_or_create_page(struct address_space *mapping,
 {
 	struct page *page;
 	int err;
-	gfp_t gfp_notmask = 0;
-
 repeat:
 	page = find_lock_page(mapping, index);
 	if (!page) {
-retry:
-		page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
+		page = __page_cache_alloc(gfp_mask);
 		if (!page)
 			return NULL;
-
-		if (is_cma_pageblock(page)) {
-			__free_page(page);
-			gfp_notmask |= __GFP_MOVABLE;
-			goto retry;
-		}
-
-
 		/*
 		 * We want a regular kernel memory (not highmem or DMA etc)
 		 * allocation for the radix tree nodes, but we need to honour
@@ -2354,17 +2343,9 @@ repeat:
 	if (page)
 		goto found;
 
-retry:
 	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
 	if (!page)
 		return NULL;
-
-	if (is_cma_pageblock(page)) {
-		__free_page(page);
-		gfp_notmask |= __GFP_MOVABLE;
-		goto retry;
-	}
-
 	status = add_to_page_cache_lru(page, mapping, index,
 						GFP_KERNEL & ~gfp_notmask);
 	if (unlikely(status)) {
@@ -2547,7 +2528,9 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 	if (err)
 		goto out;
 
-	file_update_time(file);
+	err = file_update_time(file);
+	if (err)
+		goto out;
 
 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
 	if (unlikely(file->f_flags & O_DIRECT)) {

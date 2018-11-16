@@ -1287,6 +1287,10 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
 	vm->size = va->va_end - va->va_start;
 	vm->caller = caller;
 	va->vm = vm;
+#ifdef CONFIG_DEBUG_VMALLOC
+	vm->pid = current->pid;
+	vm->task_name = current->comm;
+#endif
 	va->flags |= VM_VM_AREA;
 }
 
@@ -1591,6 +1595,10 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
 	}
 	area->pages = pages;
 	area->caller = caller;
+#ifdef CONFIG_DEBUG_VMALLOC
+	area->pid = current->pid;
+	area->task_name = current->comm;
+#endif
 	if (!area->pages) {
 		remove_vm_area(area->addr);
 		kfree(area);
@@ -1648,14 +1656,9 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
 	struct vm_struct *area;
 	void *addr;
 	unsigned long real_size = size;
-#ifdef CONFIG_FIX_MOVABLE_ZONE
-	unsigned long total_pages = total_unmovable_pages;
-#else
-	unsigned long total_pages = totalram_pages;
-#endif
 
 	size = PAGE_ALIGN(size);
-	if (!size || (size >> PAGE_SHIFT) > total_pages)
+	if (!size || (size >> PAGE_SHIFT) > totalram_pages)
 		goto fail;
 
 	area = __get_vm_area_node(size, align, VM_ALLOC | VM_UNLIST,
@@ -2216,14 +2219,6 @@ struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
 		return NULL;
 	}
 
-	/*
-	 * If the allocated address space is passed to a hypercall
-	 * before being used then we cannot rely on a page fault to
-	 * trigger an update of the page tables.  So sync all the page
-	 * tables here.
-	 */
-	vmalloc_sync_all();
-
 	return area;
 }
 EXPORT_SYMBOL_GPL(alloc_vm_area);
@@ -2599,6 +2594,14 @@ static int s_show(struct seq_file *m, void *p)
 
 	if (v->flags & VM_VPAGES)
 		seq_printf(m, " vpages");
+
+#ifdef CONFIG_DEBUG_VMALLOC
+	if (v->pid)
+		seq_printf(m, " pid=%d", v->pid);
+
+	if (v->task_name)
+		seq_printf(m, " task name=%s", v->task_name);
+#endif
 
 	show_numa_info(m, v);
 	seq_putc(m, '\n');

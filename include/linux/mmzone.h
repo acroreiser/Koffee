@@ -35,13 +35,23 @@
  */
 #define PAGE_ALLOC_COSTLY_ORDER 3
 
+#ifndef CONFIG_DMA_CMA
+
+#define MIGRATE_UNMOVABLE     0
+#define MIGRATE_RECLAIMABLE   1
+#define MIGRATE_MOVABLE       2
+#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
+#define MIGRATE_RESERVE       3
+#define MIGRATE_ISOLATE       4 /* can't allocate from here */
+#define MIGRATE_TYPES         5
+
+#else
 enum {
 	MIGRATE_UNMOVABLE,
 	MIGRATE_RECLAIMABLE,
 	MIGRATE_MOVABLE,
-	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
+	MIGRATE_PCPTYPES,   /* the number of types on the pcp lists */
 	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
-#ifdef CONFIG_CMA
 	/*
 	 * MIGRATE_CMA migration type is designed to mimic the way
 	 * ZONE_MOVABLE works.  Only movable pages can be allocated
@@ -56,25 +66,14 @@ enum {
 	 * a single pageblock.
 	 */
 	MIGRATE_CMA,
-#endif
-	MIGRATE_ISOLATE,	/* can't allocate from here */
+	MIGRATE_ISOLATE,    /* can't allocate from here */
 	MIGRATE_TYPES
 };
 
-/*
- * Returns a list which contains the migrate types on to which
- * an allocation falls back when the free list for the migrate
- * type mtype is depleted.
- * The end of the list is delimited by the type MIGRATE_RESERVE.
- */
-extern int *get_migratetype_fallbacks(int mtype);
-
-#ifdef CONFIG_CMA
 bool is_cma_pageblock(struct page *page);
-#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-#else
-#  define is_cma_pageblock(page) false
-#  define is_migrate_cma(migratetype) false
+#define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
+#define cma_wmark_pages(zone) (zone->min_cma_pages)
+
 #endif
 
 #define for_each_migratetype_order(order, type) \
@@ -150,7 +149,9 @@ enum zone_stat_item {
 	NUMA_OTHER,		/* allocation from other node */
 #endif
 	NR_ANON_TRANSPARENT_HUGEPAGES,
+#ifdef CONFIG_DMA_CMA
 	NR_FREE_CMA_PAGES,
+#endif
 	NR_VM_ZONE_STAT_ITEMS };
 
 /*
@@ -377,20 +378,18 @@ struct zone {
 	 * free areas of different sizes
 	 */
 	spinlock_t		lock;
-#if defined CONFIG_COMPACTION || defined CONFIG_CMA
-	/* Set to true when the PG_migrate_skip bits should be cleared */
-	bool			compact_blockskip_flush;
-
-	/* pfns where compaction scanners should start */
-	unsigned long		compact_cached_free_pfn;
-	unsigned long		compact_cached_migrate_pfn;
-#endif
+	int                     all_unreclaimable; /* All pages pinned */
 #ifdef CONFIG_MEMORY_HOTPLUG
 	/* see spanned/present_pages for more description */
 	seqlock_t		span_seqlock;
 #endif
-#ifdef CONFIG_CMA
-	bool			cma_alloc;
+#ifdef CONFIG_DMA_CMA
+	/*
+	 * CMA needs to increase watermark levels during the allocation
+	 * process to make sure that the system is not starved.
+	 */
+	unsigned long       min_cma_pages;
+	bool                cma_alloc;
 #endif
 	struct free_area	free_area[MAX_ORDER];
 
@@ -528,12 +527,6 @@ static inline int zone_is_oom_locked(const struct zone *zone)
 {
 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
 }
-
-#ifdef CONFIG_SMP
-unsigned long zone_nr_free_pages(struct zone *zone);
-#else
-#define zone_nr_free_pages(zone) zone_page_state(zone, NR_FREE_PAGES)
-#endif /* CONFIG_SMP */
 
 /*
  * The "priority" of VM scanning is how much of the queues we will scan in one
@@ -1170,10 +1163,7 @@ static inline int pfn_present(unsigned long pfn)
 #define pfn_to_nid(pfn)		(0)
 #endif
 
-#ifndef early_pfn_valid
 #define early_pfn_valid(pfn)	pfn_valid(pfn)
-#endif
-
 void sparse_init(void);
 #else
 #define sparse_init()	do {} while (0)
