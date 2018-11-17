@@ -149,7 +149,7 @@ static struct dbs_tuners {
 } dbs_tuners_ins = {
 	.input_boost_freq = 400000,
 	.input_boost_us = 100*1000,
-	.power_optimal_freq = 800000,
+	.power_optimal_freq = 1200000,
 	.high_freq_sampling_up_factor = 2,
 
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
@@ -162,7 +162,7 @@ static struct dbs_tuners {
 	.sampling_rate = 2*HZ/100,
 	.sampling_down_factor = 2,
 	.sampling_down_factor_relax_khz = 400000,
-	.max_non_oc_freq = 1000000,
+	.max_non_oc_freq = 1400000,
 	.oc_freq_boost_ms = 1500,
 
 	.standby_sampling_rate = 3*HZ/100,
