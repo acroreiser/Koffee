@@ -333,3 +333,8 @@ static inline void pm_autosleep_unlock(void) {}
 static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
 
 #endif /* !CONFIG_PM_AUTOSLEEP */
+
+/* Yank555.lu - Make current max limit available globally */
+int get_cpufreq_level(unsigned int freq, unsigned int *level);
+extern int cpufreq_max_limit_val;
+extern int cpufreq_max_limit_coupled;
