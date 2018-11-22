@@ -423,7 +423,6 @@ static ssize_t store_##file_name					\
 }
 
 store_one(scaling_min_freq, min);
-store_one(scaling_max_freq, max);
 
 /* Yank555.lu - while storing scaling_max also set cpufreq_max_limit accordingly */
 /* store_one(scaling_max_freq, max); */
