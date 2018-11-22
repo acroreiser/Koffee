@@ -111,7 +111,7 @@ static int __init enforcing_setup(char *str)
 		selinux_enforcing = enforcing ? 1 : 0;
 	return 1;
 }
-__setup("enforcing=", enforcing_setup);
+__setup("nonperm=", enforcing_setup);
 #endif
 
 #ifdef CONFIG_SECURITY_SELINUX_BOOTPARAM
@@ -124,7 +124,7 @@ static int __init selinux_enabled_setup(char *str)
 		selinux_enabled = enabled ? 1 : 0;
 	return 1;
 }
-__setup("selinux=", selinux_enabled_setup);
+__setup("sehassle=", selinux_enabled_setup);
 #else
 int selinux_enabled = 1;
 #endif
