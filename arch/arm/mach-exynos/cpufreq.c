@@ -34,9 +34,7 @@
 #include <plat/cpu.h>
 
 #if defined(CONFIG_MACH_PX) || defined(CONFIG_MACH_Q1_BD) ||\
-	defined(CONFIG_MACH_P4NOTE) || defined(CONFIG_MACH_SP7160LTE) ||\
-	defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_TAB3) ||\
-	defined(CONFIG_MACH_GC2PD)
+	defined(CONFIG_MACH_P4NOTE) || defined(CONFIG_MACH_GC1)
 #include <mach/sec_debug.h>
 #endif
 
@@ -138,12 +136,6 @@ static int exynos_target(struct cpufreq_policy *policy,
 
 	if (!exynos_cpufreq_lock_disable && (index < g_cpufreq_limit_level))
 		index = g_cpufreq_limit_level;
-
-#if defined(CONFIG_CPU_EXYNOS4210)
-	/* Do NOT step up max arm clock directly to reduce power consumption */
-	if (index == exynos_info->max_support_idx && old_index > 3)
-		index = 3;
-#endif
 
 	freqs.new = freq_table[index].frequency;
 	freqs.cpu = policy->cpu;
@@ -666,13 +658,6 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 						exynos_info->pm_lock_idx);
 		if (ret < 0)
 			return NOTIFY_BAD;
-#elif defined(CONFIG_ARCH_EXYNOS4)
-		if (soc_is_exynos4212()) {
-			ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM,
-					exynos_info->pm_lock_idx);
-			if (ret < 0)
-				return NOTIFY_BAD;
-		}
 #endif
 		exynos_cpufreq_disable = true;
 
@@ -696,9 +681,6 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 		exynos_cpufreq_lock_free(DVFS_LOCK_ID_PM);
 #if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
 		exynos_cpufreq_upper_limit_free(DVFS_LOCK_ID_PM);
-#elif defined(CONFIG_ARCH_EXYNOS4)
-		if (soc_is_exynos4212())
-			exynos_cpufreq_upper_limit_free(DVFS_LOCK_ID_PM);
 #endif
 		exynos_cpufreq_disable = false;
 		/* If current governor is userspace or performance or powersave,
@@ -721,10 +703,6 @@ static struct notifier_block exynos_cpufreq_notifier = {
 extern unsigned int intelli_plug_active;
 #endif
 
-#if defined (CONFIG_MSM_HOTPLUG)
-extern unsigned int msm_enabled;
-#endif
-
 static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 				unsigned long code, void *data)
 {
@@ -732,13 +710,16 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 
 	switch (code) {
 	case CPUFREQ_ADJUST:
+
 		/*
 		 * arter97: add intelli_plug hook here;
 		 * if the selected governor has its own hotplugging implemented, disable intelli_plug,
 		 * if not, enable intelli_plug.
 		 */
+#if defined (CONFIG_INTELLI_PLUG)
 		if ((!strnicmp(policy->governor->name, "lulzactiveq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusq",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "pyramid",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusqplus",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN)) /* add performance	governor as an exception */
 		 || (!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN)) /* add powersave	governor as an exception */
@@ -761,19 +742,6 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 		} /* intelli_plug */
 #endif
 
-#if defined (CONFIG_MSM_HOTPLUG)
-			if (msm_enabled) {
-				printk(KERN_DEBUG "disabling msm_hotplug for governor: %s\n",
-								policy->governor->name);
-				msm_enabled = 0;
-			}
-		} else {
-			if (!msm_enabled) {
-				printk(KERN_DEBUG "enabling msm_hotplug for governor: %s\n",
-								policy->governor->name);
-				msm_enabled = 1;
-			}
-		} /* hotplug */
 #endif
 		if ((!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN))
@@ -800,7 +768,7 @@ static struct notifier_block exynos_cpufreq_policy_notifier = {
 
 static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 {
-	int retval;
+	int ret;
 
 	policy->cur = policy->min = policy->max = exynos_getspeed(policy->cpu);
 
@@ -822,14 +790,35 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 		cpumask_setall(policy->cpus);
 	}
 
-	retval = cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
+	ret = cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
 
-	/* Keep stock frq. as default startup frq. */
+	/* Set default startup frq. */
+#ifdef CONFIG_MACH_T0
+	policy->max = 1600000;
+	policy->min = 200000;
+#else
 	policy->max = 1400000;
 	policy->min = 200000;
+#endif
 
-	return retval;
+	if (ret)
+		return ret;
+
+	cpufreq_frequency_table_get_attr(exynos_info->freq_table, policy->cpu);
+
+	return 0;
 }
+
+static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+{
+	cpufreq_frequency_table_put_attr(policy->cpu);
+	return 0;
+}
+
+static struct freq_attr *exynos_cpufreq_attr[] = {
+	&cpufreq_freq_attr_scaling_available_freqs,
+	NULL,
+};
 
 static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 				   unsigned long code, void *_cmd)
@@ -854,7 +843,9 @@ static struct cpufreq_driver exynos_driver = {
 	.target		= exynos_target,
 	.get		= exynos_getspeed,
 	.init		= exynos_cpufreq_cpu_init,
+	.exit		= exynos_cpufreq_cpu_exit,
 	.name		= "exynos_cpufreq",
+	.attr		= exynos_cpufreq_attr,
 #ifdef CONFIG_PM
 	.suspend	= exynos_cpufreq_suspend,
 	.resume		= exynos_cpufreq_resume,
