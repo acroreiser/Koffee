@@ -58,7 +58,9 @@
 #include <linux/cma.h>
 #endif
 
+#include <asm/io.h>
 #include <asm/mach/arch.h>
+#include <asm/hardware/gic.h>
 #include <asm/mach-types.h>
 
 #include <video/platform_lcd.h>
@@ -7746,9 +7748,10 @@ static void __init exynos_init_reserve(void)
 
 MACHINE_START(SMDKC210, "SMDK4210")
 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
-	.boot_params	= S5P_PA_SDRAM + 0x100,
+        .atag_offset	= S5P_PA_SDRAM + 0x100,
 	.init_irq	= exynos4_init_irq,
 	.map_io		= smdkc210_map_io,
+	.handle_irq	= gic_handle_irq,
 	.init_machine	= smdkc210_machine_init,
 	.timer		= &exynos4_timer,
 	.init_early	= &exynos_init_reserve,

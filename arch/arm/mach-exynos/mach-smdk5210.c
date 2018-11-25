@@ -27,7 +27,9 @@
 #include <linux/smsc911x.h>
 #include <linux/clk.h>
 
+#include <asm/io.h>
 #include <asm/mach/arch.h>
+#include <asm/hardware/gic.h>
 #include <asm/mach-types.h>
 
 #include <plat/gpio-cfg.h>
@@ -1151,7 +1153,8 @@ static void __init smdk5210_machine_init(void)
 }
 
 MACHINE_START(SMDK5210, "SMDK5210")
-	.boot_params	= S5P_PA_SDRAM + 0x100,
+        .atag_offset	= S5P_PA_SDRAM + 0x100,
+	.handle_irq	= gic_handle_irq,
 	.init_irq	= exynos5_init_irq,
 	.map_io		= smdk5210_map_io,
 	.init_machine	= smdk5210_machine_init,

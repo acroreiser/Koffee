@@ -21,6 +21,7 @@
 #include <linux/mfd/max8997.h>
 #include <linux/lcd.h>
 
+#include <asm/io.h>
 #include <asm/mach/arch.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach-types.h>

@@ -15,6 +15,7 @@
 #include <linux/serial_core.h>
 #include <linux/smsc911x.h>
 
+#include <asm/io.h>
 #include <asm/mach/arch.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach-types.h>
@@ -207,7 +208,7 @@ static void __init armlex4210_machine_init(void)
 
 MACHINE_START(ARMLEX4210, "ARMLEX4210")
 	/* Maintainer: Alim Akhtar <alim.akhtar@samsung.com> */
-	.boot_params	= S5P_PA_SDRAM + 0x100,
+        .atag_offset	= S5P_PA_SDRAM + 0x100,
 	.init_irq	= exynos4_init_irq,
 	.map_io		= armlex4210_map_io,
 	.handle_irq	= gic_handle_irq,

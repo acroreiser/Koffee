@@ -56,7 +56,9 @@
 #include <linux/delay.h>
 #include <linux/bootmem.h>
 
+#include <asm/io.h>
 #include <asm/mach/arch.h>
+#include <asm/hardware/gic.h>
 #include <asm/mach-types.h>
 
 #include <plat/regs-serial.h>
@@ -2800,7 +2802,7 @@ static void __init exynos_init_reserve(void)
 }
 
 MACHINE_START(SMDK4412, "SMDK4x12")
-	.boot_params	= S5P_PA_SDRAM + 0x100,
+        .atag_offset	= S5P_PA_SDRAM + 0x100,
 	.init_irq	= exynos4_init_irq,
 	.map_io		= midas_map_io,
 	.init_machine	= midas_machine_init,
@@ -2812,9 +2814,10 @@ MACHINE_START(SMDK4412, "SMDK4x12")
 MACHINE_END
 
 MACHINE_START(SMDK4212, "SMDK4x12")
-	.boot_params	= S5P_PA_SDRAM + 0x100,
+        .atag_offset	= S5P_PA_SDRAM + 0x100,
 	.init_irq	= exynos4_init_irq,
 	.map_io		= midas_map_io,
+	.handle_irq     = gic_handle_irq,
 	.init_machine	= midas_machine_init,
 	.timer		= &exynos4_timer,
 #ifdef CONFIG_EXYNOS_C2C

@@ -33,6 +33,7 @@
 #include <linux/cma.h>
 #endif
 
+#include <asm/io.h>
 #include <asm/mach/arch.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach-types.h>
@@ -2674,7 +2675,7 @@ MACHINE_END
 MACHINE_START(SMDKV310, "SMDKV310")
 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
 	/* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
-	.boot_params	= S5P_PA_SDRAM + 0x100,
+        .atag_offset	= S5P_PA_SDRAM + 0x100,
 	.init_irq	= exynos4_init_irq,
 	.map_io		= smdkv310_map_io,
 	.handle_irq	= gic_handle_irq,
