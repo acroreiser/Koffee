@@ -18,11 +18,6 @@
 #include <plat/clock.h>
 
 #include "hw_if/hw_if.h"
-#include <linux/pm_qos.h>
-
-static struct pm_qos_request bus_qos_pm_qos_req;
-static unsigned int qos_requested;
-
 #include "s5p_tvout_ctrl.h"
 
 enum {
@@ -349,8 +344,6 @@ int s5p_mixer_ctrl_set_pixel_format(
 
 int s5p_mixer_ctrl_enable_layer(enum s5p_mixer_layer layer)
 {
-	enum s5p_tvout_disp_mode std;
-	enum s5p_tvout_o_mode inf;
 	switch (layer) {
 	case MIXER_VIDEO_LAYER:
 		s5p_mixer_ctrl_private.v_layer.use_video_layer = true;
@@ -369,22 +362,6 @@ int s5p_mixer_ctrl_enable_layer(enum s5p_mixer_layer layer)
 		return 0;
 	}
 #endif
-	s5p_tvif_ctrl_get_std_if(&std, &inf);
-	if ((std == TVOUT_1080P_60) &&
-	    s5p_mixer_ctrl_private.v_layer.use_video_layer &&
-	    (s5p_mixer_ctrl_private.layer[MIXER_GPR0_LAYER].use_grp_layer ||
-	     s5p_mixer_ctrl_private.layer[MIXER_GPR1_LAYER].use_grp_layer) &&
-	    (qos_requested == 0)) {
-		tvout_dbg("add qos request\n");
-		pm_qos_add_request(&bus_qos_pm_qos_req, PM_QOS_BUS_QOS, 1);
-		qos_requested = 1;
-	} else {
-		if (qos_requested == 1) {
-			tvout_dbg("remove qos request\n");
-			pm_qos_remove_request(&bus_qos_pm_qos_req);
-			qos_requested = 0;
-		}
-	}
 
 	if (s5p_mixer_ctrl_private.running) {
 		s5p_mixer_ctrl_set_reg(layer);
@@ -398,8 +375,6 @@ int s5p_mixer_ctrl_enable_layer(enum s5p_mixer_layer layer)
 int s5p_mixer_ctrl_disable_layer(enum s5p_mixer_layer layer)
 {
 	bool use_vid, use_grp0, use_grp1;
-	enum s5p_tvout_disp_mode std;
-	enum s5p_tvout_o_mode inf;
 
 	switch (layer) {
 	case MIXER_VIDEO_LAYER:
@@ -427,23 +402,6 @@ int s5p_mixer_ctrl_disable_layer(enum s5p_mixer_layer layer)
 
 	if (s5p_mixer_ctrl_private.running)
 		s5p_mixer_set_show(layer, false);
-
-	s5p_tvif_ctrl_get_std_if(&std, &inf);
-	if ((std == TVOUT_1080P_60) &&
-	    s5p_mixer_ctrl_private.v_layer.use_video_layer &&
-	    (s5p_mixer_ctrl_private.layer[MIXER_GPR0_LAYER].use_grp_layer ||
-	     s5p_mixer_ctrl_private.layer[MIXER_GPR1_LAYER].use_grp_layer) &&
-	    (qos_requested == 0)) {
-		tvout_dbg("add qos request\n");
-		pm_qos_add_request(&bus_qos_pm_qos_req, PM_QOS_BUS_QOS, 1);
-		qos_requested = 1;
-	} else {
-		if (qos_requested == 1) {
-			tvout_dbg("remove qos request\n");
-			pm_qos_remove_request(&bus_qos_pm_qos_req);
-			qos_requested = 0;
-		}
-	}
 
 	return 0;
 }
@@ -532,14 +490,11 @@ int s5p_mixer_ctrl_set_dst_win_pos(enum s5p_mixer_layer layer,
 #ifdef CONFIG_HDMI_14A_3D
 	case TVOUT_720P_60_SBS_HALF:
 	case TVOUT_720P_59_SBS_HALF:
-	case TVOUT_720P_60_TB:
 	case TVOUT_720P_50_TB:
 		w_t = 1280;
 		h_t = 720;
 		break;
-	case TVOUT_1080P_60_SBS_HALF:
-	case TVOUT_1080P_24_SBS_HALF:
-	case TVOUT_1080P_60_TB:
+
 	case TVOUT_1080P_24_TB:
 	case TVOUT_1080P_23_TB:
 		w_t = 1920;
@@ -1020,12 +975,8 @@ int s5p_mixer_ctrl_start(
 			csc_for_coeff = MIXER_RGB709_0_255;
 			break;
 #ifdef CONFIG_HDMI_14A_3D
-		case TVOUT_1080P_60_SBS_HALF:
 		case TVOUT_720P_60_SBS_HALF:
 		case TVOUT_720P_59_SBS_HALF:
-		case TVOUT_1080P_24_SBS_HALF:
-		case TVOUT_1080P_60_TB:
-		case TVOUT_720P_60_TB:
 		case TVOUT_720P_50_TB:
 		case TVOUT_1080P_24_TB:
 		case TVOUT_1080P_23_TB:
