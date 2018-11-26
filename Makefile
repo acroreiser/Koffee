@@ -373,17 +373,19 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -mlong-calls \
 		   -Werror \
 		   -Wno-error=all \
+		   -Wno-error=address \
 		   -Wno-error=declaration-after-statement \
+		   -Wno-error=enum-compare \
+		   -Wno-error=maybe-uninitialized \
+		   -Wno-error=return-type \
+		   -Wno-error=sizeof-pointer-memaccess \
+		   -Wno-error=undef \
 		   -Wno-error=unused-function \
 		   -Wno-error=unused-label \
 		   -Wno-error=unused-parameter \
 		   -Wno-error=unused-value \
-		   -Wno-error=unused-variable \
-		   -Wno-error=maybe-uninitialized \
-		   -Wno-error=sizeof-pointer-memaccess \
-		   -Wno-error=undef \
-		   -Wno-error=return-type \
-		   -Wno-error=enum-compare
+		   -Wno-error=unused-variable
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
