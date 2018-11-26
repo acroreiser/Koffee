@@ -32,7 +32,7 @@
 #define CSVT_CTRL_RI		0x04
 #define CSVT_CTRL_CD		0x08
 
-static bool debug;
+static int debug;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 
 struct csvt_ctrl_dev {
