@@ -12,14 +12,11 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
 extern void putback_lru_pages(struct list_head *l);
 extern int migrate_page(struct address_space *,
 			struct page *, struct page *, enum migrate_mode);
-#ifndef CONFIG_DMA_CMA
-extern int migrate_pages(struct list_head *l, new_page_t x,
-			unsigned long private, bool offlining);
-#else
 extern int migrate_pages(struct list_head *l, new_page_t x,
 			unsigned long private, bool offlining,
-			enum migrate_mode, int tries);
+			enum migrate_mode);
 
+#ifdef CONFIG_DMA_CMA
 extern int migrate_replace_cma_page(struct page *oldpage,
 				       struct page **newpage);
 #endif
