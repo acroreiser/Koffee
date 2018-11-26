@@ -62,8 +62,8 @@ static void calculate_load(void)
 		dvfs_info->load_data[cpu].prev_idle = cur_idle;
 		dvfs_info->load_data[cpu].prev_wall = cur_wall;
 
-		idle_time = (unsigned int)cputime64_sub(cur_idle, prev_idle);
-		wall_time = (unsigned int)cputime64_sub(cur_wall, prev_wall);
+		idle_time = (unsigned int)(cur_idle - prev_idle);
+		wall_time = (unsigned int)(cur_wall - prev_wall);
 
 		if (wall_time < idle_time) {
 			pr_err("%s walltime < idletime\n", __func__);
