@@ -558,7 +558,25 @@ static struct usb_driver ipheth_driver = {
 	.id_table =	ipheth_table,
 };
 
-module_usb_driver(ipheth_driver);
+static int __init ipheth_init(void)
+{
+	int retval;
+
+	retval = usb_register(&ipheth_driver);
+	if (retval) {
+		err("usb_register failed: %d", retval);
+		return retval;
+	}
+	return 0;
+}
+
+static void __exit ipheth_exit(void)
+{
+	usb_deregister(&ipheth_driver);
+}
+
+module_init(ipheth_init);
+module_exit(ipheth_exit);
 
 MODULE_AUTHOR("Diego Giagio <diego@giagio.com>");
 MODULE_DESCRIPTION("Apple iPhone USB Ethernet driver");

@@ -950,7 +950,20 @@ static struct usb_driver rtl8150_driver = {
 	.resume		= rtl8150_resume
 };
 
-module_usb_driver(rtl8150_driver);
+static int __init usb_rtl8150_init(void)
+{
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
+	return usb_register(&rtl8150_driver);
+}
+
+static void __exit usb_rtl8150_exit(void)
+{
+	usb_deregister(&rtl8150_driver);
+}
+
+module_init(usb_rtl8150_init);
+module_exit(usb_rtl8150_exit);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);

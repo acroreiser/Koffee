@@ -1224,7 +1224,20 @@ static const struct ethtool_ops cdc_ncm_ethtool_ops = {
 	.nway_reset = usbnet_nway_reset,
 };
 
-module_usb_driver(cdc_ncm_driver);
+static int __init cdc_ncm_init(void)
+{
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION "\n");
+	return usb_register(&cdc_ncm_driver);
+}
+
+module_init(cdc_ncm_init);
+
+static void __exit cdc_ncm_exit(void)
+{
+	usb_deregister(&cdc_ncm_driver);
+}
+
+module_exit(cdc_ncm_exit);
 
 MODULE_AUTHOR("Hans Petter Selasky");
 MODULE_DESCRIPTION("USB CDC NCM host driver");

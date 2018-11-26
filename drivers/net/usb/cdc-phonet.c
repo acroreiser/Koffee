@@ -459,7 +459,18 @@ static struct usb_driver usbpn_driver = {
 	.id_table =	usbpn_ids,
 };
 
-module_usb_driver(usbpn_driver);
+static int __init usbpn_init(void)
+{
+	return usb_register(&usbpn_driver);
+}
+
+static void __exit usbpn_exit(void)
+{
+	usb_deregister(&usbpn_driver);
+}
+
+module_init(usbpn_init);
+module_exit(usbpn_exit);
 
 MODULE_AUTHOR("Remi Denis-Courmont");
 MODULE_DESCRIPTION("USB CDC Phonet host interface");
