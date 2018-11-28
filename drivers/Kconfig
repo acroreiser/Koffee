@@ -162,6 +162,9 @@ source "drivers/barcode_emul/Kconfig"
 
 source "drivers/dpram/Kconfig"
 
+# MUIC
+source "drivers/muic/Kconfig"
+
 # Secure OS Mobicore
 source "drivers/gud/Kconfig"
 
