@@ -22,12 +22,12 @@
 #include <linux/notifier.h>
 #include <linux/slab.h>
 #include <linux/platform_device.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 #include <linux/devfreq/exynos4_display.h>
 
 
 #include <linux/list.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 #include <mach/cpufreq.h>
 #include <mach/dev.h>
 #include <linux/device.h>
@@ -92,7 +92,7 @@ static struct exynos4_dispfreq_opp_table exynos_dispfreq_clk_table[] = {
 	{0, 0, 0 },
 };
 
-static struct pm_qos_request qos_wrapper[DVFS_LOCK_ID_END];
+static struct pm_qos_request_list qos_wrapper[DVFS_LOCK_ID_END];
 
 /* Wrappers for obsolete legacy kernel hack (busfreq_lock/lock_free) */
 int exynos4_busfreq_lock(unsigned int nId, enum busfreq_level_request lvl)

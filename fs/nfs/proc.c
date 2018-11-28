@@ -41,10 +41,42 @@
 #include <linux/nfs_fs.h>
 #include <linux/nfs_page.h>
 #include <linux/lockd/bind.h>
-#include <linux/freezer.h>
 #include "internal.h"
 
 #define NFSDBG_FACILITY		NFSDBG_PROC
+
+/*
+ * wrapper to handle the -EKEYEXPIRED error message. This should generally
+ * only happen if using krb5 auth and a user's TGT expires. NFSv2 doesn't
+ * support the NFSERR_JUKEBOX error code, but we handle this situation in the
+ * same way that we handle that error with NFSv3.
+ */
+static int
+nfs_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+{
+	int res;
+	do {
+		res = rpc_call_sync(clnt, msg, flags);
+		if (res != -EKEYEXPIRED)
+			break;
+		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+		res = -ERESTARTSYS;
+	} while (!fatal_signal_pending(current));
+	return res;
+}
+
+#define rpc_call_sync(clnt, msg, flags)	nfs_rpc_wrapper(clnt, msg, flags)
+
+static int
+nfs_async_handle_expired_key(struct rpc_task *task)
+{
+	if (task->tk_status != -EKEYEXPIRED)
+		return 0;
+	task->tk_status = 0;
+	rpc_restart_call(task);
+	rpc_delay(task, NFS_JUKEBOX_RETRY_TIME);
+	return 1;
+}
 
 /*
  * Bare-bones access to getattr: this is for nfs_read_super.

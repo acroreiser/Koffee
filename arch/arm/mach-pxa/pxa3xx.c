@@ -23,7 +23,6 @@
 #include <linux/i2c/pxa-i2c.h>
 
 #include <asm/mach/map.h>
-#include <asm/suspend.h>
 #include <mach/hardware.h>
 #include <mach/pxa3xx-regs.h>
 #include <mach/reset.h>
@@ -149,7 +148,7 @@ static void pxa3xx_cpu_pm_suspend(void)
 	asm volatile("mra %Q0, %R0, acc0" : "=r" (acc0));
 #endif
 
-	extern int pxa3xx_finish_suspend(unsigned long);
+	extern void pxa3xx_finish_suspend(unsigned long);
 
 	/* resuming from D2 requires the HSIO2/BOOT/TPM clocks enabled */
 	CKENA |= (1 << CKEN_BOOT) | (1 << CKEN_TPM);
@@ -169,7 +168,7 @@ static void pxa3xx_cpu_pm_suspend(void)
 	/* overwrite with the resume address */
 	*p = virt_to_phys(cpu_resume);
 
-	cpu_suspend(0, pxa3xx_finish_suspend);
+	cpu_suspend(0, PHYS_OFFSET - PAGE_OFFSET, 0, pxa3xx_finish_suspend);
 
 	*p = saved_data;
 

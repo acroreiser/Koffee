@@ -8,7 +8,7 @@
 #include <linux/usb.h>
 #include <pcmcia/cistpl.h>
 #include <pcmcia/ds.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 #include <linux/smp_lock.h>
 
 #define kparam_block_sysfs_write(a)
@@ -61,7 +61,7 @@ static inline int pcmcia_write_config_byte(struct pcmcia_device *p_dev, off_t wh
 	return pcmcia_access_configuration_register(p_dev, &reg);
 }
 
-struct pm_qos_request {
+struct pm_qos_request_list {
 	u32 qos;
 	void *request;
 };

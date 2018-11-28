@@ -26,6 +26,15 @@ config PM_WATCHDOG_TIMEOUT
 	  Enable PM watchdog timer to catch lockup during early_suspend,
 	  late_resume and suspend_finish.
 
+config FAST_BOOT
+	bool "Force suspend and show fake turn off which is same with suspend"
+	depends on SUSPEND
+	default n
+	---help---
+	  This allows you go to suspend instead to turn off. If this is
+	  done, it goes to wake up instead to turn on. This works with power
+	  source.
+
 config HAS_WAKELOCK
 	bool
 
@@ -151,6 +160,14 @@ config FULL_PAGE_RECLAIM
 	  With this config, the size of hibernation snapshot image is
 	  dramatically decreased and small size of hibernation snapshot image
 	  has benefit for fast booting.
+
+config FAST_RESUME
+	bool "Using fast resume during Suspend-to-Disk"
+	depends on HIBERNATION
+	---help---
+	  software_resume() function which triggers hibernation restore is
+	  called faster on booting time by introducing new initcalls. This has
+	  benefit for fast booting on hibernation
 
 config PM_STD_PARTITION
 	string "Default resume partition"
@@ -280,8 +297,8 @@ config APM_EMULATION
 	  notification of APM "events" (e.g. battery status change).
 
 	  In order to use APM, you will need supporting software. For location
-	  and more information, read <file:Documentation/power/apm-acpi.txt>
-	  and the Battery Powered Linux mini-HOWTO, available from
+	  and more information, read <file:Documentation/power/pm.txt> and the
+	  Battery Powered Linux mini-HOWTO, available from
 	  <http://www.tldp.org/docs.html#howto>.
 
 	  This driver does not spin down disk drives (see the hdparm(8)
@@ -311,9 +328,9 @@ config PM_OPP
 	  implementations a ready to use framework to manage OPPs.
 	  For more information, read <file:Documentation/power/opp.txt>
 
-config PM_CLK
+config PM_RUNTIME_CLK
 	def_bool y
-	depends on PM && HAVE_CLK
+	depends on PM_RUNTIME && HAVE_CLK
 
 config SUSPEND_TIME
 	bool "Log time spent in suspend"
@@ -325,11 +342,3 @@ config SUSPEND_TIME
 config CPU_PM
 	bool
 	depends on SUSPEND || CPU_IDLE
-
-config PM_GENERIC_DOMAINS
-	bool
-	depends on PM
-
-config PM_GENERIC_DOMAINS_RUNTIME
-	def_bool y
-	depends on PM_RUNTIME && PM_GENERIC_DOMAINS

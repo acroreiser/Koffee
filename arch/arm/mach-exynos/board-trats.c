@@ -1519,8 +1519,8 @@ static void flexrate_work(struct work_struct *work)
 static DECLARE_WORK(flex_work, flexrate_work);
 #endif
 
-#include <linux/pm_qos.h>
-static struct pm_qos_request busfreq_qos;
+#include <linux/pm_qos_params.h>
+static struct pm_qos_request_list busfreq_qos;
 static void flexrate_qos_cancel(struct work_struct *work)
 {
 	pm_qos_update_request(&busfreq_qos, 0);

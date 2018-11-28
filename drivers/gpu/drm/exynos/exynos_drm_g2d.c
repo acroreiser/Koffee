@@ -14,7 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
@@ -135,7 +135,7 @@ struct g2d_data {
 	struct workqueue_struct		*g2d_workq;
 	struct work_struct		runqueue_work;
 	struct exynos_drm_subdrv	subdrv;
-	struct pm_qos_request	pm_qos;
+	struct pm_qos_request_list	pm_qos;
 	bool				suspended;
 
 	/* cmdlist */

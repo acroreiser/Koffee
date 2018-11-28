@@ -32,7 +32,7 @@
 #include <asm/suspend.h>
 #include <asm/mach/time.h>
 
-extern int sa1100_finish_suspend(unsigned long);
+extern void sa1100_finish_suspend(unsigned long);
 
 #define SAVE(x)		sleep_save[SLEEP_SAVE_##x] = x
 #define RESTORE(x)	x = sleep_save[SLEEP_SAVE_##x]
@@ -76,6 +76,8 @@ static int sa11x0_pm_enter(suspend_state_t state)
 
 	/* go zzz */
 	cpu_suspend(0, sa1100_finish_suspend);
+
+	cpu_init();
 
 	/*
 	 * Ensure not to come back here if it wasn't intended

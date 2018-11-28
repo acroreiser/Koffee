@@ -29,7 +29,7 @@
 
 /*#define DEBUG*/
 
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/slab.h>
@@ -43,6 +43,7 @@
 #include <linux/kernel.h>
 
 #include <linux/uaccess.h>
+#include <linux/export.h>
 
 /*
  * locking rule: all changes to requests or notifiers lists
@@ -103,55 +104,12 @@ static struct pm_qos_object network_throughput_pm_qos = {
 	.type = PM_QOS_MAX,
 };
 
-static BLOCKING_NOTIFIER_HEAD(bus_dma_throughput_notifier);
-static struct pm_qos_object bus_dma_throughput_pm_qos = {
-	.requests = PLIST_HEAD_INIT(bus_dma_throughput_pm_qos.requests),
-	.notifiers = &bus_dma_throughput_notifier,
-	.name = "bus_dma_throughput",
-	.target_value = PM_QOS_BUS_DMA_THROUGHPUT_DEFAULT_VALUE,
-	.default_value = PM_QOS_BUS_DMA_THROUGHPUT_DEFAULT_VALUE,
-	.type = PM_QOS_MAX,
-};
-
-static BLOCKING_NOTIFIER_HEAD(display_frequency_notifier);
-static struct pm_qos_object display_frequency_pm_qos = {
-	.requests = PLIST_HEAD_INIT(display_frequency_pm_qos.requests),
-	.notifiers = &display_frequency_notifier,
-	.name = "display_frequency",
-	.target_value = PM_QOS_DISPLAY_FREQUENCY_DEFAULT_VALUE,
-	.default_value = PM_QOS_DISPLAY_FREQUENCY_DEFAULT_VALUE,
-	.type = PM_QOS_MAX,
-};
-
-static BLOCKING_NOTIFIER_HEAD(bus_qos_notifier);
-static struct pm_qos_object bus_qos_pm_qos = {
-	.requests = PLIST_HEAD_INIT(bus_qos_pm_qos.requests),
-	.notifiers = &bus_qos_notifier,
-	.name = "bus_qos",
-	.target_value = 0,
-	.default_value = 0,
-	.type = PM_QOS_MAX,
-};
-
-static BLOCKING_NOTIFIER_HEAD(dvfs_res_lat_notifier);
-static struct pm_qos_object dvfs_res_lat_pm_qos = {
-	.requests = PLIST_HEAD_INIT(dvfs_res_lat_pm_qos.requests),
-	.notifiers = &dvfs_res_lat_notifier,
-	.name = "dvfs_response_latency",
-	.target_value = PM_QOS_DVFS_RESPONSE_LAT_DEFAULT_VALUE,
-	.default_value = PM_QOS_DVFS_RESPONSE_LAT_DEFAULT_VALUE,
-	.type = PM_QOS_MIN
-};
 
 static struct pm_qos_object *pm_qos_array[] = {
 	&null_pm_qos,
 	&cpu_dma_pm_qos,
 	&network_lat_pm_qos,
-	&network_throughput_pm_qos,
-	&bus_dma_throughput_pm_qos,
-	&display_frequency_pm_qos,
-	&bus_qos_pm_qos,
-	&dvfs_res_lat_pm_qos,
+	&network_throughput_pm_qos
 };
 
 static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
@@ -265,7 +223,7 @@ int pm_qos_request(int pm_qos_class)
 }
 EXPORT_SYMBOL_GPL(pm_qos_request);
 
-int pm_qos_request_active(struct pm_qos_request *req)
+int pm_qos_request_active(struct pm_qos_request_list *req)
 {
 	return req->pm_qos_class != 0;
 }
@@ -279,12 +237,12 @@ EXPORT_SYMBOL_GPL(pm_qos_request_active);
  *
  * This function inserts a new entry in the pm_qos_class list of requested qos
  * performance characteristics.  It recomputes the aggregate QoS expectations
- * for the pm_qos_class of parameters and initializes the pm_qos_request
+ * for the pm_qos_class of parameters and initializes the pm_qos_request_list
  * handle.  Caller needs to save this handle for later use in updates and
  * removal.
  */
 
-void pm_qos_add_request(struct pm_qos_request *dep,
+void pm_qos_add_request(struct pm_qos_request_list *dep,
 			int pm_qos_class, s32 value)
 {
 	struct pm_qos_object *o =  pm_qos_array[pm_qos_class];
@@ -314,7 +272,7 @@ EXPORT_SYMBOL_GPL(pm_qos_add_request);
  *
  * Attempts are made to make this code callable on hot code paths.
  */
-void pm_qos_update_request(struct pm_qos_request *pm_qos_req,
+void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
 			   s32 new_value)
 {
 	s32 temp;
@@ -348,7 +306,7 @@ EXPORT_SYMBOL_GPL(pm_qos_update_request);
  * recompute the current target value for the pm_qos_class.  Call this
  * on slow code paths.
  */
-void pm_qos_remove_request(struct pm_qos_request *pm_qos_req)
+void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req)
 {
 	struct pm_qos_object *o;
 
@@ -377,12 +335,15 @@ EXPORT_SYMBOL_GPL(pm_qos_remove_request);
  */
 int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier)
 {
+#if 0
 	int retval;
 
 	retval = blocking_notifier_chain_register(
 			pm_qos_array[pm_qos_class]->notifiers, notifier);
 
 	return retval;
+#endif
+	return 0;
 }
 EXPORT_SYMBOL_GPL(pm_qos_add_notifier);
 
@@ -411,7 +372,7 @@ static int pm_qos_power_open(struct inode *inode, struct file *filp)
 
 	pm_qos_class = find_pm_qos_object_by_minor(iminor(inode));
 	if (pm_qos_class >= 0) {
-               struct pm_qos_request *req = kzalloc(sizeof(*req), GFP_KERNEL);
+               struct pm_qos_request_list *req = kzalloc(sizeof(*req), GFP_KERNEL);
 		if (!req)
 			return -ENOMEM;
 
@@ -426,7 +387,7 @@ static int pm_qos_power_open(struct inode *inode, struct file *filp)
 
 static int pm_qos_power_release(struct inode *inode, struct file *filp)
 {
-	struct pm_qos_request *req;
+	struct pm_qos_request_list *req;
 
 	req = filp->private_data;
 	pm_qos_remove_request(req);
@@ -442,7 +403,7 @@ static ssize_t pm_qos_power_read(struct file *filp, char __user *buf,
 	s32 value;
 	unsigned long flags;
 	struct pm_qos_object *o;
-	struct pm_qos_request *pm_qos_req = filp->private_data;
+	struct pm_qos_request_list *pm_qos_req = filp->private_data;
 
 	if (!pm_qos_req)
 		return -EINVAL;
@@ -461,7 +422,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
 		size_t count, loff_t *f_pos)
 {
 	s32 value;
-	struct pm_qos_request *pm_qos_req;
+	struct pm_qos_request_list *pm_qos_req;
 
 	if (count == sizeof(s32)) {
 		if (copy_from_user(&value, buf, sizeof(s32)))
@@ -517,20 +478,6 @@ static int __init pm_qos_power_init(void)
 	if (ret < 0)
 		printk(KERN_ERR
 			"pm_qos_param: network_throughput setup failed\n");
-	ret = register_pm_qos_misc(&bus_dma_throughput_pm_qos);
-	if (ret < 0)
-		printk(KERN_ERR
-			"pm_qos_param: bus_dma_throughput setup failed\n");
-
-	ret = register_pm_qos_misc(&display_frequency_pm_qos);
-	if (ret < 0)
-		printk(KERN_ERR
-			"pm_qos_param: display_frequency setup failed\n");
-
-	ret = register_pm_qos_misc(&dvfs_res_lat_pm_qos);
-	if (ret < 0)
-		printk(KERN_ERR
-			"pm_qos_param: dvfs_response_frequency setup failed\n");
 
 	return ret;
 }

@@ -14,7 +14,7 @@
 #include <linux/netdevice.h>
 #include <linux/pm.h>
 #include <asm-generic/bug.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 #include <linux/pci.h>
 
 /* The macro below uses a const upstream, this differs */

@@ -18,9 +18,9 @@
 #include <plat/clock.h>
 
 #include "hw_if/hw_if.h"
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 
-static struct pm_qos_request bus_qos_pm_qos_req;
+static struct pm_qos_request_list bus_qos_pm_qos_req;
 static unsigned int qos_requested;
 
 #include "s5p_tvout_ctrl.h"

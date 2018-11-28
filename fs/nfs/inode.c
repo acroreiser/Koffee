@@ -38,9 +38,8 @@
 #include <linux/nfs_xdr.h>
 #include <linux/slab.h>
 #include <linux/compat.h>
-#include <linux/freezer.h>
-#include <linux/crc32.h>
 
+#include <asm/system.h>
 #include <asm/uaccess.h>
 
 #include "nfs4_fs.h"
@@ -51,7 +50,6 @@
 #include "fscache.h"
 #include "dns_resolve.h"
 #include "pnfs.h"
-#include "netns.h"
 
 #define NFSDBG_FACILITY		NFSDBG_VFS
 
@@ -79,7 +77,7 @@ int nfs_wait_bit_killable(void *word)
 {
 	if (fatal_signal_pending(current))
 		return -ERESTARTSYS;
-	freezable_schedule_unsafe();
+	schedule();
 	return 0;
 }
 
@@ -152,7 +150,7 @@ static void nfs_zap_caches_locked(struct inode *inode)
 	nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
 	nfsi->attrtimeo_timestamp = jiffies;
 
-	memset(NFS_I(inode)->cookieverf, 0, sizeof(NFS_I(inode)->cookieverf));
+	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
 		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
 	else
@@ -391,10 +389,9 @@ nfs_fhget(struct super_block *sb, struct nfs_fh *fh, struct nfs_fattr *fattr)
 		unlock_new_inode(inode);
 	} else
 		nfs_refresh_inode(inode, fattr);
-	dprintk("NFS: nfs_fhget(%s/%Ld fh_crc=0x%08x ct=%d)\n",
+	dprintk("NFS: nfs_fhget(%s/%Ld ct=%d)\n",
 		inode->i_sb->s_id,
 		(long long)NFS_FILEID(inode),
-		nfs_display_fhandle_hash(fh),
 		atomic_read(&inode->i_count));
 
 out:
@@ -405,7 +402,7 @@ out_no_inode:
 	goto out;
 }
 
-#define NFS_VALID_ATTRS (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_SIZE|ATTR_ATIME|ATTR_ATIME_SET|ATTR_MTIME|ATTR_MTIME_SET|ATTR_FILE|ATTR_OPEN)
+#define NFS_VALID_ATTRS (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_SIZE|ATTR_ATIME|ATTR_ATIME_SET|ATTR_MTIME|ATTR_MTIME_SET|ATTR_FILE)
 
 int
 nfs_setattr(struct dentry *dentry, struct iattr *attr)
@@ -427,7 +424,7 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
 
 	/* Optimization: if the end result is no change, don't RPC */
 	attr->ia_valid &= NFS_VALID_ATTRS;
-	if ((attr->ia_valid & ~(ATTR_FILE|ATTR_OPEN)) == 0)
+	if ((attr->ia_valid & ~ATTR_FILE) == 0)
 		return 0;
 
 	/* Write all dirty data */
@@ -1048,67 +1045,6 @@ struct nfs_fh *nfs_alloc_fhandle(void)
 	return fh;
 }
 
-#ifdef NFS_DEBUG
-/*
- * _nfs_display_fhandle_hash - calculate the crc32 hash for the filehandle
- *                             in the same way that wireshark does
- *
- * @fh: file handle
- *
- * For debugging only.
- */
-u32 _nfs_display_fhandle_hash(const struct nfs_fh *fh)
-{
-	/* wireshark uses 32-bit AUTODIN crc and does a bitwise
-	 * not on the result */
-	return ~crc32(0xFFFFFFFF, &fh->data[0], fh->size);
-}
-
-/*
- * _nfs_display_fhandle - display an NFS file handle on the console
- *
- * @fh: file handle to display
- * @caption: display caption
- *
- * For debugging only.
- */
-void _nfs_display_fhandle(const struct nfs_fh *fh, const char *caption)
-{
-	unsigned short i;
-
-	if (fh == NULL || fh->size == 0) {
-		printk(KERN_DEFAULT "%s at %p is empty\n", caption, fh);
-		return;
-	}
-
-	printk(KERN_DEFAULT "%s at %p is %u bytes, crc: 0x%08x:\n",
-	       caption, fh, fh->size, _nfs_display_fhandle_hash(fh));
-	for (i = 0; i < fh->size; i += 16) {
-		__be32 *pos = (__be32 *)&fh->data[i];
-
-		switch ((fh->size - i - 1) >> 2) {
-		case 0:
-			printk(KERN_DEFAULT " %08x\n",
-				be32_to_cpup(pos));
-			break;
-		case 1:
-			printk(KERN_DEFAULT " %08x %08x\n",
-				be32_to_cpup(pos), be32_to_cpup(pos + 1));
-			break;
-		case 2:
-			printk(KERN_DEFAULT " %08x %08x %08x\n",
-				be32_to_cpup(pos), be32_to_cpup(pos + 1),
-				be32_to_cpup(pos + 2));
-			break;
-		default:
-			printk(KERN_DEFAULT " %08x %08x %08x %08x\n",
-				be32_to_cpup(pos), be32_to_cpup(pos + 1),
-				be32_to_cpup(pos + 2), be32_to_cpup(pos + 3));
-		}
-	}
-}
-#endif
-
 /**
  * nfs_inode_attrs_need_update - check if the inode attributes need updating
  * @inode - pointer to inode
@@ -1276,9 +1212,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	unsigned long now = jiffies;
 	unsigned long save_cache_validity;
 
-	dfprintk(VFS, "NFS: %s(%s/%ld fh_crc=0x%08x ct=%d info=0x%x)\n",
+	dfprintk(VFS, "NFS: %s(%s/%ld ct=%d info=0x%x)\n",
 			__func__, inode->i_sb->s_id, inode->i_ino,
-			nfs_display_fhandle_hash(NFS_FH(inode)),
 			atomic_read(&inode->i_count), fattr->valid);
 
 	if ((fattr->valid & NFS_ATTR_FATTR_FILEID) && nfsi->fileid != fattr->fileid)
@@ -1476,7 +1411,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	/*
 	 * Big trouble! The inode has become a different object.
 	 */
-	printk(KERN_DEBUG "NFS: %s: inode %ld mode changed, %07o to %07o\n",
+	printk(KERN_DEBUG "%s: inode %ld mode changed, %07o to %07o\n",
 			__func__, inode->i_ino, inode->i_mode, fattr->mode);
  out_err:
 	/*
@@ -1565,7 +1500,7 @@ static void init_once(void *foo)
 	INIT_LIST_HEAD(&nfsi->open_files);
 	INIT_LIST_HEAD(&nfsi->access_cache_entry_lru);
 	INIT_LIST_HEAD(&nfsi->access_cache_inode_lru);
-	INIT_LIST_HEAD(&nfsi->commit_list);
+	INIT_RADIX_TREE(&nfsi->nfs_page_tree, GFP_ATOMIC);
 	nfsi->npages = 0;
 	nfsi->ncommit = 0;
 	atomic_set(&nfsi->silly_count, 1);
@@ -1622,28 +1557,6 @@ static void nfsiod_stop(void)
 	destroy_workqueue(wq);
 }
 
-int nfs_net_id;
-EXPORT_SYMBOL_GPL(nfs_net_id);
-
-static int nfs_net_init(struct net *net)
-{
-	nfs_clients_init(net);
-	return nfs_dns_resolver_cache_init(net);
-}
-
-static void nfs_net_exit(struct net *net)
-{
-	nfs_dns_resolver_cache_destroy(net);
-	nfs_cleanup_cb_ident_idr(net);
-}
-
-static struct pernet_operations nfs_net_ops = {
-	.init = nfs_net_init,
-	.exit = nfs_net_exit,
-	.id   = &nfs_net_id,
-	.size = sizeof(struct nfs_net),
-};
-
 /*
  * Initialize NFS
  */
@@ -1653,13 +1566,9 @@ static int __init init_nfs_fs(void)
 
 	err = nfs_idmap_init();
 	if (err < 0)
-		goto out10;
-
-	err = nfs_dns_resolver_init();
-	if (err < 0)
 		goto out9;
 
-	err = register_pernet_subsys(&nfs_net_ops);
+	err = nfs_dns_resolver_init();
 	if (err < 0)
 		goto out8;
 
@@ -1696,14 +1605,14 @@ static int __init init_nfs_fs(void)
 		goto out0;
 
 #ifdef CONFIG_PROC_FS
-	rpc_proc_register(&init_net, &nfs_rpcstat);
+	rpc_proc_register(&nfs_rpcstat);
 #endif
 	if ((err = register_nfs_fs()) != 0)
 		goto out;
 	return 0;
 out:
 #ifdef CONFIG_PROC_FS
-	rpc_proc_unregister(&init_net, "nfs");
+	rpc_proc_unregister("nfs");
 #endif
 	nfs_destroy_directcache();
 out0:
@@ -1721,12 +1630,10 @@ out5:
 out6:
 	nfs_fscache_unregister();
 out7:
-	unregister_pernet_subsys(&nfs_net_ops);
-out8:
 	nfs_dns_resolver_destroy();
-out9:
+out8:
 	nfs_idmap_quit();
-out10:
+out9:
 	return err;
 }
 
@@ -1738,12 +1645,12 @@ static void __exit exit_nfs_fs(void)
 	nfs_destroy_inodecache();
 	nfs_destroy_nfspagecache();
 	nfs_fscache_unregister();
-	unregister_pernet_subsys(&nfs_net_ops);
 	nfs_dns_resolver_destroy();
 	nfs_idmap_quit();
 #ifdef CONFIG_PROC_FS
-	rpc_proc_unregister(&init_net, "nfs");
+	rpc_proc_unregister("nfs");
 #endif
+	nfs_cleanup_cb_ident_idr();
 	unregister_nfs_fs();
 	nfs_fs_proc_exit();
 	nfsiod_stop();
