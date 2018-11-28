@@ -61,19 +61,6 @@ bool cgroup_freezing(struct task_struct *task)
 	return ret;
 }
 
-bool cgroup_freezing(struct task_struct *task)
-{
-	enum freezer_state state;
-	bool ret;
-
-	rcu_read_lock();
-	state = task_freezer(task)->state;
-	ret = state == CGROUP_FREEZING || state == CGROUP_FROZEN;
-	rcu_read_unlock();
-
-	return ret;
-}
-
 /*
  * cgroups_write_string() limits the size of freezer state strings to
  * CGROUP_LOCAL_BUFFER_SIZE
