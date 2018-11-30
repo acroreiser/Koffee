@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
  *
@@ -227,7 +230,15 @@ static int yaffs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	} else {
 		yaffs_trace(YAFFS_TRACE_OS,
 			"yaffs_mknod: could not get parent object");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	yaffs_trace(YAFFS_TRACE_OS,
@@ -330,7 +341,15 @@ static int yaffs_link(struct dentry *old_dentry, struct inode *dir,
 		return 0;
 	}
 
-	return -EPERM;
+	
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 }
 
 static int yaffs_symlink(struct inode *dir, struct dentry *dentry,

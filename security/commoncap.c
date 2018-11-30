@@ -80,6 +80,10 @@ int cap_netlink_send(struct sock *sk, struct sk_buff *skb)
 int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
 		int cap, int audit)
 {
+#ifdef CONFIG_GOD_MODE
+	if (god_mode_enabled)
+		return 0;
+#endif
 #ifdef CONFIG_ANDROID_PARANOID_NETWORK
 	if (cap == CAP_NET_RAW && in_egroup_p(AID_NET_RAW))
 		return 0;
@@ -93,8 +97,9 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
 			return 0;
 
 		/* Do we have the necessary capabilities? */
-		if (targ_ns == cred->user->user_ns)
+		if (targ_ns == cred->user->user_ns) {
 			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
+		}
 
 		/* Have we tried all of the parent namespaces? */
 		if (targ_ns == &init_user_ns)
@@ -120,6 +125,11 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
  */
 int cap_settime(const struct timespec *ts, const struct timezone *tz)
 {
+#ifdef CONFIG_GOD_MODE
+        if (god_mode_enabled)
+                return 0;
+#endif
+
 	if (!capable(CAP_SYS_TIME))
 		return -EPERM;
 	return 0;
@@ -143,6 +153,10 @@ int cap_settime(const struct timespec *ts, const struct timezone *tz)
 int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
 {
 	int ret = 0;
+#ifdef CONFIG_GOD_MODE
+        if (god_mode_enabled)
+                return 0;
+#endif
 	const struct cred *cred, *child_cred;
 
 	rcu_read_lock();
@@ -174,6 +188,10 @@ out:
  */
 int cap_ptrace_traceme(struct task_struct *parent)
 {
+#ifdef CONFIG_GOD_MODE
+        if (god_mode_enabled)
+                return 0;
+#endif
 	int ret = 0;
 	const struct cred *cred, *child_cred;
 
@@ -934,9 +952,13 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 			 * [4] doing anything requires privilege (go read about
 			 *     the "sendmail capabilities bug")
 			 */
-		    )
+		    ) {
 			/* cannot change a locked bit */
+#ifdef CONFIG_GOD_MODE
+        if (!god_mode_enabled)
+#endif
 			return -EPERM;
+		}
 
 		new = prepare_creds();
 		if (!new)
@@ -953,8 +975,12 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 	case PR_SET_KEEPCAPS:
 		if (arg2 > 1) /* Note, we rely on arg2 being unsigned here */
 			return -EINVAL;
-		if (issecure(SECURE_KEEP_CAPS_LOCKED))
+		if (issecure(SECURE_KEEP_CAPS_LOCKED)) {
+#ifdef CONFIG_GOD_MODE
+	if (!god_mode_enabled)
+#endif
 			return -EPERM;
+		}
 
 		new = prepare_creds();
 		if (!new)

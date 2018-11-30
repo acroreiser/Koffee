@@ -112,6 +112,8 @@ endif
 
 obj-$(CONFIG_JUMP_LABEL) += jump_label.o
 
+obj-$(CONFIG_GOD_MODE) += god_mode.o
+
 $(obj)/configs.o: $(obj)/config_data.h
 
 # config_data.h contains the same information as ikconfig.h but gzipped.

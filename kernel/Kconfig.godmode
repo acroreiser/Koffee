@@ -1,0 +1,6 @@
+config GOD_MODE
+	bool "god mode"
+	default y
+	help
+	  Enables an unprivileged user to access/modify/execute 
+	  files, which usually only root is allowed to.
