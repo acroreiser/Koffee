@@ -7,7 +7,6 @@
 #include <linux/etherdevice.h>
 #include <linux/if_arp.h>
 #include <linux/slab.h>
-#include <linux/export.h>
 #include <net/cfg80211.h>
 #include "wext-compat.h"
 #include "nl80211.h"
@@ -154,10 +153,6 @@ static void __cfg80211_clear_ibss(struct net_device *dev, bool nowext)
 
 	kfree(wdev->connect_keys);
 	wdev->connect_keys = NULL;
-
-	if (rdev->ops->set_qos_map) {
-		rdev->ops->set_qos_map(&rdev->wiphy, dev, NULL);
-	}
 
 	/*
 	 * Delete all the keys ... pairwise keys can't really

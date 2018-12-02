@@ -157,7 +157,8 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_WPA_VERSIONS] = { .type = NLA_U32 },
 	[NL80211_ATTR_PID] = { .type = NLA_U32 },
 	[NL80211_ATTR_4ADDR] = { .type = NLA_U8 },
-	[NL80211_ATTR_PMKID] = { .len = WLAN_PMKID_LEN },
+	[NL80211_ATTR_PMKID] = { .type = NLA_BINARY,
+				 .len = WLAN_PMKID_LEN },
 	[NL80211_ATTR_DURATION] = { .type = NLA_U32 },
 	[NL80211_ATTR_COOKIE] = { .type = NLA_U64 },
 	[NL80211_ATTR_TX_RATES] = { .type = NLA_NESTED },
@@ -212,7 +213,6 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_SCAN_FLAGS] = { .type = NLA_U32 },
 	[NL80211_ATTR_P2P_CTWINDOW] = { .type = NLA_U8 },
 	[NL80211_ATTR_P2P_OPPPS] = { .type = NLA_U8 },
-	[NL80211_ATTR_LOCAL_MESH_POWER_MODE] = {. type = NLA_U32 },
 	[NL80211_ATTR_ACL_POLICY] = {. type = NLA_U32 },
 	[NL80211_ATTR_MAC_ADDRS] = { .type = NLA_NESTED },
 	[NL80211_ATTR_STA_CAPABILITY] = { .type = NLA_U16 },
@@ -240,8 +240,6 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_VENDOR_ID] = { .type = NLA_U32 },
 	[NL80211_ATTR_VENDOR_SUBCMD] = { .type = NLA_U32 },
 	[NL80211_ATTR_VENDOR_DATA] = { .type = NLA_BINARY },
-	[NL80211_ATTR_QOS_MAP] = { .type = NLA_BINARY,
-				   .len = IEEE80211_QOS_MAP_LEN_MAX },
 };
 
 /* policy for the key attributes */
@@ -955,7 +953,6 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 		i++;
 		NLA_PUT_U32(msg, i, NL80211_CMD_REGISTER_BEACONS);
 	}
-	CMD(set_qos_map, SET_QOS_MAP);
 
 #ifdef CONFIG_NL80211_TESTMODE
 	CMD(testmode_cmd, TESTMODE);
@@ -2461,8 +2458,8 @@ static int nl80211_stop_ap(struct sk_buff *skb, struct genl_info *info)
 		return -ENOENT;
 
 	err = rdev->ops->stop_ap(&rdev->wiphy, dev);
-	wdev->beacon_interval = 0;
-
+	if (!err)
+		wdev->beacon_interval = 0;
 	return err;
 }
 
@@ -3171,14 +3168,6 @@ static int nl80211_new_station(struct sk_buff *skb, struct genl_info *info)
 
 	if (parse_station_flags(info, dev->ieee80211_ptr->iftype, &params))
 		return -EINVAL;
-
-	/* HT requires QoS, but if we don't have that just ignore HT/VHT
-	 * as userspace might just pass through the capabilities from the IEs
-	 * directly, rather than enforcing this restriction and returning an
-	 * error in this case.
-	 */
-	if (!(params.sta_flags_set & BIT(NL80211_STA_FLAG_WME)))
-		params.ht_capa = NULL;
 
 	switch (dev->ieee80211_ptr->iftype) {
 	case NL80211_IFTYPE_AP:
@@ -6583,9 +6572,6 @@ static int nl80211_set_rekey_data(struct sk_buff *skb, struct genl_info *info)
 	if (err)
 		return err;
 
-	if (!tb[NL80211_REKEY_DATA_REPLAY_CTR] || !tb[NL80211_REKEY_DATA_KEK] ||
-	    !tb[NL80211_REKEY_DATA_KCK])
-		return -EINVAL;
 	if (nla_len(tb[NL80211_REKEY_DATA_REPLAY_CTR]) != NL80211_REPLAY_CTR_LEN)
 		return -ERANGE;
 	if (nla_len(tb[NL80211_REKEY_DATA_KEK]) != NL80211_KEK_LEN)
@@ -6739,7 +6725,7 @@ static int nl80211_vendor_cmd(struct sk_buff *skb, struct genl_info *info)
 		if (err != -EINVAL)
 			return err;
 		wdev = NULL;
-	} else if (!wdev || wdev->wiphy != &rdev->wiphy) {
+	} else if (wdev->wiphy != &rdev->wiphy) {
 		return -EINVAL;
 	}
 
@@ -6823,57 +6809,6 @@ int cfg80211_vendor_cmd_reply(struct sk_buff *skb)
 	return genlmsg_reply(skb, rdev->cur_cmd_info);
 }
 EXPORT_SYMBOL(cfg80211_vendor_cmd_reply);
-
-static int nl80211_set_qos_map(struct sk_buff *skb,
-			       struct genl_info *info)
-{
-	struct cfg80211_registered_device *rdev = info->user_ptr[0];
-	struct cfg80211_qos_map *qos_map = NULL;
-	struct net_device *dev = info->user_ptr[1];
-	u8 *pos, len, num_des, des_len, des;
-	int ret;
-
-	if (!rdev->ops->set_qos_map)
-		return -EOPNOTSUPP;
-
-	if (info->attrs[NL80211_ATTR_QOS_MAP]) {
-		pos = nla_data(info->attrs[NL80211_ATTR_QOS_MAP]);
-		len = nla_len(info->attrs[NL80211_ATTR_QOS_MAP]);
-
-		if (len % 2 || len < IEEE80211_QOS_MAP_LEN_MIN ||
-		    len > IEEE80211_QOS_MAP_LEN_MAX)
-			return -EINVAL;
-
-		qos_map = kzalloc(sizeof(struct cfg80211_qos_map), GFP_KERNEL);
-		if (!qos_map)
-			return -ENOMEM;
-
-		num_des = (len - IEEE80211_QOS_MAP_LEN_MIN) >> 1;
-		if (num_des) {
-			des_len = num_des *
-				sizeof(struct cfg80211_dscp_exception);
-			memcpy(qos_map->dscp_exception, pos, des_len);
-			qos_map->num_des = num_des;
-			for (des = 0; des < num_des; des++) {
-				if (qos_map->dscp_exception[des].up > 7) {
-					kfree(qos_map);
-					return -EINVAL;
-				}
-			}
-			pos += des_len;
-		}
-		memcpy(qos_map->up, pos, IEEE80211_QOS_MAP_LEN_MIN);
-	}
-
-	wdev_lock(dev->ieee80211_ptr);
-	ret = nl80211_key_allowed(dev->ieee80211_ptr);
-	if (!ret)
-		ret = rdev->ops->set_qos_map(&rdev->wiphy, dev, qos_map);
-	wdev_unlock(dev->ieee80211_ptr);
-
-	kfree(qos_map);
-	return ret;
-}
 
 #define NL80211_FLAG_NEED_WIPHY		0x01
 #define NL80211_FLAG_NEED_NETDEV	0x02
@@ -7485,14 +7420,6 @@ static struct genl_ops nl80211_ops[] = {
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
 		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-				  NL80211_FLAG_NEED_RTNL,
-	},
-	{
-		.cmd = NL80211_CMD_SET_QOS_MAP,
-		.doit = nl80211_set_qos_map,
-		.policy = nl80211_policy,
-		.flags = GENL_ADMIN_PERM,
-		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
 				  NL80211_FLAG_NEED_RTNL,
 	},
 };
