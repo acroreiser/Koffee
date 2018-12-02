@@ -379,6 +379,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-error=maybe-uninitialized \
 		   -Wno-error=return-type \
 		   -Wno-error=sizeof-pointer-memaccess \
+		   -Wno-error=strict-prototypes \
 		   -Wno-error=undef \
 		   -Wno-error=unused-function \
 		   -Wno-error=unused-label \
