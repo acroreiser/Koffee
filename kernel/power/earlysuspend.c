@@ -392,7 +392,7 @@ static struct attribute_group earlysuspend_attribute_group = {
 #define MAJOR_VERSION	1
 #define MINOR_VERSION	6
 
-#define POWER_SUSPEND_DEBUG // Add debugging prints in dmesg
+//#define POWER_SUSPEND_DEBUG // Add debugging prints in dmesg
 
 /* the display on process started */
 #define LCD_EVENT_ON_START		0x01
