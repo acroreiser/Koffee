@@ -11,6 +11,7 @@
 */
 
 #include <linux/types.h>
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/clk.h>
@@ -136,12 +137,6 @@ static int exynos_target(struct cpufreq_policy *policy,
 	if (!exynos_cpufreq_lock_disable && (index < g_cpufreq_limit_level))
 		index = g_cpufreq_limit_level;
 
-#if defined(CONFIG_CPU_EXYNOS4210)
-	/* Do NOT step up max arm clock directly to reduce power consumption */
-	if (index == exynos_info->max_support_idx && old_index > 3)
-		index = 3;
-#endif
-
 	freqs.new = freq_table[index].frequency;
 	freqs.cpu = policy->cpu;
 
@@ -251,6 +246,33 @@ int exynos_cpufreq_get_level(unsigned int freq, unsigned int *level)
 	return -EINVAL;
 }
 EXPORT_SYMBOL_GPL(exynos_cpufreq_get_level);
+
+int exynos_cpufreq_get_level_ret(unsigned int freq)
+{
+	struct cpufreq_frequency_table *table;
+	unsigned int i;
+
+	if (!exynos_cpufreq_init_done)
+		return -EINVAL;
+
+	table = cpufreq_frequency_get_table(0);
+	if (!table) {
+		pr_err("%s: Failed to get the cpufreq table\n", __func__);
+		return -EINVAL;
+	}
+
+	for (i = exynos_info->max_support_idx;
+		(table[i].frequency != CPUFREQ_TABLE_END); i++) {
+		if (table[i].frequency == freq) {
+			return i;
+		}
+	}
+
+	pr_err("%s: %u KHz is an unsupported cpufreq\n", __func__, freq);
+
+	return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(exynos_cpufreq_get_level_ret);
 
 atomic_t exynos_cpufreq_lock_count;
 
@@ -677,6 +699,10 @@ static struct notifier_block exynos_cpufreq_notifier = {
 	.notifier_call = exynos_cpufreq_notifier_event,
 };
 
+#if defined (CONFIG_INTELLI_PLUG)
+extern unsigned int intelli_plug_active;
+#endif
+
 static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 				unsigned long code, void *data)
 {
@@ -684,9 +710,42 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 
 	switch (code) {
 	case CPUFREQ_ADJUST:
-		if ((!strnicmp(policy->governor->name, "powersave", CPUFREQ_NAME_LEN))
-		|| (!strnicmp(policy->governor->name, "performance", CPUFREQ_NAME_LEN))
-		|| (!strnicmp(policy->governor->name, "userspace", CPUFREQ_NAME_LEN))) {
+
+		/*
+		 * arter97: add intelli_plug hook here;
+		 * if the selected governor has its own hotplugging implemented, disable intelli_plug,
+		 * if not, enable intelli_plug.
+		 */
+#if defined (CONFIG_INTELLI_PLUG)
+		if ((!strnicmp(policy->governor->name, "lulzactiveq",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "pegasusq",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "pyramid",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "pegasusqplus",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN)) /* add performance	governor as an exception */
+		 || (!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN)) /* add powersave	governor as an exception */
+		 || (!strnicmp(policy->governor->name, "userspace",	CPUFREQ_NAME_LEN)) /* add userspace	governor as an exception */
+		 || (!strnicmp(policy->governor->name, "yankasusq",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "zzmoove",	CPUFREQ_NAME_LEN))
+ 		 || (!strnicmp(policy->governor->name, "pegasusqpluso",	CPUFREQ_NAME_LEN))) {
+#if defined (CONFIG_INTELLI_PLUG)
+			if (intelli_plug_active) {
+				printk(KERN_DEBUG "disabling intelli_plug for governor: %s\n",
+								policy->governor->name);
+				intelli_plug_active = 0;
+			}
+		} else {
+			if (!intelli_plug_active) {
+				printk(KERN_DEBUG "enabling intelli_plug for governor: %s\n",
+								policy->governor->name);
+				intelli_plug_active = 1;
+			}
+		} /* intelli_plug */
+#endif
+
+#endif
+		if ((!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN))
+		 || (!strnicmp(policy->governor->name, "userspace",	CPUFREQ_NAME_LEN))) {
 			printk(KERN_DEBUG "cpufreq governor is changed to %s\n",
 							policy->governor->name);
 			exynos_cpufreq_lock_disable = true;
@@ -732,6 +791,16 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	}
 
 	ret = cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
+
+	/* Set default startup frq. */
+#ifdef CONFIG_MACH_T0
+	policy->max = 1600000;
+	policy->min = 200000;
+#else
+	policy->max = 1400000;
+	policy->min = 200000;
+#endif
+
 	if (ret)
 		return ret;
 
@@ -857,3 +926,76 @@ err_vdd_arm:
 	return -EINVAL;
 }
 late_initcall(exynos_cpufreq_init);
+
+/* sysfs interface for UV control */
+ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf) {
+
+  int i, len = 0;
+  if (buf)
+  {
+    for (i = exynos_info->max_support_idx; i<=exynos_info->min_support_idx; i++)
+    {
+      if(exynos_info->freq_table[i].frequency==CPUFREQ_ENTRY_INVALID) continue;
+      len += sprintf(buf + len, "%dmhz: %d mV\n", exynos_info->freq_table[i].frequency/1000,
+					((exynos_info->volt_table[i] % 1000) + exynos_info->volt_table[i])/1000);
+    }
+  }
+  return len;
+}
+
+ssize_t store_UV_mV_table(struct cpufreq_policy *policy,
+                                      const char *buf, size_t count) {
+
+	unsigned int ret = -EINVAL;
+   int i = 0;
+   int j = 0;
+	int u[15];
+   ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6],
+															&u[7], &u[8], &u[9], &u[10], &u[11], &u[12], &u[13], &u[14]);
+	if(ret != 15) {
+		ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6],
+															&u[7], &u[8], &u[9], &u[10], &u[11], &u[12], &u[13]);
+		if(ret != 14) {
+			ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6],
+															&u[7], &u[8], &u[9], &u[10], &u[11], &u[12]);
+			if( ret != 12)
+				return -EINVAL;
+		}
+	}
+
+	for( i = 0; i < 15; i++ )
+	{
+		u[i] *= 1000;
+		// round down voltages - thx to AndreiLux
+		if(u[i] % 12500)
+			u[i] = (u[i] / 12500) * 12500;
+
+		if (u[i] > CPU_UV_MV_MAX) {
+			u[i] = CPU_UV_MV_MAX;
+		}
+		else if (u[i] < CPU_UV_MV_MIN) {
+			u[i] = CPU_UV_MV_MIN;
+		}
+	}
+
+	for( i = 0; i < 15; i++ ) {
+		while(exynos_info->freq_table[i+j].frequency==CPUFREQ_ENTRY_INVALID)
+			j++;
+		exynos_info->volt_table[i+j] = u[i];
+	}
+	return count;
+}
+
+/* sysfs interface for ASV level */
+ssize_t show_asv_level(struct cpufreq_policy *policy, char *buf) {
+
+	return sprintf(buf, "ASV level: %d\n",exynos_result_of_asv); 
+
+}
+
+extern ssize_t store_asv_level(struct cpufreq_policy *policy,
+                                      const char *buf, size_t count) {
+	
+	// the store function does not do anything
+	return count;
+}
