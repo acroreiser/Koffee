@@ -9,18 +9,15 @@
 #include <linux/freezer.h>
 #include <asm/errno.h>
 
-#ifdef CONFIG_VT
+#if defined(CONFIG_PM_SLEEP) && defined(CONFIG_VT) && defined(CONFIG_VT_CONSOLE)
 extern void pm_set_vt_switch(int);
+extern int pm_prepare_console(void);
+extern void pm_restore_console(void);
 #else
 static inline void pm_set_vt_switch(int do_switch)
 {
 }
-#endif
 
-#ifdef CONFIG_VT_CONSOLE_SLEEP
-extern int pm_prepare_console(void);
-extern void pm_restore_console(void);
-#else
 static inline int pm_prepare_console(void)
 {
 	return 0;
@@ -89,22 +86,6 @@ static inline void dpm_save_failed_step(enum suspend_stat_step step)
 	suspend_stats.last_failed_step++;
 	suspend_stats.last_failed_step %= REC_FAILED_NUM;
 }
-
-/**
- * suspend_stats_update - Update success/failure statistics of suspend-to-ram
- *
- * @error: Value returned by enter_state() function
- */
-static inline void suspend_stats_update(int error)
-{
-	if (error) {
-		suspend_stats.fail++;
-		dpm_save_failed_errno(error);
-	} else {
-		suspend_stats.success++;
-	}
-}
-
 
 /**
  * struct platform_suspend_ops - Callbacks for managing platform dependent
@@ -366,7 +347,7 @@ extern int unregister_pm_notifier(struct notifier_block *nb);
 extern bool events_check_enabled;
 
 extern bool pm_wakeup_pending(void);
-extern bool pm_get_wakeup_count(unsigned int *count, bool block);
+extern bool pm_get_wakeup_count(unsigned int *count);
 extern bool pm_save_wakeup_count(unsigned int count);
 #else /* !CONFIG_PM_SLEEP */
 
@@ -407,16 +388,5 @@ static inline void unlock_system_sleep(void)
 	freezer_count();
 }
 #endif
-
-#ifdef CONFIG_PM_AUTOSLEEP
-
-/* kernel/power/autosleep.c */
-void queue_up_suspend_work(void);
-
-#else /* !CONFIG_PM_AUTOSLEEP */
-
-static inline void queue_up_suspend_work(void) {}
-
-#endif /* !CONFIG_PM_AUTOSLEEP */
 
 #endif /* _LINUX_SUSPEND_H */
