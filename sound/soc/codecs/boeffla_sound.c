@@ -108,20 +108,19 @@ static unsigned int regcache[REGDUMP_BANKS * REGDUMP_REGISTERS + 1];	// register
 
 static int mic_level;			// internal mic level
 
-#if defined(CONFIG_INTELLI_PLUG)
 // define variables for incall hook
 static void wm8994_incall_hook(void);
 static void incall_boost(struct work_struct *work);
 static DECLARE_WORK(incall_boost_work, incall_boost);
 struct workqueue_struct *incall_boost_queue;
+
 static bool is_incall = false;
 static bool prev_incall_state = false;
 static bool bootdone = false;
-#define INCALL_BOOST_FREQ 1000000
+
 extern unsigned int intelli_plug_active;
-#endif
 
-
+#define INCALL_BOOST_FREQ 1000000
 
 /*****************************************/
 // Internal function declarations
@@ -165,16 +164,14 @@ static unsigned int get_mic_level(int reg_index, unsigned int val);
 
 static void reset_boeffla_sound(void);
 
-#if defined(CONFIG_INTELLI_PLUG)
+
 // incall hook by arter97
 static void wm8994_incall_hook(void)
 {
 	// fall-out early when boot is not finished
 	// (a dirty workaround for early kernel-panic)
-
 	if (!bootdone || !intelli_plug_active)
 		return;
-
 
 	is_incall = check_for_call();
 	if (is_incall != prev_incall_state) {
@@ -194,7 +191,6 @@ static void incall_boost(struct work_struct *work)
 		exynos_cpufreq_lock_free(DVFS_LOCK_ID_INCALL);
 	}
 }
-#endif
 
 /*****************************************/
 // Boeffla sound hook functions for
@@ -234,11 +230,9 @@ unsigned int Boeffla_sound_hook_wm8994_write(unsigned int reg, unsigned int val)
 	bool current_is_headphone;
 	bool current_is_fmradio;
 
-#if defined(CONFIG_INTELLI_PLUG)
 	// call incall hook no-matter-what boeffla sound is enabled or not
 	wm8994_incall_hook();
-#endif
-	
+
 	// Terminate instantly if boeffla sound is not enabled and return
 	// original value back
 	if (!boeffla_sound)
@@ -1476,11 +1470,9 @@ static ssize_t boeffla_sound_store(struct device *dev, struct device_attribute *
 {
 	unsigned int ret = -EINVAL;
 	int val;
-	
-#if defined(CONFIG_INTELLI_PLUG)
+
 	bootdone = true;
-#endif
-	
+
 	// read values from input buffer
 	ret = sscanf(buf, "%d", &val);
 
@@ -2474,10 +2466,8 @@ static int boeffla_sound_init(void)
 	// Initialize delayed work for Eq reapplication
 	INIT_DELAYED_WORK_DEFERRABLE(&apply_settings_work, apply_settings);
 
-#if defined(CONFIG_INTELLI_PLUG)
 	// Add incall hook by arter97
 	incall_boost_queue = create_singlethread_workqueue("incall_boost_work");
-#endif
 
 	// Print debug info
 	printk("Boeffla-sound: engine version %s started\n", BOEFFLA_SOUND_VERSION);

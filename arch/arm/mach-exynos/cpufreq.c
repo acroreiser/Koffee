@@ -11,7 +11,6 @@
 */
 
 #include <linux/types.h>
-#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/clk.h>
@@ -699,9 +698,7 @@ static struct notifier_block exynos_cpufreq_notifier = {
 	.notifier_call = exynos_cpufreq_notifier_event,
 };
 
-#if defined (CONFIG_INTELLI_PLUG)
 extern unsigned int intelli_plug_active;
-#endif
 
 static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 				unsigned long code, void *data)
@@ -716,7 +713,6 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 		 * if the selected governor has its own hotplugging implemented, disable intelli_plug,
 		 * if not, enable intelli_plug.
 		 */
-#if defined (CONFIG_INTELLI_PLUG)
 		if ((!strnicmp(policy->governor->name, "lulzactiveq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pegasusq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "pyramid",	CPUFREQ_NAME_LEN))
@@ -727,7 +723,6 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 		 || (!strnicmp(policy->governor->name, "yankasusq",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "zzmoove",	CPUFREQ_NAME_LEN))
  		 || (!strnicmp(policy->governor->name, "pegasusqpluso",	CPUFREQ_NAME_LEN))) {
-#if defined (CONFIG_INTELLI_PLUG)
 			if (intelli_plug_active) {
 				printk(KERN_DEBUG "disabling intelli_plug for governor: %s\n",
 								policy->governor->name);
@@ -740,9 +735,7 @@ static int exynos_cpufreq_policy_notifier_call(struct notifier_block *this,
 				intelli_plug_active = 1;
 			}
 		} /* intelli_plug */
-#endif
 
-#endif
 		if ((!strnicmp(policy->governor->name, "powersave",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "performance",	CPUFREQ_NAME_LEN))
 		 || (!strnicmp(policy->governor->name, "userspace",	CPUFREQ_NAME_LEN))) {
