@@ -85,46 +85,43 @@ static unsigned int clkdiv_cpu0_4212[CPUFREQ_LEVEL_END][8] = {
 	/* ARM L2: 1600Mhz */
 	{ 0, 3, 7, 0, 6, 1, 2, 0 },
 
-	/* ARM L3: 1500Mhz */
+	/* ARM L3: 1400Mhz */
 	{ 0, 3, 7, 0, 6, 1, 2, 0 },
 
-	/* ARM L4: 1400Mhz */
+	/* ARM L4: 1300Mhz */
 	{ 0, 3, 7, 0, 6, 1, 2, 0 },
 
-	/* ARM L5: 1300Mhz */
-	{ 0, 3, 7, 0, 6, 1, 2, 0 },
-
-	/* ARM L6: 1200Mhz */
+	/* ARM L5: 1200Mhz */
 	{ 0, 3, 7, 0, 5, 1, 2, 0 },
 
-	/* ARM L7: 1100Mhz */
+	/* ARM L6: 1100Mhz */
 	{ 0, 3, 7, 0, 5, 1, 2, 0 },
 
-	/* ARM L8: 1000MHz */
+	/* ARM L7: 1000MHz */
 	{ 0, 3, 6, 0, 4, 1, 2, 0 },
 
-	/* ARM L9: 900MHz */
+	/* ARM L8: 900MHz */
 	{ 0, 2, 5, 0, 4, 1, 1, 0 },
 
-	/* ARM L10: 800MHz */
+	/* ARM L9: 800MHz */
 	{ 0, 2, 5, 0, 3, 1, 1, 0 },
 
-	/* ARM L11: 700MHz */
+	/* ARM L10: 700MHz */
 	{ 0, 2, 5, 0, 3, 1, 1, 0 },
 
-	/* ARM L12: 600MHz */
+	/* ARM L11: 600MHz */
 	{ 0, 2, 4, 0, 3, 1, 1, 0 },
 
-	/* ARM L13: 500MHz */
+	/* ARM L12: 500MHz */
 	{ 0, 2, 4, 0, 3, 1, 1, 0 },
 
-	/* ARM L14: 400MHz */
+	/* ARM L13: 400MHz */
 	{ 0, 2, 4, 0, 3, 1, 1, 0 },
 
-	/* ARM L15: 300MHz */
+	/* ARM L14: 300MHz */
 	{ 0, 2, 4, 0, 3, 1, 1, 0 },
 
-	/* ARM L16: 200MHz */
+	/* ARM L15: 200MHz */
 	{ 0, 2, 4, 0, 2, 1, 1, 0 },
 };
 
@@ -143,46 +140,43 @@ static unsigned int clkdiv_cpu0_4412[CPUFREQ_LEVEL_END][8] = {
 	/* ARM L2: 1600Mhz */
 	{ 0, 4, 7, 0, 7, 1, 7, 0 },
 
-	/* ARM L3: 1500Mhz */
-	{ 0, 4, 7, 0, 7, 1, 7, 0 },
-
-	/* ARM L4: 1400Mhz */
+	/* ARM L3: 1400Mhz */
 	{ 0, 3, 7, 0, 6, 1, 7, 0 },
 
-	/* ARM L5: 1300Mhz */
+	/* ARM L4: 1300Mhz */
 	{ 0, 3, 7, 0, 6, 1, 6, 0 },
 
-	/* ARM L6: 1200Mhz */
+	/* ARM L5: 1200Mhz */
 	{ 0, 3, 7, 0, 5, 1, 6, 0 },
 
-	/* ARM L7: 1100Mhz */
+	/* ARM L6: 1100Mhz */
 	{ 0, 3, 7, 0, 5, 1, 5, 0 },
 
-	/* ARM L8: 1000MHz */
+	/* ARM L7: 1000MHz */
 	{ 0, 3, 6, 0, 4, 1, 5, 0 },
 
-	/* ARM L9: 900MHz */
+	/* ARM L8: 900MHz */
 	{ 0, 2, 5, 0, 4, 1, 4, 0 },
 
-	/* ARM L10: 800MHz */
+	/* ARM L9: 800MHz */
 	{ 0, 2, 5, 0, 3, 1, 4, 0 },
 
-	/* ARM L11: 700MHz */
+	/* ARM L10: 700MHz */
 	{ 0, 2, 5, 0, 3, 1, 3, 0 },
 
-	/* ARM L12: 600MHz */
+	/* ARM L11: 600MHz */
 	{ 0, 2, 4, 0, 3, 1, 3, 0 },
 
-	/* ARM L13: 500MHz */
+	/* ARM L12: 500MHz */
 	{ 0, 2, 4, 0, 3, 1, 2, 0 },
 
-	/* ARM L14: 400MHz */
+	/* ARM L13: 400MHz */
 	{ 0, 2, 4, 0, 3, 1, 2, 0 },
 
-	/* ARM L15: 300MHz */
+	/* ARM L14: 300MHz */
 	{ 0, 2, 4, 0, 3, 1, 1, 0 },
 
-	/* ARM L16: 200MHz */
+	/* ARM L15: 200MHz */
 	{ 0, 2, 4, 0, 2, 1, 1, 0 },
 };
 
@@ -199,46 +193,43 @@ static unsigned int clkdiv_cpu1_4212[CPUFREQ_LEVEL_END][2] = {
 	/* ARM L2: 1600MHz */
 	{ 6, 0 },
 
-	/* ARM L3: 1500MHz */
+	/* ARM L3: 1400MHz */
 	{ 6, 0 },
 
-	/* ARM L4: 1400MHz */
+	/* ARM L4: 1300MHz */
 	{ 6, 0 },
 
-	/* ARM L5: 1300MHz */
-	{ 6, 0 },
-
-	/* ARM L6: 1200MHz */
+	/* ARM L5: 1200MHz */
 	{ 5, 0 },
 
-	/* ARM L7: 1100MHz */
+	/* ARM L6: 1100MHz */
 	{ 5, 0 },
 
-	/* ARM L8: 1000MHz */
+	/* ARM L7: 1000MHz */
 	{ 4, 0 },
 
-	/* ARM L9: 900MHz */
+	/* ARM L8: 900MHz */
 	{ 4, 0 },
 
-	/* ARM L10: 800MHz */
+	/* ARM L9: 800MHz */
 	{ 3, 0 },
 
-	/* ARM L11: 700MHz */
+	/* ARM L10: 700MHz */
 	{ 3, 0 },
 
-	/* ARM L12: 600MHz */
+	/* ARM L11: 600MHz */
 	{ 3, 0 },
 
-	/* ARM L13: 500MHz */
+	/* ARM L12: 500MHz */
 	{ 3, 0 },
 
-	/* ARM L14: 400MHz */
+	/* ARM L13: 400MHz */
 	{ 3, 0 },
 
-	/* ARM L15: 300MHz */
+	/* ARM L14: 300MHz */
 	{ 3, 0 },
 
-	/* ARM L16: 200MHz */
+	/* ARM L15: 200MHz */
 	{ 3, 0 },
 };
 
