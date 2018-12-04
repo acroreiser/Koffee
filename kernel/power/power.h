@@ -309,8 +309,3 @@ static inline void pm_wd_add_timer(struct timer_list *timer,
 				struct pm_wd_data *data, int timeout) { }
 static inline void pm_wd_del_timer(struct timer_list *timer) { }
 #endif
-
-/* Yank555.lu - Make current max limit available globally */
-int get_cpufreq_level(unsigned int freq, unsigned int *level);
-extern int cpufreq_max_limit_val;
-extern int cpufreq_max_limit_coupled;
