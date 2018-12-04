@@ -102,7 +102,7 @@
 
 // Change this value for your device
 #define LITTLE_CORES    4
-#define BIG_CORES       4
+#define BIG_CORES       0
 
 #define MSM_HOTPLUG_VERSION             "2.3"
 
