@@ -275,7 +275,7 @@ static int update_average_load(unsigned int cpu)
     if (ret)
         return -EINVAL;
 
-    cur_idle_time = get_cpu_idle_time(cpu, &cur_wall_time, io_is_busy);
+    cur_idle_time = get_cpu_idle_time_us(cpu, &cur_wall_time);
 
     wall_time = (unsigned int) (cur_wall_time - pcpu->prev_cpu_wall);
     pcpu->prev_cpu_wall = cur_wall_time;
