@@ -34,8 +34,8 @@ static int irq_count;
 static struct kobject *wakeup_reason;
 static spinlock_t resume_reason_lock;
 
-static ssize_t reason_show(struct kobject *kobj, struct kobj_attribute *attr,
-		const char *buf, size_t count)
+static ssize_t last_resume_reason_show(struct kobject *kobj, struct kobj_attribute *attr,
+		char *buf)
 {
 	int irq_no, buf_offset = 0;
 	struct irq_desc *desc;
@@ -53,8 +53,7 @@ static ssize_t reason_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return buf_offset;
 }
 
-static struct kobj_attribute resume_reason = __ATTR(last_resume_reason, 0666,
-		reason_show, NULL);
+static struct kobj_attribute resume_reason = __ATTR_RO(last_resume_reason);
 
 static struct attribute *attrs[] = {
 	&resume_reason.attr,
@@ -79,6 +78,13 @@ void log_wakeup_reason(int irq)
 		printk(KERN_INFO "Resume caused by IRQ %d\n", irq);
 
 	spin_lock(&resume_reason_lock);
+	if (irq_count == MAX_WAKEUP_REASON_IRQS) {
+		spin_unlock(&resume_reason_lock);
+		printk(KERN_WARNING "Resume caused by more than %d IRQs\n",
+				MAX_WAKEUP_REASON_IRQS);
+		return;
+	}
+
 	irq_list[irq_count++] = irq;
 	spin_unlock(&resume_reason_lock);
 }
@@ -106,7 +112,7 @@ static struct notifier_block wakeup_reason_pm_notifier_block = {
 /* Initializes the sysfs parameter
  * registers the pm_event notifier
  */
-void __init wakeup_reason_init(void)
+int __init wakeup_reason_init(void)
 {
 	int retval;
 	spin_lock_init(&resume_reason_lock);
@@ -119,7 +125,7 @@ void __init wakeup_reason_init(void)
 	if (!wakeup_reason) {
 		printk(KERN_WARNING "[%s] failed to create a sysfs kobject\n",
 				__func__);
-		return;
+		return 1;
 	}
 	retval = sysfs_create_group(wakeup_reason, &attr_group);
 	if (retval) {
@@ -127,6 +133,7 @@ void __init wakeup_reason_init(void)
 		printk(KERN_WARNING "[%s] failed to create a sysfs group %d\n",
 				__func__, retval);
 	}
+	return 0;
 }
 
 late_initcall(wakeup_reason_init);
