@@ -1529,11 +1529,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			queue_work_on(this_dbs_info->cpu, dbs_wq,
 			      &this_dbs_info->down_work);
 	}
-	
+
 	//if (hotplug_history->num_hist  == max_hotplug_rate)
 	//	hotplug_history->num_hist = 0;
-	
-	/* 
+
+#if 0
+	/*
 	 * Don't bother changing CPU freq if not in standby mode
 	 * and not all cores are up
 	 */
@@ -1541,6 +1542,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		pr_err_ratelimited("%s: waiting for all CPUs up before ramping cpufreq up!\n", __func__);
 		return;
 	}
+#endif
 
 	/* frequency changing logic starts here */
 
