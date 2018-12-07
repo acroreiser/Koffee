@@ -231,10 +231,13 @@ static void watchdog_check_hardlockup_other_cpu(void)
 		if (per_cpu(hard_watchdog_warn, cpu) == true)
 			return;
 
+		/*
 		if (hardlockup_panic)
 			panic("Watchdog detected hard LOCKUP on cpu %d", cpu);
 		else
 			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", cpu);
+		*/
+		pr_emerg("Watchdog detected hard LOCKUP on cpu %d", cpu);
 
 		per_cpu(hard_watchdog_warn, cpu) = true;
 	} else {
@@ -292,10 +295,12 @@ static void watchdog_overflow_callback(struct perf_event *event,
 		if (__this_cpu_read(hard_watchdog_warn) == true)
 			return;
 
+		pr_emerg("Watchdog detected hard LOCKUP on cpu %d", cpu);
+		/*
 		if (hardlockup_panic)
 			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
 		else
-			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);*/
 
 		__this_cpu_write(hard_watchdog_warn, true);
 		return;
