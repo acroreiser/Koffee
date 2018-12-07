@@ -5,6 +5,10 @@
  *            (C)  2003 Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>.
  *                      Jun Nakajima <jun.nakajima@intel.com>
  *            (C)  2009 Alexander Clouter <alex@digriz.org.uk>
+ *            (C)  2011 Samsung Electronics co. ltd
+ *                      ByungChang Cha <bc.cha@samsung.com>
+ *            (C)  2014-2015 Marcin Kaluza (mkaluza@xda-developers.com) <marcin.kaluza@trioptimum.com>
+ *            (C)  2018 Victor Shilin (ChronoMonochrome@xda-developers.com) <chrono.monochrome@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
