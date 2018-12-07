@@ -14,6 +14,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/ratelimit.h>
 #include <linux/cpufreq.h>
 #include <linux/cpu.h>
 #include <linux/jiffies.h>
@@ -1197,6 +1198,11 @@ static void cpu_up_work(struct work_struct *work)
 	int boost_mincpus = dbs_tuners_ins.boost_mincpus;
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
 
+	if (!standby) {
+		nr_up = 3;
+		goto do_up_work;
+	}
+	
 	if (hotplug_lock && min_cpu_lock)
 		nr_up = max(hotplug_lock, min_cpu_lock) - online;
 	else if (hotplug_lock)
@@ -1207,12 +1213,15 @@ static void cpu_up_work(struct work_struct *work)
 	if (is_boosted() && boost_mincpus) {
 		nr_up = max(nr_up, boost_mincpus - online);
 	}
-
+	
+do_up_work:
+/*
 	if (online == 1) {
 		printk(KERN_ERR "CPU_UP 3\n");
 		cpu_up(num_possible_cpus() - 1);
 		nr_up -= 1;
 	}
+*/
 
 	for_each_cpu_not(cpu, cpu_online_mask) {
 		if (nr_up-- == 0)
@@ -1502,12 +1511,22 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 
 	/* Check for CPU hotplug */
-	if (check_up()) {
+	if (check_up() || (!standby && num_online_cpus() < NR_CPUS)) {
 		queue_work_on(this_dbs_info->cpu, dbs_wq,
 			      &this_dbs_info->up_work);
 	} else if (check_down()) {
-		queue_work_on(this_dbs_info->cpu, dbs_wq,
+		if (standby)
+			queue_work_on(this_dbs_info->cpu, dbs_wq,
 			      &this_dbs_info->down_work);
+	}
+	
+	/* 
+	 * Don't bother changing CPU freq if not in standby mode
+	 * and not all cores are up
+	 */
+	if (!standby && num_online_cpus() < NR_CPUS) {
+		pr_err_ratelimited("%s: waiting for all CPUs up before ramping cpufreq up!\n", __func__);
+		return;
 	}
 
 	if (hotplug_history->num_hist  == max_hotplug_rate)
