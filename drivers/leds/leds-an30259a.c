@@ -832,6 +832,26 @@ void enable_led_an30259a(unsigned int led_brightness, unsigned int delay_on_time
 }
 EXPORT_SYMBOL(enable_led_an30259a);
 
+static unsigned int led_brightness = 0;
+
+static int set_brightness(const char *val, struct kernel_param *kp)
+{
+	int retval;
+	int brightness;
+
+	retval = sscanf(val, "%d", &brightness);
+	if (retval == 0) {
+		dev_err(&data_bkp->client->dev, "fail to get brightness value.\n");
+		return -EINVAL;
+	}
+
+	led_brightness = brightness;
+	an30259a_set_brightness(&led_bkp->cdev, led_brightness);
+
+	return 0;
+}
+module_param_call(brightness, set_brightness, param_get_uint, &led_brightness, 0644);
+
 static int __devinit an30259a_initialize(struct i2c_client *client,
 					struct an30259a_led *led, int channel)
 {
