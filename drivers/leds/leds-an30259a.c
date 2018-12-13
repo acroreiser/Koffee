@@ -516,9 +516,6 @@ static ssize_t store_an30259a_led_blink(struct device *dev,
 	unsigned int delay_on_time = 0;
 	unsigned int delay_off_time = 0;
 	struct an30259a_data *data = dev_get_drvdata(dev);
-	u8 led_r_brightness = 0;
-	u8 led_g_brightness = 0;
-	u8 led_b_brightness = 0;
 
 	retval = sscanf(buf, "0x%x %d %d", &led_brightness,
 				&delay_on_time, &delay_off_time);
@@ -528,27 +525,7 @@ static ssize_t store_an30259a_led_blink(struct device *dev,
 		return count;
 	}
 
-	/*Reset an30259a*/
-	an30259a_start_led_pattern(LED_OFF);
-
-	/*Set LED blink mode*/
-	led_r_brightness = ((u32)led_brightness & LED_R_MASK)
-					>> LED_R_SHIFT;
-	led_g_brightness = ((u32)led_brightness & LED_G_MASK)
-					>> LED_G_SHIFT;
-	led_b_brightness = ((u32)led_brightness & LED_B_MASK);
-
-	an30259a_set_led_blink(LED_R, delay_on_time,
-				delay_off_time, led_r_brightness);
-	an30259a_set_led_blink(LED_G, delay_on_time,
-				delay_off_time, led_g_brightness);
-	an30259a_set_led_blink(LED_B, delay_on_time,
-				delay_off_time, led_b_brightness);
-
-	leds_i2c_write_all(data->client);
-
-	printk(KERN_DEBUG "led_blink is called, Color:0x%X Brightness:%i\n",
-			led_brightness, LED_DYNAMIC_CURRENT);
+	enable_led_an30259a(led_brightness, delay_on_time, delay_off_time);
 
 	return count;
 }
