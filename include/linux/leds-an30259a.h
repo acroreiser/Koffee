@@ -81,9 +81,9 @@ struct an30259a_pr_control {
 #define AN30259A_PR_SET_LEDS	_IOW('S', 43, struct an30259a_pr_control[3])
 #define AN30259A_PR_SET_IMAX	_IOW('S', 44, __u8)
 
-#define COLOR_RED	0xff0000
-#define COLOR_GREEN	0x00ff00
-#define COLOR_BLUE	0x0000ff
+#define COLOR_RED	0x0d0000
+#define COLOR_GREEN	0x000d00
+#define COLOR_BLUE	0x00000d
 #define COLOR_YELLOW	COLOR_RED | COLOR_GREEN
 
 void enable_led_an30259a(unsigned int led_brightness, unsigned int delay_on_time,
