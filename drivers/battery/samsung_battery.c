@@ -46,6 +46,10 @@
 #endif
 #include "linux/charge_level.h"
 
+#ifdef CONFIG_LEDS_AN30259A
+#include <linux/leds-an30259a.h>
+#endif
+
 int ac_level 		= AC_CHARGE_LEVEL_DEFAULT;    // Set AC default charge level
 int usb_level  		= USB_CHARGE_LEVEL_DEFAULT; // Set USB default charge level
 int wireless_level	= WIRELESS_CHARGE_LEVEL_DEFAULT; // Set wireless default charge level
@@ -1166,6 +1170,25 @@ charge_state_con:
 		battery_control_info(info, POWER_SUPPLY_PROP_STATUS, ENABLE);
 
 		info->charge_start_time = current_time.tv_sec;
+#ifdef CONFIG_LEDS_AN30259A
+		if (led_switch > 0) {
+			switch (info->battery_soc) {
+			  case 0 ... 15:
+				enable_led_an30259a(color_lowcharge, 0, 0);
+				break;
+			  case 16 ... 80:
+				enable_led_an30259a(color_medcharge, 0, 0);
+				break;
+			  case 81 ... 100:
+				if (info->full_charged_state != STATUS_2ND_FULL)
+					enable_led_an30259a(color_highcharge, 0, 0);
+				else
+					enable_led_an30259a(color_fullcharge, 0, 0);
+				break;
+			}
+		}
+#endif
+
 		pr_info("%s: charge enabled, current as %d/%dmA @%d\n",
 			__func__, info->charge_current, info->input_current,
 			info->charge_start_time);
@@ -1185,6 +1208,11 @@ charge_state_con:
 		}
 	} else if ((chg_curr == 0) && (info->charge_start_time != 0)) {
 		battery_control_info(info, POWER_SUPPLY_PROP_STATUS, DISABLE);
+
+#ifdef CONFIG_LEDS_AN30259A
+		if (led_switch > 0)
+			enable_led_an30259a(0, 0, 0);
+#endif
 
 		pr_info("%s: charge disabled, current as %d/%dmA @%d\n",
 			__func__, info->charge_current, info->input_current,

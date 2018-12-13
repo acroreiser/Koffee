@@ -527,6 +527,7 @@ static ssize_t store_an30259a_led_blink(struct device *dev,
 		dev_err(&data->client->dev, "fail to get led_blink value.\n");
 		return count;
 	}
+
 	/*Reset an30259a*/
 	an30259a_start_led_pattern(LED_OFF);
 
@@ -803,6 +804,57 @@ static struct attribute_group sec_led_attr_group = {
 };
 #endif
 
+#define COLOR_FULLCHARGE 	0x140D00
+#define COLOR_HIGHCHARGE 	COLOR_GREEN
+#define COLOR_MEDCHARGE 	COLOR_YELLOW
+#define COLOR_LOWCHARGE 	COLOR_RED
+
+unsigned int led_switch = 0;
+unsigned int color_fullcharge = 0x140D00;
+unsigned int color_highcharge = COLOR_GREEN;
+unsigned int color_medcharge = COLOR_YELLOW;
+unsigned int color_lowcharge = COLOR_RED;
+
+module_param(led_switch, uint, 0644);
+module_param(color_fullcharge, uint, 0644);
+module_param(color_highcharge, uint, 0644);
+module_param(color_medcharge, uint, 0644);
+module_param(color_lowcharge, uint, 0644);
+
+static struct an30259a_led *led_bkp;
+static struct an30259a_data *data_bkp;
+
+void enable_led_an30259a(unsigned int led_brightness, unsigned int delay_on_time,
+							unsigned int delay_off_time)
+{
+	u8 led_r_brightness = 0;
+	u8 led_g_brightness = 0;
+	u8 led_b_brightness = 0;
+
+	/*Reset an30259a*/
+	an30259a_start_led_pattern(LED_OFF);
+
+	/*Set LED blink mode*/
+	led_r_brightness = ((u32)led_brightness & LED_R_MASK)
+					>> LED_R_SHIFT;
+	led_g_brightness = ((u32)led_brightness & LED_G_MASK)
+					>> LED_G_SHIFT;
+	led_b_brightness = ((u32)led_brightness & LED_B_MASK);
+
+	an30259a_set_led_blink(LED_R, delay_on_time,
+				delay_off_time, led_r_brightness);
+	an30259a_set_led_blink(LED_G, delay_on_time,
+				delay_off_time, led_g_brightness);
+	an30259a_set_led_blink(LED_B, delay_on_time,
+				delay_off_time, led_b_brightness);
+
+	leds_i2c_write_all(data_bkp->client);
+
+	pr_err("%s is called, Color:0x%X Brightness:%i\n",
+			__func__, led_brightness, LED_DYNAMIC_CURRENT);
+}
+EXPORT_SYMBOL(enable_led_an30259a);
+
 static int __devinit an30259a_initialize(struct i2c_client *client,
 					struct an30259a_led *led, int channel)
 {
@@ -851,6 +903,7 @@ static int __devinit an30259a_initialize(struct i2c_client *client,
 	}
 
 	leds_set_imax(client, 0x00);
+	led_bkp = led;
 
 	return 0;
 }
@@ -895,7 +948,7 @@ static int __devinit an30259a_probe(struct i2c_client *client,
 
 #ifdef SEC_LED_SPECIFIC
 	led_enable_fade = 1;
-	
+
 	led_dev = device_create(sec_class, NULL, 0, data, "led");
 	if (IS_ERR(led_dev)) {
 		dev_err(&client->dev,
@@ -910,6 +963,7 @@ static int __devinit an30259a_probe(struct i2c_client *client,
 		goto exit;
 	}
 #endif
+	data_bkp = data;
 	return ret;
 exit:
 	mutex_destroy(&data->mutex);
