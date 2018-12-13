@@ -1179,11 +1179,11 @@ charge_state_con:
 			  case 16 ... 80:
 				enable_led_an30259a(color_medcharge, 0, 0);
 				break;
-			  case 81 ... 100:
-				if (info->full_charged_state != STATUS_2ND_FULL)
-					enable_led_an30259a(color_highcharge, 0, 0);
-				else
-					enable_led_an30259a(color_fullcharge, 0, 0);
+			  case 81 ... 99:
+				enable_led_an30259a(color_highcharge, 0, 0);
+				break;
+			  case 100:
+				enable_led_an30259a(color_fullcharge, 0, 0);
 				break;
 			}
 		}
