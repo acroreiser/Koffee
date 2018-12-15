@@ -458,12 +458,10 @@ void local_timer_stop(struct clock_event_device *evt)
 		disable_percpu_irq(IRQ_MCT_LOCALTIMER);
 }
 
-#if 0
 static struct local_timer_ops exynos4_mct_tick_ops __cpuinitdata = {
-	.setup	= exynos4_local_timer_setup,
-	.stop	= exynos4_local_timer_stop,
+	.setup	= local_timer_setup,
+	.stop	= local_timer_stop,
 };
-#endif
 
 static void __init exynos4_local_timer_init(void)
 {
@@ -494,7 +492,7 @@ static void __init exynos4_timer_resources(void)
 		     IRQ_MCT_LOCALTIMER, err);
 	}
 
-	//local_timer_register(&exynos4_mct_tick_ops);
+	local_timer_register(&exynos4_mct_tick_ops);
 #endif /* CONFIG_LOCAL_TIMERS */
 }
 
