@@ -28,7 +28,6 @@
 #include <linux/android_alarm.h>
 #include <plat/adc.h>
 #include <linux/power/sec_battery_u1.h>
-#include "charge_current.h"
 
 #if defined(CONFIG_TARGET_LOCALE_NA) || defined(CONFIG_TARGET_LOCALE_NAATT)
 #define POLLING_INTERVAL	(10 * 1000)
@@ -322,7 +321,6 @@ struct sec_bat_info {
 	unsigned int batt_temp_radc;
 #endif
 	unsigned int batt_current_adc;
-    int batt_chg_current;
 #if defined(CONFIG_TARGET_LOCALE_NAATT)
 	int batt_vf_adc;
 	int batt_event_status;
@@ -400,8 +398,6 @@ static enum power_supply_property sec_power_props[] = {
 #ifdef CONFIG_TARGET_LOCALE_NA
 static struct sec_bat_info *pchg;
 #endif
-
-int poweroff_charging;
 
 struct power_supply *get_power_supply_by_name(char *name)
 {
@@ -1487,15 +1483,15 @@ static int sec_bat_enable_charging_main(struct sec_bat_info *info, bool enable)
 		switch (info->cable_type) {
 		case CABLE_TYPE_USB:
 			val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
-			val_chg_current.intval = charge_current_usb;	/* mA */
+			val_chg_current.intval = 450;	/* mA */
 			break;
 		case CABLE_TYPE_AC:
 			val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
-			val_chg_current.intval = charge_current_ac;	/* mA */
+			val_chg_current.intval = 650;	/* mA */
 			break;
 		case CABLE_TYPE_MISC:
 			val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
-			val_chg_current.intval = charge_current_misc;	/* mA */
+			val_chg_current.intval = 450;	/* mA */
 			break;
 		default:
 			dev_err(info->dev, "%s: Invalid func use\n", __func__);
@@ -1576,7 +1572,7 @@ static int sec_bat_enable_charging_sub(struct sec_bat_info *info, bool enable)
 			switch (info->cable_type) {
 			case CABLE_TYPE_USB:
 				val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
-			val_chg_current.intval = charge_current_usb;	/* mA */
+				val_chg_current.intval = 450;	/* mA */
 				break;
 			case CABLE_TYPE_AC:
 				val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
@@ -1586,11 +1582,11 @@ static int sec_bat_enable_charging_sub(struct sec_bat_info *info, bool enable)
 					val_chg_current.intval = 450;	/* mA */
 				else
 #endif
-			val_chg_current.intval = charge_current_ac;	/* mA */
+					val_chg_current.intval = 650;	/* mA */
 				break;
 			case CABLE_TYPE_MISC:
 				val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
-			val_chg_current.intval = charge_current_misc;	/* mA */
+				val_chg_current.intval = 450;	/* mA */
 				break;
 			default:
 				dev_err(info->dev, "%s: Invalid func use\n",
@@ -2344,20 +2340,6 @@ static void sec_bat_polling_work(struct work_struct *work)
 				      msecs_to_jiffies(info->polling_interval));
 }
 
-
-int sec_bat_check_chgcurrent(struct sec_bat_info *info)
-{
-	unsigned long cadc = 0;
-
-	mutex_lock(&info->adclock);
-	cadc = sec_bat_get_adc_data(info, ADC_CH_CHGCURRENT);
-	mutex_unlock(&info->adclock);
-	if(cadc<0) info->batt_chg_current=cadc; else
-	//fit & normalize - gm
-	info->batt_chg_current = (cadc*50-(cadc*cadc/10000*84))/100;
-	return info->batt_chg_current;
-}
-
 #define SEC_BATTERY_ATTR(_name)			\
 {						\
 	.attr = { .name = #_name,		\
@@ -2387,7 +2369,6 @@ static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(batt_test_value),
 	SEC_BATTERY_ATTR(batt_current_now),
 	SEC_BATTERY_ATTR(batt_current_adc),
-	SEC_BATTERY_ATTR(batt_chg_current),
 	SEC_BATTERY_ATTR(siop_activated),
 	SEC_BATTERY_ATTR(system_rev),
 #ifdef CONFIG_TARGET_LOCALE_NA
@@ -2442,7 +2423,6 @@ enum {
 	BATT_TEST_VALUE,
 	BATT_CURRENT_NOW,
 	BATT_CURRENT_ADC,
-	BATT_CHG_CURRENT,
 	BATT_SIOP_ACTIVATED,
 	BATT_SYSTEM_REV,
 	BATT_FG_PSOC,
@@ -2660,13 +2640,6 @@ static ssize_t sec_bat_show_property(struct device *dev,
 	case BATT_CURRENT_ADC:
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 			       info->batt_current_adc);
-		break;
-	case BATT_CHG_CURRENT:
-		if(info->charging_status != POWER_SUPPLY_STATUS_DISCHARGING)
-		{
-			val = sec_bat_check_chgcurrent(info);
-			i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", val);
-		} else i = -EINVAL;
 		break;
 	case BATT_SYSTEM_REV:
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", system_rev);
@@ -3041,7 +3014,6 @@ static int sec_bat_create_attrs(struct device *dev)
 	while (i--)
 		device_remove_file(dev, &sec_battery_attrs[i]);
  succeed:
-    charge_current_start();
 	return rc;
 }
 
@@ -3074,7 +3046,7 @@ static int sec_bat_read_proc(char *buf, char **start,
 	ktime_t ktime;
 	int len = 0;
 
-        get_monotonic_boottime(&cur_time);
+	get_monotonic_boottime(&cur_time);
 
 #ifdef CONFIG_TARGET_LOCALE_NA
 	len = sprintf(buf,
@@ -3085,7 +3057,6 @@ static int sec_bat_read_proc(char *buf, char **start,
 		      info->batt_vfocv,
 		      info->batt_vcell,
 		      info->batt_current_adc,
-              info->batt_chg_current,
 		      info->batt_full_status,
 		      info->charging_int_full_count,
 		      info->charging_adc_full_count,
@@ -3264,7 +3235,7 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 	info->event_expired_time = 0xFFFFFFFF;
 #endif
 	if (info->get_lpcharging_state) {
-		if (poweroff_charging = info->get_lpcharging_state())
+		if (info->get_lpcharging_state())
 			info->polling_interval = POLLING_INTERVAL / 4;
 		else
 			info->polling_interval = POLLING_INTERVAL;
