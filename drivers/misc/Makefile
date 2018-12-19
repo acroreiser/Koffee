@@ -75,7 +75,7 @@ obj-$(CONFIG_SEC_DEV_JACK)	+= sec_jack_muic.o
 else
 obj-$(CONFIG_SEC_DEV_JACK)	+= sec_jack.o
 endif
-obj-$(CONFIG_MUIC_MAX8997)	+= max8997-muic.o
+#obj-$(CONFIG_MUIC_MAX8997)	+= max8997-muic.o
 obj-$(CONFIG_PN544)		+= pn544.o
 obj-$(CONFIG_FM34_WE395)	+= fm34_we395.o
 obj-$(CONFIG_AUDIENCE_ES305)	+= es305.o
