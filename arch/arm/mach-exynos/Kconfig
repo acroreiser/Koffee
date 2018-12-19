@@ -1745,6 +1745,6 @@ config MACH_KONA_SENSOR
 
 config CHARGE_LEVEL
 	bool "Charge level interface"
-	default y
+	default n
 	help
 	  Allows configuration of ac and usb charging levels
