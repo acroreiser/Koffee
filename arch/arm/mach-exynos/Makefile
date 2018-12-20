@@ -247,9 +247,15 @@ ifeq ($(CONFIG_MACH_KONA_SENSOR), y)
 obj-$(CONFIG_MACH_MIDAS)                += sec-reboot.o
 obj-$(CONFIG_MACH_KONA_SENSOR)          += kona-sensor.o
 else
-obj-$(CONFIG_MACH_MIDAS)		+= sec-reboot.o midas-sensor.o
+obj-$(CONFIG_MACH_MIDAS)		+= sec-reboot.o
 endif
 endif
+endif
+
+ifeq ($(CONFIG_MACH_T0),y)
+obj-$(CONFIG_MACH_MIDAS) 		+= midas-sensor_n7100.o
+else
+obj-$(CONFIG_MACH_MIDAS) 		+= midas-sensor.o
 endif
 obj-$(CONFIG_LEDS_LP5521)		+= midas-leds.o
 
