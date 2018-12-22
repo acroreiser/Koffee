@@ -241,15 +241,19 @@ int __init __must_check cma_early_region_register(struct cma_region *reg)
 	dma_addr_t start, alignment;
 	size_t size;
 
-	if (reg->alignment & (reg->alignment - 1))
+	if (reg->alignment & (reg->alignment - 1)) {
+		pr_err("%s: %s: aligment = %p\n", __func__, reg->name, (void*)reg->alignment);
 		return -EINVAL;
+	}
 
 	alignment = max(reg->alignment, (dma_addr_t)PAGE_SIZE);
 	start     = ALIGN(reg->start, alignment);
 	size      = PAGE_ALIGN(reg->size);
 
-	if (start + size < start)
+	if (start + size < start) {
+		pr_err("%s: start = %p, size = %p\n", __func__, (void*)start, (void*)size);
 		return -EINVAL;
+	}
 
 	reg->size      = size;
 	reg->start     = start;
@@ -257,8 +261,8 @@ int __init __must_check cma_early_region_register(struct cma_region *reg)
 
 	list_add_tail(&reg->list, &cma_early_regions);
 
-	pr_debug("param: registering early region %s (%p@%p/%p)\n",
-		 reg->name, (void *)reg->size, (void *)reg->start,
+	pr_err("%s: registering early region %s (%p@%p/%p)\n",
+		 __func__, reg->name, (void *)reg->size, (void *)reg->start,
 		 (void *)reg->alignment);
 
 	return 0;
@@ -1100,6 +1104,8 @@ __cma_alloc(const struct device *dev, const char *type,
 	struct cma_region *reg;
 	const char *from;
 	dma_addr_t addr;
+
+	//dump_stack();
 
 	if (dev)
 		pr_debug("allocate %p/%p for %s/%s\n",
