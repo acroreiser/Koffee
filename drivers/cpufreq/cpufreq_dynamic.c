@@ -176,12 +176,12 @@ static unsigned int min_sampling_rate;
 
 
 #define DEF_MAX_CPU_LOCK			(0)
-#define DEF_MIN_CPU_LOCK			(0)
+#define DEF_MIN_CPU_LOCK			(2)
 #define DEF_CPU_UP_FREQ				(500000)
 #define DEF_CPU_DOWN_FREQ			(200000)
 #define DEF_UP_NR_CPUS				(1)
 #define DEF_CPU_UP_RATE				(10)
-#define DEF_CPU_DOWN_RATE			(20)
+#define DEF_CPU_DOWN_RATE			(10)
 #define MAX_HOTPLUG_RATE			(40u)
 #define DEF_FREQ_STEP				(37)
 #define DEF_START_DELAY				(0)
@@ -1294,20 +1294,26 @@ static int check_up(void)
 	if (online == num_possible_cpus())
 		return 0;
 
-	if (dbs_tuners_ins.max_cpu_lock != 0
-		&& online >= dbs_tuners_ins.max_cpu_lock)
-		return 0;
-
 	if (dbs_tuners_ins.min_cpu_lock != 0
-		&& online < dbs_tuners_ins.min_cpu_lock)
+			&& online < dbs_tuners_ins.min_cpu_lock) {
+		/*printk(KERN_ERR "[HOTPLUG IN] %s: ret=1, online (%d) < min_cpu_lock\n",
+			__func__, online);*/
+
 		return 1;
+	}
 
 	if (is_boosted() && dbs_tuners_ins.boost_mincpus != 0
-		&& online < dbs_tuners_ins.boost_mincpus)
-		return 1;
+			&& online < dbs_tuners_ins.boost_mincpus) {
+		/*printk(KERN_ERR "[HOTPLUG IN] %s: ret=1, is_boosted && online (%d) < boost_mincpus\n",
+			__func__, online);*/
 
-	if (num_hist == 0 || num_hist % up_rate)
+		return 1;
+	}
+
+	if (num_hist == 0 || num_hist % up_rate) {
+		/*pr_err("[HOTPLUG OUT]: %s: ret=0, num_hist == %d)\n", __func__, num_hist);*/
 		return 0;
+	}
 
 	for (i = num_hist - 1; i >= num_hist - up_rate; --i) {
 		usage = &hotplug_history->usage[i];
@@ -1322,7 +1328,7 @@ static int check_up(void)
 	}
 
 	if (min_freq >= up_freq && min_rq_avg > up_rq) {
-		printk(KERN_ERR "[HOTPLUG IN] %s %d>=%d && %d>%d\n",
+		printk(KERN_ERR "[HOTPLUG IN] %s: ret=1, %d>=%d && %d>%d\n",
 			__func__, min_freq, up_freq, min_rq_avg, up_rq);
 		hotplug_history->num_hist = 0;
 		return 1;
@@ -1349,26 +1355,29 @@ static int check_down(void)
 	online = num_online_cpus();
 	down_freq = hotplug_freq[online - 1][HOTPLUG_DOWN_INDEX];
 	down_rq = hotplug_rq[online - 1][HOTPLUG_DOWN_INDEX];
-	
+
 	/* don't bother trying to turn off cpu if we're not done boosting yet,
 	 * but allow turning off cpus above minimum */
 	if (is_boosted() && dbs_tuners_ins.boost_mincpus != 0
-		&& online <= dbs_tuners_ins.boost_mincpus)
+			&& online <= dbs_tuners_ins.boost_mincpus) {
+		/*pr_err("[HOTPLUG OUT]: %s: ret=0, is_boosted && online (%d <= boost_mincpus)\n", __func__, online);*/
 		return 0;
+	}
 
 	if (online == 1)
 		return 0;
 
-	if (dbs_tuners_ins.max_cpu_lock != 0
-		&& online > dbs_tuners_ins.max_cpu_lock)
-		return 1;
-
 	if (dbs_tuners_ins.min_cpu_lock != 0
-		&& online <= dbs_tuners_ins.min_cpu_lock)
-		return 0;
+			&& online <= dbs_tuners_ins.min_cpu_lock) {
+		/*pr_err("[HOTPLUG OUT]: %s: ret=0, is_boosted && online (%d <= min_cpu_lock)\n", __func__, online);*/
 
-	if (num_hist == 0 || num_hist % down_rate)
 		return 0;
+	}
+
+	if (num_hist == 0 || num_hist % down_rate) {
+		/*pr_err("[HOTPLUG OUT]: %s: ret=0, num_hist == %d)\n", __func__, num_hist);*/
+		return 0;
+	}
 
 	for (i = num_hist - 1; i >= num_hist - down_rate; --i) {
 		usage = &hotplug_history->usage[i];
@@ -1384,7 +1393,7 @@ static int check_down(void)
 	}
 
 	if (max_freq <= down_freq && max_rq_avg <= down_rq) {
-		printk(KERN_ERR "[HOTPLUG OUT] %s %d<=%d && %d<%d\n",
+		printk(KERN_ERR "[HOTPLUG OUT] %s: ret=0, %d<=%d && %d<%d\n",
 			__func__, max_freq, down_freq, max_rq_avg, down_rq);
 		hotplug_history->num_hist = 0;
 		return 1;
