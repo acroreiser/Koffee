@@ -1,5 +1,5 @@
-#ifndef __LINUX_CMA_H
-#define __LINUX_CMA_H
+#ifndef ____LINUX_CMA_H
+#define ____LINUX_CMA_H
 
 /* linux/include/linux/cma.h
  *
