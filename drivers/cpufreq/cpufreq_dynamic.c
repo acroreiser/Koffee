@@ -1198,10 +1198,10 @@ static void cpu_up_work(struct work_struct *work)
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
 
 	if (!standby) {
-		nr_up = 3;
+		nr_up = NR_CPUS - online;
 		goto do_up_work;
 	}
-	
+
 	if (hotplug_lock && min_cpu_lock)
 		nr_up = max(hotplug_lock, min_cpu_lock) - online;
 	else if (hotplug_lock)
@@ -1212,7 +1212,7 @@ static void cpu_up_work(struct work_struct *work)
 	if (is_boosted() && boost_mincpus) {
 		nr_up = max(nr_up, boost_mincpus - online);
 	}
-	
+
 do_up_work:
 /*
 	if (online == 1) {
