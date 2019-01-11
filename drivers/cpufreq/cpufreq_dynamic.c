@@ -175,6 +175,8 @@ static unsigned int min_sampling_rate;
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
 
+#define DEF_MAX_CPU_LOCK			(0)
+#define DEF_MIN_CPU_LOCK			(0)
 #define DEF_CPU_UP_FREQ				(500000)
 #define DEF_CPU_DOWN_FREQ			(200000)
 #define DEF_UP_NR_CPUS				(1)
@@ -314,6 +316,8 @@ static struct dbs_tuners {
 	unsigned int cpu_up_freq;
 	unsigned int cpu_down_freq;
 	unsigned int up_nr_cpus;
+	unsigned int max_cpu_lock;
+	unsigned int min_cpu_lock;
 	unsigned int dvfs_debug;
 	unsigned int max_freq;
 	unsigned int min_freq;
@@ -359,25 +363,47 @@ static struct dbs_tuners {
 	.cpu_up_freq = DEF_CPU_UP_FREQ,
 	.cpu_down_freq = DEF_CPU_DOWN_FREQ,
 	.up_nr_cpus = DEF_UP_NR_CPUS,
+	.max_cpu_lock = DEF_MAX_CPU_LOCK,
+	.min_cpu_lock = DEF_MIN_CPU_LOCK,
 	.dvfs_debug = 0,
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	.early_suspend = -1,
 #endif
 };
 
-static int cpufreq_pegasusq_cpu_lock(int num_core)
+static void cpufreq_pegasusq_min_cpu_lock(unsigned int num_core)
 {
-	int prev_lock;
+	int online, flag;
+	struct cpu_dbs_info_s *dbs_info;
 
-	if (num_core < 1 || num_core > num_possible_cpus())
-		return -EINVAL;
+	dbs_tuners_ins.min_cpu_lock = min(num_core, num_possible_cpus());
 
-	return 0;
+	dbs_info = &per_cpu(cs_cpu_dbs_info, 0); /* from CPU0 */
+	online = num_online_cpus();
+	flag = (int)num_core - online;
+	if (flag <= 0)
+		return;
+	queue_work_on(dbs_info->cpu, dbs_wq, &dbs_info->up_work);
 }
 
-static int cpufreq_pegasusq_cpu_unlock(int num_core)
+static void cpufreq_pegasusq_min_cpu_unlock(void)
 {
-	return 0;
+	int online, lock, flag;
+	struct cpu_dbs_info_s *dbs_info;
+
+	dbs_tuners_ins.min_cpu_lock = 0;
+
+	dbs_info = &per_cpu(cs_cpu_dbs_info, 0); /* from CPU0 */
+	online = num_online_cpus();
+#if defined(CONFIG_HAS_EARLYSUSPEND) && EARLYSUSPEND_HOTPLUGLOCK
+	if (suspend) { /* if LCD is off-state */
+		return;
+	}
+#endif
+	flag = lock - online;
+	if (flag >= 0)
+		return;
+	queue_work_on(dbs_info->cpu, dbs_wq, &dbs_info->down_work);
 }
 
 /*
@@ -601,6 +627,8 @@ show_one(cpu_down_rate, cpu_down_rate);
 show_one(cpu_up_freq, cpu_up_freq);
 show_one(cpu_down_freq, cpu_down_freq);
 show_one(up_nr_cpus, up_nr_cpus);
+show_one(max_cpu_lock, max_cpu_lock);
+show_one(min_cpu_lock, min_cpu_lock);
 show_one(dvfs_debug, dvfs_debug);
 show_one(boost_mincpus, boost_mincpus);
 
@@ -900,6 +928,33 @@ static ssize_t store_up_nr_cpus(struct kobject *a, struct attribute *b,
 	return count;
 }
 
+static ssize_t store_max_cpu_lock(struct kobject *a, struct attribute *b,
+				  const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+	dbs_tuners_ins.max_cpu_lock = min(input, num_possible_cpus());
+	return count;
+}
+
+static ssize_t store_min_cpu_lock(struct kobject *a, struct attribute *b,
+				  const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+	if (input == 0)
+		cpufreq_pegasusq_min_cpu_unlock();
+	else
+		cpufreq_pegasusq_min_cpu_lock(input);
+	return count;
+}
+
 static ssize_t store_dvfs_debug(struct kobject *a, struct attribute *b,
 				const char *buf, size_t count)
 {
@@ -931,6 +986,8 @@ define_one_global_rw(cpu_down_rate);
 define_one_global_rw(cpu_up_freq);
 define_one_global_rw(cpu_down_freq);
 define_one_global_rw(up_nr_cpus);
+define_one_global_rw(max_cpu_lock);
+define_one_global_rw(min_cpu_lock);
 define_one_global_rw(dvfs_debug);
 define_one_global_rw(boost_mincpus);
 define_one_global_ro(cpucore_table);
@@ -967,6 +1024,9 @@ static struct attribute *dbs_attributes[] = {
 	&cpu_up_freq.attr,
 	&cpu_down_freq.attr,
 	&up_nr_cpus.attr,
+	/* priority: max_cpu_lock > min_cpu_lock */
+	&max_cpu_lock.attr,
+	&min_cpu_lock.attr,
 	&dvfs_debug.attr,
 	&hotplug_freq_1_1.attr,
 	&hotplug_freq_2_0.attr,
@@ -1017,6 +1077,7 @@ static void cpu_up_work(struct work_struct *work)
 	int cpu;
 	int online = num_online_cpus();
 	int nr_up = dbs_tuners_ins.up_nr_cpus;
+	int min_cpu_lock = dbs_tuners_ins.min_cpu_lock;
 	int boost_mincpus = dbs_tuners_ins.boost_mincpus;
 
 	if (!standby) {
@@ -1024,10 +1085,13 @@ static void cpu_up_work(struct work_struct *work)
 		goto do_up_work;
 	}
 
+	if (min_cpu_lock)
+		nr_up = max(nr_up, min_cpu_lock - online);
+
 	if (is_boosted() && boost_mincpus) {
 		nr_up = max(nr_up, boost_mincpus - online);
 	}
-
+	
 do_up_work:
 /*
 	if (online == 1) {
@@ -1101,6 +1165,14 @@ static int check_up(void)
 	if (online == num_possible_cpus())
 		return 0;
 
+	if (dbs_tuners_ins.max_cpu_lock != 0
+		&& online >= dbs_tuners_ins.max_cpu_lock)
+		return 0;
+
+	if (dbs_tuners_ins.min_cpu_lock != 0
+		&& online < dbs_tuners_ins.min_cpu_lock)
+		return 1;
+
 	if (is_boosted() && dbs_tuners_ins.boost_mincpus != 0
 		&& online < dbs_tuners_ins.boost_mincpus)
 		return 1;
@@ -1144,7 +1216,7 @@ static int check_down(void)
 	online = num_online_cpus();
 	down_freq = hotplug_freq[online - 1][HOTPLUG_DOWN_INDEX];
 	down_rq = hotplug_rq[online - 1][HOTPLUG_DOWN_INDEX];
-	
+
 	/* don't bother trying to turn off cpu if we're not done boosting yet,
 	 * but allow turning off cpus above minimum */
 	if (is_boosted() && dbs_tuners_ins.boost_mincpus != 0
@@ -1152,6 +1224,14 @@ static int check_down(void)
 		return 0;
 
 	if (online == 1)
+		return 0;
+
+	if (dbs_tuners_ins.max_cpu_lock != 0
+		&& online > dbs_tuners_ins.max_cpu_lock)
+		return 1;
+
+	if (dbs_tuners_ins.min_cpu_lock != 0
+		&& online <= dbs_tuners_ins.min_cpu_lock)
 		return 0;
 
 	if (num_hist == 0 || num_hist % down_rate)
@@ -1518,6 +1598,7 @@ static int pm_notifier_call(struct notifier_block *this,
 {
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
+		pr_debug("%s enter suspend\n", __func__);
 		return NOTIFY_OK;
 	case PM_POST_RESTORE:
 	case PM_POST_SUSPEND:
