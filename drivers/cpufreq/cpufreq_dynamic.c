@@ -440,7 +440,7 @@ static int cpufreq_pegasusq_cpu_unlock(int num_core)
 	return 0;
 }
 
-static void cpufreq_pegasusq_min_cpu_lock(unsigned int num_core)
+void cpufreq_dynamic_min_cpu_lock(unsigned int num_core)
 {
 	int online, flag;
 	struct cpu_dbs_info_s *dbs_info;
@@ -455,7 +455,7 @@ static void cpufreq_pegasusq_min_cpu_lock(unsigned int num_core)
 	queue_work_on(dbs_info->cpu, dbs_wq, &dbs_info->up_work);
 }
 
-static void cpufreq_pegasusq_min_cpu_unlock(void)
+void cpufreq_dynamic_min_cpu_unlock(void)
 {
 	int online, lock, flag;
 	struct cpu_dbs_info_s *dbs_info;
@@ -1029,9 +1029,9 @@ static ssize_t store_min_cpu_lock(struct kobject *a, struct attribute *b,
 	if (ret != 1)
 		return -EINVAL;
 	if (input == 0)
-		cpufreq_pegasusq_min_cpu_unlock();
+		cpufreq_dynamic_min_cpu_unlock();
 	else
-		cpufreq_pegasusq_min_cpu_lock(input);
+		cpufreq_dynamic_min_cpu_lock(input);
 	return count;
 }
 

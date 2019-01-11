@@ -824,13 +824,28 @@ static int compact_node(int nid)
 	return __compact_pgdat(NODE_DATA(nid), &cc);
 }
 
+//int compaction_pm_hint = 0;
+
+#ifdef CONFIG_CPUFREQ_DYNAMIC
+extern void cpufreq_dynamic_min_cpu_lock(unsigned int num_core);
+extern void cpufreq_dynamic_min_cpu_unlock(void);
+#endif
+
 /* Compact all nodes in the system */
 static int compact_nodes(void)
 {
 	int nid;
 
+#ifdef CONFIG_CPUFREQ_DYNAMIC
+	cpufreq_dynamic_min_cpu_lock(NR_CPUS);
+#endif
+
 	for_each_online_node(nid)
 		compact_node(nid);
+
+#ifdef CONFIG_CPUFREQ_DYNAMIC
+	cpufreq_dynamic_min_cpu_unlock();
+#endif
 
 	return COMPACT_COMPLETE;
 }
@@ -849,14 +864,15 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
+
 static void compaction_suspend(struct early_suspend *handler)
 {
 	compact_nodes();
 }
 
 static struct early_suspend compaction_early_suspend_handler = {
-        .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 10,
-        .suspend = compaction_suspend,
+	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 10,
+	.suspend = compaction_suspend,
 };
 #endif
 
