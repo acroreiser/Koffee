@@ -392,6 +392,9 @@ static ssize_t set_prox_delay(struct device *dev,
 	return size;
 }
 
+#define DEVICE_ATTR2(_name, _real_name, _mode, _show, _store) \
+	struct device_attribute dev_attr_##_real_name = __ATTR(_name, _mode, _show, _store)
+
 static DEVICE_ATTR(mcu_rev, S_IRUGO, mcu_revision_show, NULL);
 static DEVICE_ATTR(mcu_name, S_IRUGO, mcu_model_name_show, NULL);
 static DEVICE_ATTR(mcu_update, S_IRUGO, mcu_update_show, NULL);
@@ -404,19 +407,20 @@ static DEVICE_ATTR(mcu_sleep_test, S_IRUGO | S_IWUSR | S_IWGRP,
 	mcu_sleep_factorytest_show, mcu_sleep_factorytest_store);
 static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_sensors_enable, set_sensors_enable);
-static DEVICE_ATTR(acc_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+
+static DEVICE_ATTR2(poll_delay, acc_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_acc_delay, set_acc_delay);
-static DEVICE_ATTR(gyro_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR2(poll_delay, gyro_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_gyro_delay, set_gyro_delay);
-static DEVICE_ATTR(mag_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR2(poll_delay, mag_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_mag_delay, set_mag_delay);
-static DEVICE_ATTR(ori_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR2(poll_delay, ori_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_ori_delay, set_ori_delay);
-static DEVICE_ATTR(pressure_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR2(poll_delay, pressure_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_pressure_delay, set_pressure_delay);
-static DEVICE_ATTR(light_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR2(poll_delay, light_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_light_delay, set_light_delay);
-static DEVICE_ATTR(prox_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR2(poll_delay, prox_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_prox_delay, set_prox_delay);
 
 static struct device_attribute *mcu_attrs[] = {
