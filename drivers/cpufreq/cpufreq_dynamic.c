@@ -193,31 +193,31 @@ static unsigned int min_sampling_rate;
 #define HOTPLUG_UP_INDEX			(1)
 
 #ifdef CONFIG_MACH_MIDAS
-static int hotplug_rq[4][2] = {
+static int _hotplug_rq[4][2] = {
 	{0, 100}, {100, 200}, {200, 300}, {300, 0}
 };
 
-static int hotplug_freq[4][2] = {
+static int _hotplug_freq[4][2] = {
 	{0, 500000},
 	{200000, 500000},
 	{200000, 500000},
 	{200000, 0}
 };
 #elif CONFIG_MACH_SMDK4210
-static int hotplug_rq[2][2] = {
+static int _hotplug_rq[2][2] = {
 	{0, 100}, {100, 0}
 };
 
-static int hotplug_freq[2][2] = {
+static int _hotplug_freq[2][2] = {
 	{0, 500000},
 	{200000, 0}
 };
 #else
-static int hotplug_rq[4][2] = {
+static int _hotplug_rq[4][2] = {
 	{0, 100}, {100, 200}, {200, 300}, {300, 0}
 };
 
-static int hotplug_freq[4][2] = {
+static int _hotplug_freq[4][2] = {
 	{0, 500000},
 	{200000, 500000},
 	{200000, 500000},
@@ -882,70 +882,70 @@ static ssize_t store_##file_name##_##num_core##_##up_down		\
 	return count;							\
 }
 
-show_hotplug_param(hotplug_freq, 1, 1);
-show_hotplug_param(hotplug_freq, 2, 0);
+show_hotplug_param(_hotplug_freq, 1, 1);
+show_hotplug_param(_hotplug_freq, 2, 0);
 #if CONFIG_NR_CPUS > 2
-show_hotplug_param(hotplug_freq, 2, 1);
-show_hotplug_param(hotplug_freq, 3, 0);
+show_hotplug_param(_hotplug_freq, 2, 1);
+show_hotplug_param(_hotplug_freq, 3, 0);
 #endif
 #if CONFIG_NR_CPUS > 3
-show_hotplug_param(hotplug_freq, 3, 1);
-show_hotplug_param(hotplug_freq, 4, 0);
+show_hotplug_param(_hotplug_freq, 3, 1);
+show_hotplug_param(_hotplug_freq, 4, 0);
 #endif
 
-show_hotplug_param(hotplug_rq, 1, 1);
-show_hotplug_param(hotplug_rq, 2, 0);
+show_hotplug_param(_hotplug_rq, 1, 1);
+show_hotplug_param(_hotplug_rq, 2, 0);
 #if CONFIG_NR_CPUS > 2
-show_hotplug_param(hotplug_rq, 2, 1);
-show_hotplug_param(hotplug_rq, 3, 0);
+show_hotplug_param(_hotplug_rq, 2, 1);
+show_hotplug_param(_hotplug_rq, 3, 0);
 #endif
 #if CONFIG_NR_CPUS > 3
-show_hotplug_param(hotplug_rq, 3, 1);
-show_hotplug_param(hotplug_rq, 4, 0);
+show_hotplug_param(_hotplug_rq, 3, 1);
+show_hotplug_param(_hotplug_rq, 4, 0);
 #endif
 
-store_hotplug_param(hotplug_freq, 1, 1);
-store_hotplug_param(hotplug_freq, 2, 0);
+store_hotplug_param(_hotplug_freq, 1, 1);
+store_hotplug_param(_hotplug_freq, 2, 0);
 #if CONFIG_NR_CPUS > 2
-store_hotplug_param(hotplug_freq, 2, 1);
-store_hotplug_param(hotplug_freq, 3, 0);
+store_hotplug_param(_hotplug_freq, 2, 1);
+store_hotplug_param(_hotplug_freq, 3, 0);
 #endif
 #if CONFIG_NR_CPUS > 3
-store_hotplug_param(hotplug_freq, 3, 1);
-store_hotplug_param(hotplug_freq, 4, 0);
+store_hotplug_param(_hotplug_freq, 3, 1);
+store_hotplug_param(_hotplug_freq, 4, 0);
 #endif
 
-store_hotplug_param(hotplug_rq, 1, 1);
-store_hotplug_param(hotplug_rq, 2, 0);
+store_hotplug_param(_hotplug_rq, 1, 1);
+store_hotplug_param(_hotplug_rq, 2, 0);
 #if CONFIG_NR_CPUS > 2
-store_hotplug_param(hotplug_rq, 2, 1);
-store_hotplug_param(hotplug_rq, 3, 0);
+store_hotplug_param(_hotplug_rq, 2, 1);
+store_hotplug_param(_hotplug_rq, 3, 0);
 #endif
 #if CONFIG_NR_CPUS > 3
-store_hotplug_param(hotplug_rq, 3, 1);
-store_hotplug_param(hotplug_rq, 4, 0);
+store_hotplug_param(_hotplug_rq, 3, 1);
+store_hotplug_param(_hotplug_rq, 4, 0);
 #endif
 
-define_one_global_rw(hotplug_freq_1_1);
-define_one_global_rw(hotplug_freq_2_0);
+define_one_global_rw(_hotplug_freq_1_1);
+define_one_global_rw(_hotplug_freq_2_0);
 #if CONFIG_NR_CPUS > 2
-define_one_global_rw(hotplug_freq_2_1);
-define_one_global_rw(hotplug_freq_3_0);
+define_one_global_rw(_hotplug_freq_2_1);
+define_one_global_rw(_hotplug_freq_3_0);
 #endif
 #if CONFIG_NR_CPUS > 3
-define_one_global_rw(hotplug_freq_3_1);
-define_one_global_rw(hotplug_freq_4_0);
+define_one_global_rw(_hotplug_freq_3_1);
+define_one_global_rw(_hotplug_freq_4_0);
 #endif
 
-define_one_global_rw(hotplug_rq_1_1);
-define_one_global_rw(hotplug_rq_2_0);
+define_one_global_rw(_hotplug_rq_1_1);
+define_one_global_rw(_hotplug_rq_2_0);
 #if CONFIG_NR_CPUS > 2
-define_one_global_rw(hotplug_rq_2_1);
-define_one_global_rw(hotplug_rq_3_0);
+define_one_global_rw(_hotplug_rq_2_1);
+define_one_global_rw(_hotplug_rq_3_0);
 #endif
 #if CONFIG_NR_CPUS > 3
-define_one_global_rw(hotplug_rq_3_1);
-define_one_global_rw(hotplug_rq_4_0);
+define_one_global_rw(_hotplug_rq_3_1);
+define_one_global_rw(_hotplug_rq_4_0);
 #endif
 
 static ssize_t store_cpu_up_rate(struct kobject *a, struct attribute *b,
@@ -1144,25 +1144,25 @@ static struct attribute *dbs_attributes[] = {
 	&min_cpu_lock.attr,
 	&hotplug_lock.attr,
 	&dvfs_debug.attr,
-	&hotplug_freq_1_1.attr,
-	&hotplug_freq_2_0.attr,
+	&_hotplug_freq_1_1.attr,
+	&_hotplug_freq_2_0.attr,
 #if CONFIG_NR_CPUS > 2
-	&hotplug_freq_2_1.attr,
-	&hotplug_freq_3_0.attr,
+	&_hotplug_freq_2_1.attr,
+	&_hotplug_freq_3_0.attr,
 #endif
 #if CONFIG_NR_CPUS > 3
-	&hotplug_freq_3_1.attr,
-	&hotplug_freq_4_0.attr,
+	&_hotplug_freq_3_1.attr,
+	&_hotplug_freq_4_0.attr,
 #endif
-	&hotplug_rq_1_1.attr,
-	&hotplug_rq_2_0.attr,
+	&_hotplug_rq_1_1.attr,
+	&_hotplug_rq_2_0.attr,
 #if CONFIG_NR_CPUS > 2
-	&hotplug_rq_2_1.attr,
-	&hotplug_rq_3_0.attr,
+	&_hotplug_rq_2_1.attr,
+	&_hotplug_rq_3_0.attr,
 #endif
 #if CONFIG_NR_CPUS > 3
-	&hotplug_rq_3_1.attr,
-	&hotplug_rq_4_0.attr,
+	&_hotplug_rq_3_1.attr,
+	&_hotplug_rq_4_0.attr,
 #endif
 	&cpucore_table.attr,
 	&boost_mincpus.attr,
@@ -1288,8 +1288,8 @@ static int check_up(void)
 		return 0;
 
 	online = num_online_cpus();
-	up_freq = hotplug_freq[online - 1][HOTPLUG_UP_INDEX];
-	up_rq = hotplug_rq[online - 1][HOTPLUG_UP_INDEX];
+	up_freq = _hotplug_freq[online - 1][HOTPLUG_UP_INDEX];
+	up_rq = _hotplug_rq[online - 1][HOTPLUG_UP_INDEX];
 
 	if (online == num_possible_cpus())
 		return 0;
@@ -1347,8 +1347,8 @@ static int check_down(void)
 		return 0;
 
 	online = num_online_cpus();
-	down_freq = hotplug_freq[online - 1][HOTPLUG_DOWN_INDEX];
-	down_rq = hotplug_rq[online - 1][HOTPLUG_DOWN_INDEX];
+	down_freq = _hotplug_freq[online - 1][HOTPLUG_DOWN_INDEX];
+	down_rq = _hotplug_rq[online - 1][HOTPLUG_DOWN_INDEX];
 	
 	/* don't bother trying to turn off cpu if we're not done boosting yet,
 	 * but allow turning off cpus above minimum */
