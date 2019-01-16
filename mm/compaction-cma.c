@@ -228,17 +228,9 @@ unsigned long
 isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
 			   unsigned long low_pfn, unsigned long end_pfn)
 {
-	int ret;
-#ifdef CONFIG_ARCH_EXYNOS
-	int exynos_hook_ret;
-#endif
 	unsigned long last_pageblock_nr = 0, pageblock_nr;
 	unsigned long nr_scanned = 0, nr_isolated = 0;
 	struct list_head *migratelist = &cc->migratepages;
-
-#ifdef CONFIG_ARCH_EXYNOS
-	exynos_hook_ret = exynos_pm_hook_add();
-#endif
 
 	/*
 	 * Ensure that there are not too many pages isolated from the LRU
@@ -247,17 +239,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
 	 */
 	while (unlikely(too_many_isolated(zone))) {
 		/* async migration should just abort */
-		if (!cc->sync) {
-			ret = 0;
-			goto unlock;
-		}
+		if (!cc->sync)
+			return 0;
 
 		congestion_wait(BLK_RW_ASYNC, HZ/10);
 
-		if (fatal_signal_pending(current)) {
-			ret = 0;
-			goto unlock;
-		}
+		if (fatal_signal_pending(current))
+			return 0;
 	}
 
 	/* Time to isolate some pages for migration */
@@ -343,17 +331,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
 
 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
 
-#ifdef CONFIG_ARCH_EXYNOS
-	if (!exynos_hook_ret)
-		exynos_pm_hook_remove();
-#endif
 	return low_pfn;
-unlock:
-#ifdef CONFIG_ARCH_EXYNOS
-	if (!exynos_hook_ret)
-		exynos_pm_hook_remove();
-#endif
-	return ret;
 }
 
 #endif /* CONFIG_COMPACTION || CONFIG_DMA_CMA */
