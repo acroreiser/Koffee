@@ -167,16 +167,16 @@ make_flashable()
 
 
 	# create zip file
-	zip -r9 ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}.zip * -x ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}.zip
+	zip -r9 ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip * -x ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip
 
 	# sign recovery zip if there are keys available
 	if [ -f "$SOURCE_PATH/tools_boeffla/testkey.x509.pem" ]; then
-		java -jar $SOURCE_PATH/tools_boeffla/signapk.jar -w $SOURCE_PATH/tools_boeffla/testkey.x509.pem $SOURCE_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}.zip ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-signed.zip
-		cp ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-signed.zip $BUILD_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE}-signed.zip
-		md5sum $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE}-signed.zip > $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE}-signed.zip.md5
+		java -jar $SOURCE_PATH/tools_boeffla/signapk.jar -w $SOURCE_PATH/tools_boeffla/testkey.x509.pem $SOURCE_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-signed.zip
+		cp ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-signed.zip $BUILD_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}-signed.zip
+		md5sum $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}-signed.zip > $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}-signed.zip.md5
 	else
-		cp ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}.zip $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE}.zip
-		md5sum $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE}.zip > $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE}.zip.md5
+		cp ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}.zip
+		md5sum $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}.zip > $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}.zip.md5
 	fi
 
 
@@ -321,8 +321,8 @@ main() {
 			echo "| Build  host:	`hostname`"
 			echo "| Build  toolchain:	$TVERSION"
 			echo "| Number of threads:	$THREADS"
-			echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE} | grep .zip | head -n 1)"
-			echo "> MD5sum: $(ls | grep ${KERNEL_NAME}_${KERNEL_VERSION}-${REVISION}-${DEVICE} | grep .md5)"
+			echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE} | grep .zip | head -n 1)"
+			echo "> MD5sum: $(ls | grep ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE} | grep .md5)"
 			echo "--------------------------------------"
 			echo "*** Koffee is ready! ***"
 		else
