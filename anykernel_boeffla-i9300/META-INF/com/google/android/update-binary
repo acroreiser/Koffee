@@ -75,6 +75,8 @@ bb=/tmp/anykernel/tools/busybox;
 
 ui_print "###kernelname###";
 ui_print " ";
+ui_print '###copyright_script###';
+ui_print " ";
 ui_print '###copyright###';
 ui_print " ";
 ui_print "###buildinfo###";
