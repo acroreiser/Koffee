@@ -155,13 +155,13 @@ make_flashable()
 	BUILD_NUMBER=$(cat $BUILD_PATH/.version)
 	# replace variables in anykernel script
 	cd $REPACK_PATH
-	KERNELNAME="Flashing Chrono kernel"
+	KERNELNAME="Flashing Chrono kernel ${KERNEL_VERSION}"
 	sed -i "s;###kernelname###;${KERNELNAME};" META-INF/com/google/android/update-binary;
 	COPYRIGHT_SCRIPT=$(echo '(c) A\$teroid × Lord Boeffla, 2018')
 	sed -i "s;###copyright_script###;${COPYRIGHT_SCRIPT};" META-INF/com/google/android/update-binary;
 	COPYRIGHT=$(echo '(c) Chrono, 2019')
 	sed -i "s;###copyright###;${COPYRIGHT};" META-INF/com/google/android/update-binary;
-	BUILDINFO="Release ${BUILD_NUMBER}, $DATE (revision $REVISION)"
+	BUILDINFO="Build #${BUILD_NUMBER}, $DATE (revision $REVISION)"
 	sed -i "s;###buildinfo###;${BUILDINFO};" META-INF/com/google/android/update-binary;
 	SOURCECODE="Source code: https://github.com/ChronoMonochrome/android_kernel_samsung_smdk4412"
 	sed -i "s;###sourcecode###;${SOURCECODE};" META-INF/com/google/android/update-binary;
