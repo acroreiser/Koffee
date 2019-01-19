@@ -106,8 +106,10 @@ int exynos4_busfreq_lock(unsigned int nId, enum busfreq_level_request lvl)
 
 	switch (lvl) {
 	case BUS_L0:
+#if 0
 		qos_value = 400000;
 		break;
+#endif
 	case BUS_L1:
 		qos_value = 267000;
 		break;
