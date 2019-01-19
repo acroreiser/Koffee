@@ -399,7 +399,7 @@ static enum power_supply_property sec_power_props[] = {
 static struct sec_bat_info *pchg;
 #endif
 
-struct power_supply *__get_power_supply_by_name(char *name)
+struct power_supply *get_power_supply_by_name(char *name)
 {
 	if (!name)
 		return (struct power_supply *)NULL;
@@ -444,7 +444,7 @@ static int calculate_average_adc(struct sec_bat_info *info,
 static int sec_bat_get_fuelgauge_data(struct sec_bat_info *info, int type)
 {
 	struct power_supply *psy
-	    = __get_power_supply_by_name(info->fuel_gauge_name);
+	    = get_power_supply_by_name(info->fuel_gauge_name);
 	union power_supply_propval value;
 
 	if (!psy) {
@@ -581,7 +581,7 @@ static int sec_bat_set_property(struct power_supply *ps,
 {
 	struct sec_bat_info *info = container_of(ps, struct sec_bat_info,
 						 psy_bat);
-	struct power_supply *psy = __get_power_supply_by_name(info->charger_name);
+	struct power_supply *psy = get_power_supply_by_name(info->charger_name);
 	union power_supply_propval value;
 
 	if (!psy) {
@@ -888,7 +888,7 @@ static unsigned long sec_rescale_temp_adc(struct sec_bat_info *info)
 static int sec_bat_check_temper(struct sec_bat_info *info)
 {
 	struct power_supply *psy
-	    = __get_power_supply_by_name(info->fuel_gauge_name);
+	    = get_power_supply_by_name(info->fuel_gauge_name);
 	union power_supply_propval value;
 	int ret;
 
@@ -1117,7 +1117,7 @@ static int sec_bat_check_temper(struct sec_bat_info *info)
 
 static void sec_bat_get_dcinovp(struct sec_bat_info *info)
 {
-	struct power_supply *psy = __get_power_supply_by_name(info->charger_name);
+	struct power_supply *psy = get_power_supply_by_name(info->charger_name);
 	union power_supply_propval value;
 
 	if (!psy) {
@@ -1139,7 +1139,7 @@ static void sec_bat_get_dcinovp(struct sec_bat_info *info)
 static int sec_bat_check_temper(struct sec_bat_info *info)
 {
 	struct power_supply *psy
-	    = __get_power_supply_by_name(info->fuel_gauge_name);
+	    = get_power_supply_by_name(info->fuel_gauge_name);
 	union power_supply_propval value;
 	int ret;
 
@@ -1310,7 +1310,7 @@ static int sec_bat_check_temper(struct sec_bat_info *info)
 static int sec_bat_check_temper(struct sec_bat_info *info)
 {
 	struct power_supply *psy
-	    = __get_power_supply_by_name(info->fuel_gauge_name);
+	    = get_power_supply_by_name(info->fuel_gauge_name);
 	union power_supply_propval value;
 	int ret;
 
@@ -1468,7 +1468,7 @@ static void sec_bat_update_info(struct sec_bat_info *info)
 
 static int sec_bat_enable_charging_main(struct sec_bat_info *info, bool enable)
 {
-	struct power_supply *psy = __get_power_supply_by_name(info->charger_name);
+	struct power_supply *psy = get_power_supply_by_name(info->charger_name);
 	union power_supply_propval val_type, val_chg_current, val_topoff;
 	int ret;
 
@@ -1543,9 +1543,9 @@ static int sec_bat_enable_charging_main(struct sec_bat_info *info, bool enable)
 static int sec_bat_enable_charging_sub(struct sec_bat_info *info, bool enable)
 {
 	struct power_supply *psy_main =
-	    __get_power_supply_by_name(info->charger_name);
+	    get_power_supply_by_name(info->charger_name);
 	struct power_supply *psy_sub =
-	    __get_power_supply_by_name(info->sub_charger_name);
+	    get_power_supply_by_name(info->sub_charger_name);
 	union power_supply_propval val_type, val_chg_current;
 	int ret;
 
@@ -1818,7 +1818,7 @@ static void sec_bat_check_vf_adc(struct sec_bat_info *info)
 
 static void sec_bat_check_vf(struct sec_bat_info *info)
 {
-	struct power_supply *psy = __get_power_supply_by_name(info->charger_name);
+	struct power_supply *psy = get_power_supply_by_name(info->charger_name);
 	union power_supply_propval value;
 	int ret;
 
@@ -1882,7 +1882,7 @@ static void sec_bat_check_vf(struct sec_bat_info *info)
 static void sec_bat_check_ovp(struct sec_bat_info *info)
 {
 	struct power_supply *psy =
-	    __get_power_supply_by_name(info->sub_charger_name);
+	    get_power_supply_by_name(info->sub_charger_name);
 	union power_supply_propval value;
 	int ret;
 
@@ -1912,7 +1912,7 @@ static bool sec_bat_check_ing_level_trigger(struct sec_bat_info *info)
 	int ret;
 
 	if (info->use_sub_charger && info->sub_charger_name) {
-		psy = __get_power_supply_by_name(info->sub_charger_name);
+		psy = get_power_supply_by_name(info->sub_charger_name);
 
 		if (!psy) {
 			dev_err(info->dev, "%s: fail to get %s ps\n",
@@ -2053,7 +2053,7 @@ static bool sec_bat_check_ing_level_trigger(struct sec_bat_info *info)
 		}
 		return false;
 	} else {
-		psy = __get_power_supply_by_name(info->charger_name);
+		psy = get_power_supply_by_name(info->charger_name);
 
 		if (!psy) {
 			dev_err(info->dev, "%s: fail to get %s ps\n",
@@ -2613,7 +2613,7 @@ static ssize_t sec_bat_show_property(struct device *dev,
 	case BATT_SIOP_ACTIVATED:
 		{
 			struct power_supply *psy =
-			    __get_power_supply_by_name(info->sub_charger_name);
+			    get_power_supply_by_name(info->sub_charger_name);
 			union power_supply_propval value;
 
 			if (!psy) {
@@ -2745,7 +2745,7 @@ static ssize_t sec_bat_store(struct device *dev,
 			    || (info->charging_status ==
 				POWER_SUPPLY_STATUS_FULL)) {
 				struct power_supply *psy =
-				    __get_power_supply_by_name(info->
+				    get_power_supply_by_name(info->
 							     sub_charger_name);
 				union power_supply_propval value;
 
@@ -2776,7 +2776,7 @@ static ssize_t sec_bat_store(struct device *dev,
 			    (info->charging_status ==
 			     POWER_SUPPLY_STATUS_FULL)) {
 				struct power_supply *psy =
-				    __get_power_supply_by_name(info->
+				    get_power_supply_by_name(info->
 							     sub_charger_name);
 				union power_supply_propval value;
 
@@ -3019,7 +3019,7 @@ static int sec_bat_create_attrs(struct device *dev)
 
 static int sec_bat_is_charging(struct sec_bat_info *info)
 {
-	struct power_supply *psy = __get_power_supply_by_name(info->charger_name);
+	struct power_supply *psy = get_power_supply_by_name(info->charger_name);
 	union power_supply_propval value;
 	int ret;
 
@@ -3173,7 +3173,7 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 	wake_lock_init(&info->cable_wake_lock, WAKE_LOCK_SUSPEND,
 		       "sec-battery-cable");
 
-	psy = __get_power_supply_by_name(info->charger_name);
+	psy = get_power_supply_by_name(info->charger_name);
 
 	if (!psy) {
 		dev_err(info->dev, "%s: fail to get charger\n", __func__);
@@ -3399,8 +3399,8 @@ static void sec_bat_shutdown(struct device *dev)
 	if (!info->use_sub_charger)
 		return;
 
-	psy_main = __get_power_supply_by_name(info->charger_name);
-	psy_sub = __get_power_supply_by_name(info->sub_charger_name);
+	psy_main = get_power_supply_by_name(info->charger_name);
+	psy_sub = get_power_supply_by_name(info->sub_charger_name);
 
 	if (!psy_main || !psy_sub) {
 		dev_err(info->dev, "%s: fail to get charger ps\n", __func__);
@@ -3432,7 +3432,7 @@ static void sec_bat_shutdown(struct device *dev)
 	struct sec_bat_info *info = dev_get_drvdata(dev);
 #if defined(CONFIG_SMB328_CHARGER)
 	struct power_supply *psy_sub =
-	    __get_power_supply_by_name("smb328-charger");
+	    get_power_supply_by_name("smb328-charger");
 	union power_supply_propval value;
 	int ret;
 
