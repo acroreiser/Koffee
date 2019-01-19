@@ -5,7 +5,6 @@ DEFCONFIG=lineageos_i9300_defconfig
 TOOLCHAIN=/home/chrono/kernel/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
 KCONFIG=false
 CUST_CONF=no
-BUILD_NUMBER=
 DEVICE=UNKNOWN
 KCONF_REPLACE=false
 KERNEL_NAME="chrono_kernel"
@@ -16,6 +15,7 @@ USER=$USER
 DATE=`date`
 SOURCE_PATH=`pwd`
 BUILD_PATH=$SOURCE_PATH/../obj/
+BUILD_NUMBER=
 CLEAN=false
 
 
@@ -152,6 +152,7 @@ make_flashable()
 	fi
 	REVISION=`get_revision`
 	KERNEL_VERSION=`get_tag`
+	BUILD_NUMBER=$(cat $BUILD_PATH/.version)
 	# replace variables in anykernel script
 	cd $REPACK_PATH
 	KERNELNAME="Flashing Chrono kernel"
