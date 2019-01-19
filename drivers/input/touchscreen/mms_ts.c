@@ -136,7 +136,7 @@ module_param(touch_booster, uint, 0644);
 static unsigned int touch_boost_cpufreq = 400000;
 module_param(touch_boost_cpufreq, uint, 0644);
 
-static unsigned int touch_boost_busfreq = 267000;
+static unsigned int touch_boost_busfreq = 267160;
 module_param(touch_boost_busfreq, uint, 0644);
 
 static unsigned int touch_booster_off_time = 100;
