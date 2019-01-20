@@ -83,16 +83,16 @@ static unsigned int *target_loads = default_target_loads;
 static int ntarget_loads = ARRAY_SIZE(default_target_loads);
 
 /*
- * The sample rate of the timer used to increase frequency
- */
-#define DEFAULT_TIMER_RATE 3333
-static unsigned long timer_rate = DEFAULT_TIMER_RATE;
-
-/*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  */
 #define DEFAULT_MIN_SAMPLE_TIME (80 * USEC_PER_MSEC)
 static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
+
+/*
+ * The sample rate of the timer used to increase frequency
+ */
+#define DEFAULT_TIMER_RATE 3333
+static unsigned long timer_rate = DEFAULT_TIMER_RATE;
 
 /*
  * Wait this long before raising speed above hispeed, by default a single
@@ -116,7 +116,7 @@ static u64 boostpulse_endtime;
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
  */
-#define DEFAULT_TIMER_SLACK 13333
+#define DEFAULT_TIMER_SLACK (DEFAULT_TIMER_RATE + 10000)
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 static bool io_is_busy;
