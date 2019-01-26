@@ -1095,7 +1095,7 @@ probe_retry:
 	atomic_set(&data->opened, 0);
 #ifdef USES_INPUT_DEV
 	hrtimer_init(&data->timer,
-		CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+		CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 	data->poll_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 	data->timer.function = lsm330dlc_timer_func;
 	data->work_queue =

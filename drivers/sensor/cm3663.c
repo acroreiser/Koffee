@@ -635,12 +635,12 @@ static int cm3663_i2c_probe(struct i2c_client *client,
 	}
 
 	/* light_timer settings. we poll for light values using a timer. */
-	hrtimer_init(&cm3663->light_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_init(&cm3663->light_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 	cm3663->light_poll_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 	cm3663->light_timer.function = cm3663_light_timer_func;
 
 	/* prox_timer settings. we poll for light values using a timer. */
-	hrtimer_init(&cm3663->prox_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_init(&cm3663->prox_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 	cm3663->prox_poll_delay = ns_to_ktime(2000 * NSEC_PER_MSEC);
 	cm3663->prox_timer.function = cm3663_prox_timer_func;
 

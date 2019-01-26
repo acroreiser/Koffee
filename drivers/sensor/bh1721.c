@@ -561,7 +561,7 @@ static int __devinit bh1721fvc_probe(struct i2c_client *client,
 		printk(KERN_ERR"Lux : %d\n", err);
 	}
 
-	hrtimer_init(&bh1721fvc->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_init(&bh1721fvc->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 
 	bh1721fvc->light_poll_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 	bh1721fvc->timer.function = bh1721fvc_timer_func;

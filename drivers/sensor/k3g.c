@@ -1131,7 +1131,7 @@ static int k3g_probe(struct i2c_client *client,
 		u64 delay_ns;
 		data->ctrl_regs[2] = 0x00; /* disable interrupt */
 		/* hrtimer settings.  we poll for gyro values using a timer. */
-		hrtimer_init(&data->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+		hrtimer_init(&data->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 		data->polling_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 		data->time_to_read = 10000000LL;
 		delay_ns = ktime_to_ns(data->polling_delay);

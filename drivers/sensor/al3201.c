@@ -543,7 +543,7 @@ static int __devinit al3201_probe(struct i2c_client *client,
 		goto err_initializ_chip;
 	}
 
-	hrtimer_init(&data->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_init(&data->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 	data->light_poll_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 	data->timer.function = al3201_timer_func;
 	data->state = OFF;

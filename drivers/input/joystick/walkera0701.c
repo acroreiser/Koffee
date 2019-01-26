@@ -225,7 +225,7 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
 	if (parport_claim(w->pardevice))
 		goto init_err1;
 
-	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_init(&w->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 	w->timer.function = timer_handler;
 
 	w->input_dev = input_allocate_device();

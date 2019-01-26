@@ -528,7 +528,7 @@ static int synaptics_ts_probe(
 			dev_err(&client->dev, "request_irq failed\n");
 	}
 	if (!ts->use_irq) {
-		hrtimer_init(&ts->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+		hrtimer_init(&ts->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
 		ts->timer.function = synaptics_ts_timer_func;
 		hrtimer_start(&ts->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	}
