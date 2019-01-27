@@ -349,7 +349,7 @@ static struct dbs_tuners {
 	.sampling_rate = 2*HZ/100,
 	.sampling_down_factor = 2,
 	.sampling_down_factor_relax_khz = 400000,
-	.max_non_oc_freq = 1400000,
+	.max_non_oc_freq = 800000,
 	.oc_freq_boost_ms = 1500,
 
 	.standby_sampling_rate = 3*HZ/100,
