@@ -145,8 +145,8 @@ static unsigned int get_nr_run_avg(void)
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_UP_THRESHOLD		(80)
-#define DEF_DOWN_DIFFERENTIAL		(20)
+#define DEF_FREQUENCY_UP_THRESHOLD		(85)
+#define DEF_DOWN_DIFFERENTIAL		(5)
 
 /*
  * The polling frequency of this governor depends on the capability of
@@ -166,9 +166,9 @@ static unsigned int min_sampling_rate;
 #define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(90)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(95)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL		(10)
-#define DEF_SAMPLING_DOWN_FACTOR		(1)
+#define DEF_SAMPLING_DOWN_FACTOR		(2)
 #define MAX_SAMPLING_DOWN_FACTOR		(10)
 #define DEF_SAMPLING_UP_FACTOR		(6)
 #define MAX_SAMPLING_UP_FACTOR		(20)
@@ -336,27 +336,27 @@ static struct dbs_tuners {
 } dbs_tuners_ins = {
 	.input_boost_freq = 200000,
 	.input_boost_us = 0*1000,
-	.power_optimal_freq = 800000,
+	.power_optimal_freq = 600000,
 	.high_freq_sampling_up_factor = 2,
 
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
 	.down_differential = DEF_DOWN_DIFFERENTIAL,
 	.ignore_nice = 1,
-	.io_is_busy = 20*128/100,
+	.io_is_busy = 10*128/100,
 	.standby_delay_factor = 1,
 	.standby_threshold_freq = 100000,
 
-	.sampling_rate = 2*HZ/100,
-	.sampling_down_factor = 2,
+	.sampling_rate = 3*HZ/100,
+	.sampling_down_factor = 1,
 	.sampling_down_factor_relax_khz = 400000,
-	.max_non_oc_freq = 800000,
-	.oc_freq_boost_ms = 1500,
+	.max_non_oc_freq = 900000,
+	.oc_freq_boost_ms = 2000,
 
-	.standby_sampling_rate = 3*HZ/100,
+	.standby_sampling_rate = 2*HZ/100,
 	.standby_sampling_up_factor = 5,
 
-	.suspend_sampling_rate = 5*HZ/100,
-	.suspend_sampling_up_factor = 5,
+	.suspend_sampling_rate = 3*HZ/100,
+	.suspend_sampling_up_factor = 7,
 	.suspend_max_freq = 600000,
 
 	.cpu_up_rate = DEF_CPU_UP_RATE,
