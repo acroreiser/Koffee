@@ -974,13 +974,15 @@ static struct device_attribute mdnie_attributes[] = {
 
 #ifdef CONFIG_PM
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-#if defined(CONFIG_FB_MDNIE_PWM)
 static void mdnie_early_suspend(struct early_suspend *h)
 {
 	struct mdnie_info *mdnie = container_of(h, struct mdnie_info, early_suspend);
-	struct lcd_platform_data *pd = mdnie->lcd_pd;
 
 	dev_info(mdnie->dev, "+%s\n", __func__);
+	printk("%s: scenario:%d accessibility:%d", __func__, mdnie->scenario, mdnie->accessibility);
+
+#if defined(CONFIG_FB_MDNIE_PWM)
+	struct lcd_platform_data *pd = mdnie->lcd_pd;
 
 	mdnie->bd_enable = FALSE;
 
@@ -989,23 +991,20 @@ static void mdnie_early_suspend(struct early_suspend *h)
 
 	if (pd && pd->power_on)
 		pd->power_on(NULL, 0);
-
+#endif
 	dev_info(mdnie->dev, "-%s\n", __func__);
 
 	return;
 }
-#endif
 
 static void mdnie_late_resume(struct early_suspend *h)
 {
 	struct mdnie_info *mdnie = container_of(h, struct mdnie_info, early_suspend);
-#if defined(CONFIG_FB_MDNIE_PWM)
-	struct lcd_platform_data *pd = mdnie->lcd_pd;
-#endif
 
 	dev_info(mdnie->dev, "+%s\n", __func__);
 
 #if defined(CONFIG_FB_MDNIE_PWM)
+	struct lcd_platform_data *pd = mdnie->lcd_pd;
 	if (mdnie->enable)
 		mdnie_pwm_control(mdnie, 0);
 
@@ -1105,9 +1104,7 @@ static int mdnie_probe(struct platform_device *pdev)
 	dev_set_drvdata(mdnie->dev, mdnie);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-#if defined(CONFIG_FB_MDNIE_PWM)
 	mdnie->early_suspend.suspend = mdnie_early_suspend;
-#endif
 	mdnie->early_suspend.resume = mdnie_late_resume;
 	mdnie->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;
 	register_early_suspend(&mdnie->early_suspend);
