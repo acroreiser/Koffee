@@ -805,8 +805,8 @@ mali_bool mali_dvfs_table_update(void)
 #endif
 
 // Disable GPU overclock by default
-static unsigned int mali_num_levels = 2;
-module_param(mali_num_levels, uint, 0644);
+static unsigned int mali_use_5th_step = 0;
+module_param(mali_use_5th_step, uint, 0644);
 
 static unsigned int decideNextStatus(unsigned int utilization)
 {
@@ -821,12 +821,17 @@ static unsigned int decideNextStatus(unsigned int utilization)
 		if (utilization > (int)(255 * mali_dvfs[maliDvfsStatus.currentStep].upthreshold / 100) &&
 				level < MALI_DVFS_STEPS - 1) {
 			level++;
-			if (level > mali_num_levels)
-				level = mali_num_levels;
+			if (!mali_use_5th_step) /* this prevents the usage of 5th step -gm */
+				level = 3;
 		}
 		else if (utilization < (int)(255 * mali_dvfs[maliDvfsStatus.currentStep].downthreshold / 100) &&
 				level > 0) {
 			level--;
+		}
+
+		if (_mali_osk_atomic_read(&bottomlock_status) > 0) {
+			if (level < bottom_lock_step)
+				level = bottom_lock_step;
 		}
 	} else {
 		for (iStepCount = MALI_DVFS_STEPS-1; iStepCount >= 0; iStepCount--) {
