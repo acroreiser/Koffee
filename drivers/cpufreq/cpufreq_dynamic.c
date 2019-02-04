@@ -336,7 +336,7 @@ static struct dbs_tuners {
 } dbs_tuners_ins = {
 	.input_boost_freq = 200000,
 	.input_boost_us = 0*1000,
-	.power_optimal_freq = 600000,
+	.power_optimal_freq = 800000,
 	.high_freq_sampling_up_factor = 2,
 
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
