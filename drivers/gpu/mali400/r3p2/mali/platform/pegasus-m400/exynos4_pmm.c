@@ -808,6 +808,9 @@ mali_bool mali_dvfs_table_update(void)
 static unsigned int mali_use_5th_step = 0;
 module_param(mali_use_5th_step, uint, 0644);
 
+static unsigned int bottom_lock_step_enabled = 0;
+module_param(bottom_lock_step_enabled, uint, 0644);
+
 static unsigned int decideNextStatus(unsigned int utilization)
 {
 	static unsigned int level = 0;
@@ -829,9 +832,11 @@ static unsigned int decideNextStatus(unsigned int utilization)
 			level--;
 		}
 
-		if (_mali_osk_atomic_read(&bottomlock_status) > 0) {
-			if (level < bottom_lock_step)
-				level = bottom_lock_step;
+		if (bottom_lock_step_enabled) {
+			if (_mali_osk_atomic_read(&bottomlock_status) > 0) {
+				if (level < bottom_lock_step)
+					level = bottom_lock_step;
+			}
 		}
 	} else {
 		for (iStepCount = MALI_DVFS_STEPS-1; iStepCount >= 0; iStepCount--) {
