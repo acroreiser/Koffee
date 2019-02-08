@@ -1120,10 +1120,10 @@ static int taos_opt_probe(struct i2c_client *client,
 #endif
 
 	/* hrtimer settings.  we poll for light values using a timer. */
-	hrtimer_init(&taos->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&taos->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	taos->timer.function = taos_timer_func;
 
-	hrtimer_init(&taos->ptimer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&taos->ptimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	taos->prox_polling_time = ns_to_ktime(2000 * NSEC_PER_MSEC);
 	taos->ptimer.function = taos_ptimer_func;
 

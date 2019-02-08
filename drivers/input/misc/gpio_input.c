@@ -342,7 +342,7 @@ int gpio_event_input_func(struct gpio_event_input_devs *input_devs,
 			(input_devs->count > 1) ? "..." : "",
 			ret == 0 ? "interrupt" : "polling");
 
-		hrtimer_init(&ds->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+		hrtimer_init(&ds->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		ds->timer.function = gpio_event_input_timer_func;
 		hrtimer_start(&ds->timer, ktime_set(0, 0), HRTIMER_MODE_REL);
 		spin_unlock_irqrestore(&ds->irq_lock, irqflags);

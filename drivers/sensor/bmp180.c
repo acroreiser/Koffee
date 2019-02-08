@@ -611,7 +611,7 @@ static int __devinit bmp180_probe(struct i2c_client *client,
 		goto err_read_eeprom;
 	}
 
-	hrtimer_init(&barom->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&barom->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	barom->poll_delay = ns_to_ktime(DELAY_DEFAULT);
 	barom->timer.function = bmp180_timer_func;
 

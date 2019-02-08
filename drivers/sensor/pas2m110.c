@@ -755,12 +755,12 @@ static int pas2m110_i2c_probe(struct i2c_client *client,
 	}
 
 	/* light_timer settings. we poll for light values using a timer. */
-	hrtimer_init(&pas2m110->light_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&pas2m110->light_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	pas2m110->light_poll_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 	pas2m110->light_timer.function = pas2m110_light_timer_func;
 
 	/* prox_timer settings. we poll for light values using a timer. */
-	hrtimer_init(&pas2m110->prox_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&pas2m110->prox_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	pas2m110->prox_poll_delay = ns_to_ktime(2000 * NSEC_PER_MSEC);
 	pas2m110->prox_timer.function = pas2m110_prox_timer_func;
 

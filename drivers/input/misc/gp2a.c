@@ -730,7 +730,7 @@ static int gp2a_i2c_probe(struct i2c_client *client,
 	}
 
 	/* hrtimer settings.  we poll for light values using a timer. */
-	hrtimer_init(&gp2a->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&gp2a->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	gp2a->light_poll_delay =
 			ns_to_ktime(LIGHT_TIMER_PERIOD_MS * NSEC_PER_MSEC);
 	gp2a->timer.function = gp2a_timer_func;

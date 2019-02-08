@@ -586,7 +586,7 @@ static int ftk_probe(struct i2c_client *client, const struct i2c_device_id *idp)
 	ftk_ts->irq = client->irq;
 
 	if (!ftk_ts->irq) {
-		hrtimer_init(&ftk_ts->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+		hrtimer_init(&ftk_ts->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		ftk_ts->timer.function = st_ts_timer_func;
 		hrtimer_start(&ftk_ts->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	} else {

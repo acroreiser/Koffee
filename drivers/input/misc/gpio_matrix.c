@@ -394,7 +394,7 @@ int gpio_event_matrix_func(struct gpio_event_input_devs *input_devs,
 		kp->current_output = mi->noutputs;
 		kp->key_state_changed = 1;
 
-		hrtimer_init(&kp->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+		hrtimer_init(&kp->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		kp->timer.function = gpio_keypad_timer_func;
 		wake_lock_init(&kp->wake_lock, WAKE_LOCK_SUSPEND, "gpio_kp");
 		err = gpio_keypad_request_irqs(kp);

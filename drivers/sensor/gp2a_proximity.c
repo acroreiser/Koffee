@@ -1089,7 +1089,7 @@ static int gp2a_opt_probe(struct platform_device *pdev)
 	gp2a->pdata = pdata;
 
 	/* prox_timer settings. we poll for prox_avg values using a timer. */
-	hrtimer_init(&gp2a->prox_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+	hrtimer_init(&gp2a->prox_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	gp2a->prox_poll_delay = ns_to_ktime(2000 * NSEC_PER_MSEC);
 	gp2a->prox_timer.function = gp2a_prox_timer_func;
 

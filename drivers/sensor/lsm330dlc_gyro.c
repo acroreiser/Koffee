@@ -1479,7 +1479,7 @@ static int lsm330dlc_gyro_probe(struct i2c_client *client,
 			sizeof(default_ctrl_regs_bypass));
 		data->ctrl_regs[2] = 0x00; /* disable interrupt */
 		/* hrtimer settings.  we poll for gyro values using a timer. */
-		hrtimer_init(&data->timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+		hrtimer_init(&data->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		data->polling_delay = ns_to_ktime(200 * NSEC_PER_MSEC);
 		data->timer.function = lsm330dlc_gyro_timer_func;
 
