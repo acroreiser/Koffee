@@ -7,6 +7,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
 #include <linux/kernel.h>
@@ -292,6 +302,11 @@ struct usb_ep *usb_ep_autoconfig (
 			ep = find_ep (gadget, "ep9-int");
 			if (ep && ep_matches (gadget, ep, desc))
 				return ep;
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+			ep = find_ep(gadget, "ep12-int");
+			if (ep && ep_matches(gadget, ep, desc))
+				return ep;
+#endif
 		} else if (USB_ENDPOINT_XFER_BULK == type
 				&& (USB_DIR_IN & desc->bEndpointAddress)) {
 			ep = find_ep (gadget, "ep2-bulk");
@@ -303,6 +318,14 @@ struct usb_ep *usb_ep_autoconfig (
 			ep = find_ep (gadget, "ep8-bulk");
 			if (ep && ep_matches (gadget, ep, desc))
 				return ep;
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+			ep = find_ep(gadget, "ep11-bulk");
+			if (ep && ep_matches(gadget, ep, desc))
+				return ep;
+			ep = find_ep(gadget, "ep14-bulk");
+			if (ep && ep_matches(gadget, ep, desc))
+				return ep;
+#endif
 		} else if (USB_ENDPOINT_XFER_BULK == type
 				&& !(USB_DIR_IN & desc->bEndpointAddress)) {
 			ep = find_ep (gadget, "ep1-bulk");
@@ -312,6 +335,14 @@ struct usb_ep *usb_ep_autoconfig (
 			if (ep && ep_matches (gadget, ep, desc))
 				return ep;
 			ep = find_ep (gadget, "ep7-bulk");
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+			if (ep && ep_matches(gadget, ep, desc))
+				return ep;
+			ep = find_ep(gadget, "ep10-bulk");
+			if (ep && ep_matches(gadget, ep, desc))
+				return ep;
+			ep = find_ep(gadget, "ep13-bulk");
+#endif
 			if (ep && ep_matches (gadget, ep, desc))
 				return ep;
 		} else if (USB_ENDPOINT_XFER_ISOC == type
