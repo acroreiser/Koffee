@@ -562,6 +562,21 @@ bool check_for_dapm(enum snd_soc_dapm_type dapm_type, char* widget_name)
 	return false;
 }
 
+void check_for_dapm2(enum snd_soc_dapm_type dapm_type)
+{
+	struct snd_soc_dapm_widget *w;
+
+	/* Iterate widget list and find power mode of given widget per its name */
+	list_for_each_entry(w, &codec->card->widgets, list)
+	{
+		if (w->dapm != &codec->dapm)
+			continue;
+
+		/* DAPM types in include/sound/soc-dapm.h */
+		if (w->id == dapm_type)
+			pr_err("%s: %s: is %s\n", __func__, w->name, w->power ? "ON" : "OFF");
+	}
+}
 
 bool check_for_fmradio(void)
 {
@@ -2379,7 +2394,14 @@ static ssize_t version_show(struct device *dev, struct device_attribute *attr, c
 	return sprintf(buf, "%s\n", BOEFFLA_SOUND_VERSION);
 }
 
-
+static ssize_t widgets_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	pr_err("%s: checking snd_soc_dapm_spk\n", __func__);
+	check_for_dapm2(snd_soc_dapm_spk);
+	pr_err("%s: checking snd_soc_dapm_hp\n", __func__);
+	check_for_dapm2(snd_soc_dapm_hp);
+	return sprintf(buf, "debug messages were printed to dmesg\n");
+}
 
 /*****************************************/
 // Initialize boeffla sound sysfs folder
@@ -2406,6 +2428,7 @@ static DEVICE_ATTR(debug_info, S_IRUGO | S_IWUGO, debug_info_show, debug_info_st
 static DEVICE_ATTR(debug_reg, S_IRUGO | S_IWUGO, debug_reg_show, debug_reg_store);
 static DEVICE_ATTR(debug_dump, S_IRUGO | S_IWUGO, debug_dump_show, debug_dump_store);
 static DEVICE_ATTR(change_delay, S_IRUGO | S_IWUGO, change_delay_show, change_delay_store);
+static DEVICE_ATTR(widgets, S_IRUGO, widgets_show, NULL);
 static DEVICE_ATTR(version, S_IRUGO | S_IWUGO, version_show, NULL);
 
 // define attributes
@@ -2430,6 +2453,7 @@ static struct attribute *boeffla_sound_attributes[] = {
 	&dev_attr_debug_reg.attr,
 	&dev_attr_debug_dump.attr,
 	&dev_attr_change_delay.attr,
+	&dev_attr_widgets.attr,
 	&dev_attr_version.attr,
 	NULL
 };
