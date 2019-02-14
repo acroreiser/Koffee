@@ -42,6 +42,10 @@
 
 #define RQ_AVG_TIMER_RATE	10
 
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+int pegasusq_cpu_cores_lock = 0;
+#endif
+
 struct runqueue_data {
 	unsigned int nr_run_avg;
 	unsigned int update_rate;
@@ -1075,6 +1079,11 @@ static void cpu_up_work(struct work_struct *work)
 #endif
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
 
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+	nr_up = pegasusq_cpu_cores_lock - online;
+	goto do_up_work;
+#endif
+
 	if (hotplug_lock && min_cpu_lock)
 		nr_up = max(hotplug_lock, min_cpu_lock) - online;
 	else if (hotplug_lock)
@@ -1087,6 +1096,9 @@ static void cpu_up_work(struct work_struct *work)
 	}
 #endif
 
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+do_up_work:
+#endif
 	if (online == 1) {
 		printk(KERN_ERR "CPU_UP 3\n");
 		cpu_up(num_possible_cpus() - 1);
@@ -1167,6 +1179,11 @@ static int check_up(void)
 	int online;
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
 
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+	if (pegasusq_cpu_cores_lock)
+		return 1;
+#endif
+
 	if (hotplug_lock > 0)
 		return 0;
 
@@ -1228,6 +1245,11 @@ static int check_down(void)
 	int max_rq_avg = 0;
 	int online;
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
+
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+	if (pegasusq_cpu_cores_lock)
+		return 0;
+#endif
 
 	if (hotplug_lock > 0)
 		return 0;
