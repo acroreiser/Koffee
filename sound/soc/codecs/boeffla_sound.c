@@ -185,6 +185,11 @@ static void wm8994_incall_hook(void)
 	run_boost_queue = (is_incall != prev_playback_state) ||
 			  (is_playback != prev_playback_state);
 
+	if (debug(DEBUG_VERBOSE))
+		pr_err("%s: is_incall=%d, is_playback=%d,"
+		       "run_boostqueue=%d\n", __func__, is_incall,
+		       is_playback, run_boost_queue);
+
 	if (run_boost_queue) {
 		queue_work(incall_boost_queue, &incall_boost_work);
 		prev_incall_state = is_incall;
@@ -214,6 +219,16 @@ static void incall_boost(struct work_struct *work)
 		if (!is_playback)
 			exynos_cpufreq_lock_free(DVFS_LOCK_ID_INCALL);
 	}
+}
+
+static bool playback_check_running = false;
+
+static void playback_check_fn(struct work_struct *work);
+static DECLARE_DELAYED_WORK(playback_check_delayedwork, playback_check_fn);
+static void playback_check_fn(struct work_struct *work)
+{
+	wm8994_incall_hook();
+	schedule_delayed_work(&playback_check_delayedwork, msecs_to_jiffies(1000));
 }
 
 /*****************************************/
@@ -1524,8 +1539,20 @@ static ssize_t boeffla_sound_store(struct device *dev, struct device_attribute *
 	// read values from input buffer
 	ret = sscanf(buf, "%d", &val);
 
-    if (ret != 1)
-        return -EINVAL;
+	if (ret != 1)
+        	return -EINVAL;
+
+	if (val == ON) {
+		if (!playback_check_running) {
+			schedule_delayed_work(&playback_check_delayedwork, msecs_to_jiffies(0));
+			playback_check_running = true;
+		}
+	} else if (val == OFF) {
+		if (playback_check_running) {
+			cancel_delayed_work(&playback_check_delayedwork);
+			playback_check_running = false;
+		}
+	}
 
 	// store if valid data and only if status has changed, reset all values
 	if (((val == OFF) || (val == ON))&& (val != boeffla_sound))
