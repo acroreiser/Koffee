@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2003-2008 Alan Stern
  * Copyright (C) 2009 Samsung Electronics
- *                    Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
+ *                    Author: Michal Nazarewicz <mina86@mina86.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -3085,7 +3085,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
 	 * Create the LUNs, open their backing files, and register the
 	 * LUN devices in sysfs.
 	 */
-	curlun = kzalloc(nluns * sizeof *curlun, GFP_KERNEL);
+	curlun = kcalloc(nluns, sizeof(*curlun), GFP_KERNEL);
 	if (unlikely(!curlun)) {
 		rc = -ENOMEM;
 		goto error_release;
