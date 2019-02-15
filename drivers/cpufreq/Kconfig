@@ -344,9 +344,9 @@ config CPU_FREQ_GOV_PEGASUSQ_BOOST
 	depends on CPU_FREQ_GOV_PEGASUSQ
 	default n
 
-config CPU_FREQ_PEGASUSQ_ENHANCEMENTS
-	depends on CPU_FREQ_GOV_PEGASUSQ
-	bool "pegasusq - enable CPU cores lock on audio playback"
+config CPU_FREQ_ENHANCEMENTS
+	depends on CPU_FREQ_GOV_PEGASUSQ || CPU_FREQ_GOV_DYNAMIC
+	bool "enable CPU cores lock on audio playback"
 	default n
 
 config CPU_FREQ_GOV_SLP

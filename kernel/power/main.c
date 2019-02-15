@@ -47,6 +47,10 @@ extern int mali_dvfs_bottom_lock_pop(void);
 
 DEFINE_MUTEX(pm_mutex);
 
+#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
+int cpu_cores_lock = 0;
+#endif
+
 #ifdef CONFIG_PM_SLEEP
 
 /* Routines for PM-transition notifications */

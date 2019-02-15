@@ -197,8 +197,8 @@ static void wm8994_incall_hook(void)
 	}
 }
 
-#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
-extern int pegasusq_cpu_cores_lock;
+#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
+extern int cpu_cores_lock;
 #endif
 
 static void incall_boost(struct work_struct *work)
@@ -210,8 +210,8 @@ static void incall_boost(struct work_struct *work)
 		if (!is_playback)
 			exynos_cpufreq_lock_free(DVFS_LOCK_ID_INCALL);
 
-#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
-		pegasusq_cpu_cores_lock = NR_CPUS;
+#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
+		cpu_cores_lock = NR_CPUS;
 #endif
 		if (!is_playback) {
 			for_each_cpu_not(cpu, cpu_online_mask) {
@@ -228,8 +228,8 @@ static void incall_boost(struct work_struct *work)
 		if (!is_playback)
 			exynos_cpufreq_lock_free(DVFS_LOCK_ID_INCALL);
 
-#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
-		pegasusq_cpu_cores_lock = 2;
+#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
+		cpu_cores_lock = 2;
 #endif
 	}
 }
