@@ -1083,6 +1083,10 @@ static bool battery_temper_cond(struct battery_info *info)
 	return info->temper_state;
 }
 
+#ifdef CONFIG_LEDS_AN30259A
+bool charging_led_an30259a_enable = false;
+#endif
+
 static void battery_charge_control(struct battery_info *info,
 				unsigned int chg_curr, unsigned int in_curr)
 {
@@ -1177,28 +1181,16 @@ charge_state_con:
 		battery_control_info(info, POWER_SUPPLY_PROP_STATUS, ENABLE);
 
 		info->charge_start_time = current_time.tv_sec;
-#ifdef CONFIG_LEDS_AN30259A
-		if (led_switch > 0) {
-			switch (info->battery_soc) {
-			  case 0 ... 15:
-				enable_led_an30259a(color_lowcharge, 0, 0);
-				break;
-			  case 16 ... 80:
-				enable_led_an30259a(color_medcharge, 0, 0);
-				break;
-			  case 81 ... 99:
-				enable_led_an30259a(color_highcharge, 0, 0);
-				break;
-			  case 100:
-				enable_led_an30259a(color_fullcharge, 0, 0);
-				break;
-			}
-		}
-#endif
 
 		pr_info("%s: charge enabled, current as %d/%dmA @%d\n",
 			__func__, info->charge_current, info->input_current,
 			info->charge_start_time);
+#ifdef CONFIG_LEDS_AN30259A
+		if (led_switch > 0) {
+			charging_led_an30259a_enable = true;
+			enable_charging_led(info->battery_soc);
+		}
+#endif
 
 		charge_state = battery_get_info(info, POWER_SUPPLY_PROP_STATUS);
 
@@ -1217,8 +1209,10 @@ charge_state_con:
 		battery_control_info(info, POWER_SUPPLY_PROP_STATUS, DISABLE);
 
 #ifdef CONFIG_LEDS_AN30259A
-		if (led_switch > 0)
+		if (led_switch > 0) {
+			charging_led_an30259a_enable = false;
 			enable_led_an30259a(0, 0, 0);
+		}
 #endif
 
 		pr_info("%s: charge disabled, current as %d/%dmA @%d\n",

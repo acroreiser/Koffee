@@ -89,6 +89,8 @@ struct an30259a_pr_control {
 void enable_led_an30259a(unsigned int led_brightness, unsigned int delay_on_time,
 							unsigned int delay_off_time);
 
+void enable_charging_led(int val);
+
 extern unsigned int led_switch;
 extern unsigned int color_fullcharge;
 extern unsigned int color_highcharge;

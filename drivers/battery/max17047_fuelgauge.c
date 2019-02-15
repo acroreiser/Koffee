@@ -39,6 +39,10 @@
 #endif
 #endif
 
+#ifdef CONFIG_LEDS_AN30259A
+#include <linux/leds-an30259a.h>
+#endif
+
 /* TRIM ERROR DETECTION */
 #define USE_TRIM_ERROR_DETECTION
 
@@ -61,7 +65,10 @@
 #define MAX17047_REG_SOC_VF		0xFF
 
 /* Polling work */
-#undef	DEBUG_FUELGAUGE_POLLING
+#ifdef CONFIG_LEDS_AN30259A
+#define DEBUG_FUELGAUGE_POLLING
+#endif
+
 #define MAX17047_POLLING_INTERVAL	10000
 
 /* adjust full soc */
@@ -69,6 +76,10 @@
 #define FULL_SOC_LOW		9700
 #define FULL_SOC_HIGH		10000
 #define KEEP_SOC_DEFAULT	50 /* 0.5% */
+
+#ifdef CONFIG_LEDS_AN30259A
+extern bool charging_led_an30259a_enable;
+#endif
 
 struct max17047_fuelgauge_data {
 	struct i2c_client		*client;
@@ -511,6 +522,11 @@ static void max17047_polling_work(struct work_struct *work)
 	max17047_get_avgvcell(fg_data->client);
 	max17047_get_rawsoc(fg_data->client);
 	max17047_get_soc(fg_data->client);
+
+#ifdef CONFIG_LEDS_AN30259A
+		if (charging_led_an30259a_enable)
+			enable_charging_led(fg_data->soc);
+#endif
 
 	pr_info("%s: VCELL(%d), VFOCV(%d), AVGVCELL(%d), RAWSOC(%d), SOC(%d)\n",
 					__func__, fg_data->vcell,

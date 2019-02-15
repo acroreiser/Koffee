@@ -832,6 +832,24 @@ void enable_led_an30259a(unsigned int led_brightness, unsigned int delay_on_time
 }
 EXPORT_SYMBOL(enable_led_an30259a);
 
+void enable_charging_led(int val)
+{
+	switch (val) {
+	  case 0 ... 15:
+		enable_led_an30259a(color_lowcharge, 0, 0);
+		break;
+	  case 16 ... 80:
+		enable_led_an30259a(color_medcharge, 0, 0);
+		break;
+	  case 81 ... 99:
+		enable_led_an30259a(color_highcharge, 0, 0);
+		break;
+	  case 100:
+		enable_led_an30259a(color_fullcharge, 0, 0);
+	}
+}
+EXPORT_SYMBOL(enable_charging_led);
+
 static int __devinit an30259a_initialize(struct i2c_client *client,
 					struct an30259a_led *led, int channel)
 {
