@@ -176,7 +176,7 @@ static unsigned int min_sampling_rate;
 
 
 #define DEF_MAX_CPU_LOCK			(0)
-#define DEF_MIN_CPU_LOCK			(0)
+#define DEF_MIN_CPU_LOCK			(2)
 #define DEF_CPU_UP_FREQ				(500000)
 #define DEF_CPU_DOWN_FREQ			(200000)
 #define DEF_UP_NR_CPUS				(1)
@@ -349,7 +349,7 @@ static struct dbs_tuners {
 	.sampling_rate = 3*HZ/100,
 	.sampling_down_factor = 1,
 	.sampling_down_factor_relax_khz = 400000,
-	.max_non_oc_freq = 900000,
+	.max_non_oc_freq = 800000,
 	.oc_freq_boost_ms = 2000,
 
 	.standby_sampling_rate = 2*HZ/100,
