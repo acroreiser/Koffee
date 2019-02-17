@@ -229,7 +229,7 @@ static void incall_boost(struct work_struct *work)
 			exynos_cpufreq_lock_free(DVFS_LOCK_ID_INCALL);
 
 #ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
-		pegasusq_cpu_cores_lock = 2;
+		pegasusq_cpu_cores_lock = 0;
 #endif
 	}
 }
