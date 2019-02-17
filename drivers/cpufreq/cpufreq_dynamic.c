@@ -176,7 +176,7 @@ static unsigned int min_sampling_rate;
 
 
 #define DEF_MAX_CPU_LOCK			(0)
-#define DEF_MIN_CPU_LOCK			(0)
+#define DEF_MIN_CPU_LOCK			(2)
 #define DEF_CPU_UP_FREQ				(500000)
 #define DEF_CPU_DOWN_FREQ			(200000)
 #define DEF_UP_NR_CPUS				(1)
@@ -1214,14 +1214,6 @@ static void cpu_up_work(struct work_struct *work)
 	}
 
 do_up_work:
-/*
-	if (online == 1) {
-		printk(KERN_ERR "CPU_UP 3\n");
-		cpu_up(num_possible_cpus() - 1);
-		nr_up -= 1;
-	}
-*/
-
 	for_each_cpu_not(cpu, cpu_online_mask) {
 		if (nr_up-- == 0)
 			break;
@@ -1245,13 +1237,18 @@ static void cpu_down_work(struct work_struct *work)
 	if (is_boosted() && dbs_tuners_ins.boost_mincpus)
 		nr_down = min(nr_down, online - (int)dbs_tuners_ins.boost_mincpus);
 
+	if ((online - nr_down) == 1) {
+		nr_down--;
+		pr_err("%s: forcing at least 2 CPU cores online: online=%d, nr_down=%d\n", __func__, online, nr_down);
+	}
+
 	for_each_online_cpu(cpu) {
 		if (cpu == 0)
 			continue;
+		if (--nr_down <= 0)
+			break;
 		printk(KERN_ERR "CPU_DOWN %d\n", cpu);
 		cpu_down(cpu);
-		if (--nr_down == 0)
-			break;
 	}
 }
 
