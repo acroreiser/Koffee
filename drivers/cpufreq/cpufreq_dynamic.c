@@ -44,8 +44,8 @@
 
 #define RQ_AVG_TIMER_RATE	10
 
-#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
-extern int cpu_cores_lock;
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+int pegasusq_cpu_cores_lock = 0;
 #endif
 
 struct runqueue_data {
@@ -1206,8 +1206,8 @@ static void cpu_up_work(struct work_struct *work)
 		goto do_up_work;
 	}
 
-#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
-	nr_up = cpu_cores_lock - online;
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+	nr_up = pegasusq_cpu_cores_lock - online;
 	goto do_up_work;
 #endif
 
@@ -1293,8 +1293,8 @@ static int check_up(void)
 	int online;
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
 
-#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
-	if (cpu_cores_lock)
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+	if (pegasusq_cpu_cores_lock)
 		return 1;
 #endif
 
@@ -1357,8 +1357,8 @@ static int check_down(void)
 	int online;
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
 
-#ifdef CONFIG_CPU_FREQ_ENHANCEMENTS
-	if (cpu_cores_lock)
+#ifdef CONFIG_CPU_FREQ_PEGASUSQ_ENHANCEMENTS
+	if (pegasusq_cpu_cores_lock)
 		return 0;
 #endif
 
