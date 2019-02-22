@@ -374,6 +374,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror \
 		   -Wno-error=all \
 		   -Wno-error=address \
+		   -Wno-error=format-truncation= \
 		   -Wno-error=declaration-after-statement \
 		   -Wno-error=enum-compare \
 		   -Wno-error=maybe-uninitialized \
