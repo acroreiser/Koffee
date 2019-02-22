@@ -371,7 +371,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-delete-null-pointer-checks \
 		   -mtune=cortex-a9 \
 		   -mlong-calls \
-		   -Werror \
 		   -Wno-error=all \
 		   -Wno-error=address \
 		   -Wno-error=format-truncation= \
