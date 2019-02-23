@@ -37,26 +37,26 @@
 #define AOR40_BASE_110		171
 #define base_20to100			110
 
-unsigned int brightness_config = 1;
+unsigned int brightness_config;
 
-unsigned char aid_108nit_F8_18th = 0x04;
-unsigned char aid_106nit_F8_18th = 0x1b;
-unsigned char aid_104nit_F8_18th = 0x32;
-unsigned char aid_102nit_F8_18th = 0x49;
-unsigned char aid_100nit_F8_18th = 0x5e;
-unsigned char aid_90nit_F8_18th = 0x77;
-unsigned char aid_80nit_F8_18th = 0x88;
-unsigned char aid_70nit_F8_18th = 0x90;
-unsigned char aid_60nit_F8_18th = 0x97;
-unsigned char aid_50nit_F8_18th = 0x9b;
-unsigned char aid_40nit_F8_18th = 0x9e;
-unsigned char aid_30nit_F8_18th = 0xa0;
-unsigned char aid_20nit_F8_18th = 0xa2;
+unsigned char aid_108nit_F8_18th = 0x38;
+unsigned char aid_106nit_F8_18th = 0x2F;
+unsigned char aid_104nit_F8_18th = 0x25;
+unsigned char aid_102nit_F8_18th = 0x1C;
+unsigned char aid_100nit_F8_18th = 0x12;
+unsigned char aid_90nit_F8_18th = 0x22;
+unsigned char aid_80nit_F8_18th = 0x32;
+unsigned char aid_70nit_F8_18th = 0x41;
+unsigned char aid_60nit_F8_18th = 0x50;
+unsigned char aid_50nit_F8_18th = 0x5E;
+unsigned char aid_40nit_F8_18th = 0x6C;
+unsigned char aid_30nit_F8_18th = 0x7A;
+unsigned char aid_20nit_F8_18th = 0x88;
 
-unsigned int AOR40_BASE_108 = 110;
-unsigned int AOR40_BASE_106 = 110;
-unsigned int AOR40_BASE_104 = 110;
-unsigned int AOR40_BASE_102 = 110;
+unsigned int AOR40_BASE_108 = 156;
+unsigned int AOR40_BASE_106 = 143;
+unsigned int AOR40_BASE_104 = 130;
+unsigned int AOR40_BASE_102 = 120;
 
 const struct rgb_offset_info aid_rgb_fix_table[] = {
 	{GAMMA_180CD, IV_15, CI_RED, 1}, {GAMMA_180CD, IV_15, CI_GREEN, -1}, {GAMMA_180CD, IV_15, CI_BLUE, 5},
