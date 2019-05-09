@@ -128,24 +128,12 @@ enum {
 /* Touch booster */
 #if defined(CONFIG_EXYNOS4_CPUFREQ) &&\
 	defined(CONFIG_BUSFREQ_OPP)
-#define TOUCH_BOOSTER
-
-static unsigned int touch_booster = 1;
-module_param(touch_booster, uint, 0644);
-
-static unsigned int touch_boost_cpufreq = 400000;
-module_param(touch_boost_cpufreq, uint, 0644);
-
-static unsigned int touch_boost_busfreq = 267160;
-module_param(touch_boost_busfreq, uint, 0644);
-
-static unsigned int touch_booster_off_time = 100;
-module_param(touch_booster_off_time, uint, 0644);
-
-static unsigned int touch_booster_chg_time = 200;
-module_param(touch_booster_chg_time, uint, 0644);
+#define TOUCH_BOOSTER			1
+#define TOUCH_BOOSTER_OFF_TIME		100
+#define TOUCH_BOOSTER_CHG_TIME		200
+#else
+#define TOUCH_BOOSTER			0
 #endif
-
 
 struct device *sec_touchscreen;
 static struct device *bus_dev;
@@ -274,7 +262,7 @@ struct mms_ts_info {
 	u8			fw_ic_ver;
 	enum fw_flash_mode fw_flash_mode;
 
-#ifdef TOUCH_BOOSTER
+#if TOUCH_BOOSTER
 	struct delayed_work work_dvfs_off;
 	struct delayed_work work_dvfs_chg;
 	bool dvfs_lock_status;
@@ -312,7 +300,7 @@ static void mms_ts_early_suspend(struct early_suspend *h);
 static void mms_ts_late_resume(struct early_suspend *h);
 #endif
 
-#ifdef TOUCH_BOOSTER
+#if TOUCH_BOOSTER
 static bool dvfs_lock_status = false;
 static bool press_status = false;
 #endif
@@ -375,7 +363,7 @@ struct tsp_cmd tsp_cmds[] = {
 };
 #endif
 
-#ifdef TOUCH_BOOSTER
+#if TOUCH_BOOSTER
 static void change_dvfs_lock(struct work_struct *work)
 {
 	struct mms_ts_info *info = container_of(work,
@@ -419,7 +407,7 @@ static void set_dvfs_lock(struct mms_ts_info *info, uint32_t on)
 
 	mutex_lock(&info->dvfs_lock);
 	if (info->cpufreq_level <= 0) {
-		ret = exynos_cpufreq_get_level(touch_boost_cpufreq, &info->cpufreq_level);
+		ret = exynos_cpufreq_get_level(800000, &info->cpufreq_level);
 		if (ret < 0)
 			pr_err("[TSP] exynos_cpufreq_get_level error");
 		goto out;
@@ -428,13 +416,13 @@ static void set_dvfs_lock(struct mms_ts_info *info, uint32_t on)
 		if (info->dvfs_lock_status) {
 			cancel_delayed_work(&info->work_dvfs_chg);
 			schedule_delayed_work(&info->work_dvfs_off,
-				msecs_to_jiffies(touch_booster_off_time));
+				msecs_to_jiffies(TOUCH_BOOSTER_OFF_TIME));
 		}
 
 	} else if (on == 1) {
 		cancel_delayed_work(&info->work_dvfs_off);
 		if (!info->dvfs_lock_status) {
-			ret = dev_lock(bus_dev, sec_touchscreen, touch_boost_busfreq);
+			ret = dev_lock(bus_dev, sec_touchscreen, 400200);
 			if (ret < 0) {
 				pr_err("%s: dev lock failed(%d)\n",\
 							__func__, __LINE__);
@@ -447,7 +435,7 @@ static void set_dvfs_lock(struct mms_ts_info *info, uint32_t on)
 							__func__, __LINE__);
 
 			schedule_delayed_work(&info->work_dvfs_chg,
-				msecs_to_jiffies(touch_booster_chg_time));
+				msecs_to_jiffies(TOUCH_BOOSTER_CHG_TIME));
 
 			info->dvfs_lock_status = true;
 			//pr_debug("[TSP] DVFS On![%d]", info->cpufreq_level);
@@ -509,11 +497,9 @@ static void release_all_fingers(struct mms_ts_info *info)
 					   false);
 	}
 	input_sync(info->input_dev);
-#ifdef TOUCH_BOOSTER
-	if (touch_booster) {
-		set_dvfs_lock(info, 2);
-		pr_debug("[TSP] dvfs_lock free.\n ");
-	}
+#if TOUCH_BOOSTER
+	set_dvfs_lock(info, 2);
+	pr_debug("[TSP] dvfs_lock free.\n ");
 #endif
 }
 
@@ -688,15 +674,15 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 
 		if ((tmp[0] & 0x80) == 0) {
 #if defined(SEC_TSP_DEBUG)
-			/*dev_dbg(&client->dev,
+			dev_dbg(&client->dev,
 				"finger id[%d]: x=%d y=%d p=%d w=%d major=%d minor=%d angle=%d palm=%d\n",
 				id, x, y, tmp[5], tmp[4], tmp[6], tmp[7]
-				, angle, palm);*/
+				, angle, palm);
 #else
-			/*if (info->finger_state[id] != 0) {
+			if (info->finger_state[id] != 0) {
 				dev_notice(&client->dev,
 					"finger [%d] up, palm %d\n", id, palm);
-			}*/
+			}
 #endif
 			input_mt_slot(info->input_dev, id);
 			input_mt_report_slot_state(info->input_dev,
@@ -720,20 +706,20 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 #if defined(SEC_TSP_DEBUG)
 		if (info->finger_state[id] == 0) {
 			info->finger_state[id] = 1;
-			/*dev_dbg(&client->dev,
+			dev_dbg(&client->dev,
 				"finger id[%d]: x=%d y=%d w=%d major=%d minor=%d angle=%d palm=%d\n",
 				id, x, y, tmp[4], tmp[6], tmp[7]
-				, angle, palm);*/
+				, angle, palm);
 
-			/*if (finger_event_sz == 10)
+			if (finger_event_sz == 10)
 				dev_dbg(&client->dev, \
-					"pressure = %d\n", tmp[8]);*/
+					"pressure = %d\n", tmp[8]);
 		}
 #else
 		if (info->finger_state[id] == 0) {
 			info->finger_state[id] = 1;
-			/*dev_notice(&client->dev,
-				"finger [%d] down, palm %d\n", id, palm);*/
+			dev_notice(&client->dev,
+				"finger [%d] down, palm %d\n", id, palm);
 		}
 #endif
 	}
@@ -745,9 +731,8 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 			touch_is_pressed++;
 	}
 
-#ifdef TOUCH_BOOSTER
-	if (touch_booster)
-		set_dvfs_lock(info, !!touch_is_pressed);
+#if TOUCH_BOOSTER
+	set_dvfs_lock(info, !!touch_is_pressed);
 #endif
 out:
 	return IRQ_HANDLED;
@@ -3024,7 +3009,7 @@ static int __devinit mms_ts_probe(struct i2c_client *client,
 		goto err_reg_input_dev;
 	}
 
-#ifdef TOUCH_BOOSTER
+#if TOUCH_BOOSTER
 	mutex_init(&info->dvfs_lock);
 	INIT_DELAYED_WORK(&info->work_dvfs_off, set_dvfs_off);
 	INIT_DELAYED_WORK(&info->work_dvfs_chg, change_dvfs_lock);
