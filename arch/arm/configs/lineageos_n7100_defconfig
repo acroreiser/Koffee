@@ -554,6 +554,7 @@ CONFIG_T0_04_BD=y
 # CONFIG_KONA_01_BD is not set
 # CONFIG_IRON_BD is not set
 # CONFIG_GRANDE_BD is not set
+CONFIG_GPS_BCM4752=y
 # CONFIG_WRITEBACK_ENABLED is not set
 CONFIG_EXYNOS_SOUND_PLATFORM_DATA=y
 # CONFIG_JACK_FET is not set
@@ -622,12 +623,17 @@ CONFIG_SEC_MODEM_M0=y
 #
 # Connectivity Feature
 #
-# CONFIG_GPS_BRCM_475X is not set
+CONFIG_GPS_BCMxxxxx=y
+# CONFIG_GPS_BCM47521 is not set
+# CONFIG_GPS_CSRxT is not set
+# CONFIG_GPS_GSD5T is not set
 # CONFIG_BT_CSR8811 is not set
 # CONFIG_BT_BCM4330 is not set
 CONFIG_BT_BCM4334=y
 # CONFIG_BT_BCM43241 is not set
-# CONFIG_BT_MGMT is not set
+# CONFIG_BT_BCM4335 is not set
+# CONFIG_BT_BLUEDROID is not set
+CONFIG_BT_MGMT=y
 
 #
 # Qualcomm Modem Feature
