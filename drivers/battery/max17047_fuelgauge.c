@@ -304,7 +304,7 @@ static void max17047_reset_soc(struct i2c_client *client)
 				max17047_get_vfocv(client),
 				max17047_get_rawsoc(client),
 				max17047_get_soc(client));
-	max17047_test_read(fg_data);
+	//max17047_test_read(fg_data);
 
 	if (max17047_i2c_read(client, MAX17047_REG_MISCCFG, data) < 0)
 		return;
@@ -320,7 +320,7 @@ static void max17047_reset_soc(struct i2c_client *client)
 				max17047_get_vfocv(client),
 				max17047_get_rawsoc(client),
 				max17047_get_soc(client));
-	max17047_test_read(fg_data);
+	//max17047_test_read(fg_data);
 
 	return;
 }
