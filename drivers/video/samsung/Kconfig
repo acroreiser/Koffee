@@ -279,6 +279,12 @@ config FB_S5P_NT71391
 	---help---
 	  This enables support for Novatek NT71391 MIPI LCD
 
+config FB_S5P_NT71391
+	bool "NT71391 MIPI LCD"
+	depends on FB_S5P_MIPI_DSIM
+	---help---
+	  This enables support for Novatek NT71391 MIPI LCD
+
 config FB_S5P_S6D7AA0
 	bool "S6D7AA0 MIPI LCD"
 	depends on FB_S5P_MIPI_DSIM
@@ -342,6 +348,16 @@ config LCD_REVERSE
 config LCD_FREQ_SWITCH
        bool "support for LCD Frequency switch"
        depends on MACH_MIDAS
+       default n
+
+config LCD_FREQ_SWITCH_ACCOUNTING
+       bool "support for LCD Frequency switch state accounting"
+       depends on LCD_FREQ_SWITCH
+       default n
+
+config CPU_FREQ_LCD_FREQ_DFS
+       bool "support for CPU frequency based LCD freq scaling"
+       depends on LCD_FREQ_SWITCH && CPU_FREQ
        default n
 
 config FB_S5P_V2

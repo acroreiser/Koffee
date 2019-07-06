@@ -251,7 +251,7 @@ static irqreturn_t vgh_detection_int(int irq, void *_lcd)
 	dev_info(&lcd->ld->dev, "%s\n", __func__);
 
 	lcd->vgh_detection_count = 0;
-	schedule_delayed_work(&lcd->vgh_detection, HZ/16);
+	schedule_delayed_work(&lcd->vgh_detection, msecs_to_jiffies(63));
 
 	return IRQ_HANDLED;
 }
@@ -493,7 +493,7 @@ static int s6d6aa1_set_power(struct lcd_device *ld, int power)
 {
 	struct lcd_info *lcd = lcd_get_data(ld);
 
-	dev_info(&lcd->ld->dev, "%s, fb%d\n", __func__, fb->node);
+	//dev_info(&lcd->ld->dev, "%s, fb%d\n", __func__, fb->node);
 
 	return 0;
 }

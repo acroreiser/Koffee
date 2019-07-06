@@ -2196,9 +2196,6 @@ static struct platform_device *midas_devices[] __initdata = {
 #ifdef CONFIG_FB_S5P_MDNIE
 	&mdnie_device,
 #endif
-#ifdef CONFIG_LCD_FREQ_SWITCH
-	&lcdfreq_device,
-#endif
 #ifdef CONFIG_HAVE_PWM
 	&s3c_device_timer[0],
 	&s3c_device_timer[1],
