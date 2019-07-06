@@ -1020,7 +1020,7 @@ static void selinux_write_opts(struct seq_file *m,
 		seq_puts(m, prefix);
 		if (has_comma)
 			seq_putc(m, '\"');
-		seq_escape(m, opts->mnt_opts[i], "\"\n\\");
+		seq_puts(m, opts->mnt_opts[i]);
 		if (has_comma)
 			seq_putc(m, '\"');
 	}
