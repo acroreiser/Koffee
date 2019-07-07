@@ -40,9 +40,6 @@
 #include "wm8994.h"
 #include "wm_hubs.h"
 
-#include "boeffla_sound.h"
-
-
 #define WM1811_JACKDET_MODE_NONE  0x0000
 #define WM1811_JACKDET_MODE_JACK  0x0100
 #define WM1811_JACKDET_MODE_MIC   0x0080
@@ -130,7 +127,7 @@ static void wm8958_micd_set_rate(struct snd_soc_codec *codec)
 static int wm8994_readable(struct snd_soc_codec *codec, unsigned int reg)
 {
 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
-	struct wm8994 *control = wm8994->control_data;
+	struct wm8994 *control = codec->control_data;
 
 	switch (reg) {
 	case WM8994_GPIO_1:
@@ -196,8 +193,6 @@ static int wm8994_write(struct snd_soc_codec *codec, unsigned int reg,
 	int ret;
 
 	BUG_ON(reg > WM8994_MAX_REGISTER);
-
-	value = Boeffla_sound_hook_wm8994_write(reg, value);
 
 	if (!wm8994_volatile(codec, reg)) {
 		ret = snd_soc_cache_write(codec, reg, value);
@@ -1792,7 +1787,7 @@ SND_SOC_DAPM_MUX("AIF2DAC Mux", SND_SOC_NOPM, 0, 0, &aif2dac_mux),
 SND_SOC_DAPM_MUX("AIF2ADC Mux", SND_SOC_NOPM, 0, 0, &aif2adc_mux),
 
 SND_SOC_DAPM_AIF_IN("AIF3DACDAT", "AIF3 Playback", 0, SND_SOC_NOPM, 0, 0),
-SND_SOC_DAPM_AIF_IN("AIF3ADCDAT", "AIF3 Capture", 0, SND_SOC_NOPM, 0, 0),
+SND_SOC_DAPM_AIF_OUT("AIF3ADCDAT", "AIF3 Capture", 0, SND_SOC_NOPM, 0, 0),
 
 SND_SOC_DAPM_SUPPLY("TOCLK", WM8994_CLOCKING_1, 4, 0, NULL, 0),
 
@@ -2725,7 +2720,7 @@ static struct {
 };
 
 static int fs_ratios[] = {
-	64, 128, 192, 256, 384, 512, 768, 1024, 1408, 1536
+	64, 128, 192, 256, 348, 512, 768, 1024, 1408, 1536
 };
 
 static int bclk_divs[] = {
@@ -2917,6 +2912,7 @@ static int wm8994_aif3_hw_params(struct snd_pcm_substream *substream,
 		default:
 			return 0;
 		}
+		break;
 	default:
 		return 0;
 	}
@@ -4240,8 +4236,6 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
 					ARRAY_SIZE(wm8958_intercon));
 		break;
 	}
-
-	Boeffla_sound_hook_wm8994_pcm_probe(codec);
 
 	return 0;
 

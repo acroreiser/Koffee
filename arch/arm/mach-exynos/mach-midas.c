@@ -56,7 +56,7 @@
 #include <linux/delay.h>
 #include <linux/bootmem.h>
 
-#ifdef CONFIG_DMA_CMA
+#ifdef CONFIG_CMA
 #include <linux/dma-contiguous.h>
 #endif
 
@@ -149,7 +149,7 @@ struct s3cfb_extdsp_lcd {
 #include <mach/midas-tsp.h>
 #include <mach/regs-clock.h>
 
-#include <mach/board-lcd.h>
+#include <mach/midas-lcd.h>
 #include <mach/midas-sound.h>
 
 #ifdef CONFIG_INPUT_WACOM
@@ -247,53 +247,6 @@ static struct spi_board_info spi1_board_info[] __initdata = {
 };
 #endif
 
-#if defined(CONFIG_VIDEO_DRIME4_SPI)
-
-static struct s3c64xx_spi_csinfo spi1_csi[] = {
-	[0] = {
-		.line = EXYNOS4_GPB(5),
-		.set_level = gpio_set_value,
-		.fb_delay = 0x00,
-	},
-};
-
-static struct spi_board_info spi1_board_info[] __initdata = {
-	{
-		.modalias = "drime4_spi",
-		.platform_data = NULL,
-		.max_speed_hz = 12000000,
-		.bus_num = 1,
-		.chip_select = 0,
-		.mode = SPI_MODE_0,
-		.controller_data = &spi1_csi[0],
-	}
-};
-#endif
-
-#if defined(CONFIG_VIDEO_M9MO_SPI)
-
-static struct s3c64xx_spi_csinfo spi1_csi[] = {
-	[0] = {
-		.line = EXYNOS4_GPB(5),
-		.set_level = gpio_set_value,
-		.fb_delay = 0x00,
-	},
-};
-
-static struct spi_board_info spi1_board_info[] __initdata = {
-	{
-		.modalias = "m9mo_spi",
-		.platform_data = NULL,
-		.max_speed_hz = 10000000,
-		.bus_num = 1,
-		.chip_select = 0,
-		.mode = SPI_MODE_1,
-		.controller_data = &spi1_csi[0],
-	}
-};
-#endif
-
-
 #if defined(CONFIG_LINK_DEVICE_SPI)  \
 	|| defined(CONFIG_TDMB) || defined(CONFIG_TDMB_MODULE) \
 	|| defined(CONFIG_ISDBT) || defined(CONFIG_LINK_DEVICE_PLD)
@@ -341,18 +294,6 @@ static struct spi_board_info spi2_board_info[] __initdata = {
 #endif
 
 static struct i2c_board_info i2c_devs8_emul[];
-
-int check_bootmode(void)
-{
-        int inform2;
-
-        inform2 = __raw_readl(S5P_INFORM2);
-        if (inform2 == 0x1)
-                return 1;
-        else
-                return 0;
-}
-
 
 #ifdef CONFIG_KEYBOARD_CYPRESS_TOUCH
 static void touchkey_init_hw(void)
@@ -1007,8 +948,7 @@ static void motor_en(bool enable)
 	       gpio_get_value(EXYNOS4_GPD0(0)));
 }
 #endif
-// Special VIB_ON GPIO needed for t0ltekor
-#if defined(CONFIG_MACH_T0_LTE)
+#if defined(CONFIG_MACH_T0) && defined(CONFIG_TARGET_LOCALE_KOR)
 static void motor_en(bool enable)
 {
 	gpio_direction_output(EXYNOS4_GPC0(3), enable);
@@ -1576,9 +1516,9 @@ static struct samsung_battery_platform_data samsung_battery_pdata = {
 #if defined(CONFIG_MACH_GC1)
 	.voltage_max = 4200000,
 #else
-	.voltage_max = 4350000,
+	.voltage_max = 4300000,
 #endif
-	.voltage_min = 3400000,
+	.voltage_min = 3300000,
 
 #if defined(CONFIG_MACH_GC1)
 	.in_curr_limit = 700,
@@ -1595,9 +1535,14 @@ static struct samsung_battery_platform_data samsung_battery_pdata = {
 	.chg_curr_siop_lv2 = 475,
 	.chg_curr_siop_lv3 = 1,	/* zero make charger off */
 #else
+/* default:
 	.in_curr_limit = 1000,
 	.chg_curr_ta = 1000,
-	.chg_curr_dock = 1000,
+	.chg_curr_dock = 1000,*/
+
+	.in_curr_limit = 2100,
+	.chg_curr_ta = 2100,
+	.chg_curr_dock = 2100,
 	.chg_curr_siop_lv1 = 475,
 	.chg_curr_siop_lv2 = 475,
 	.chg_curr_siop_lv3 = 475,
@@ -1623,7 +1568,7 @@ static struct samsung_battery_platform_data samsung_battery_pdata = {
 	.recharge_voltage = 4150000,
 #else
 	/* it will be cacaluated in probe */
-	.recharge_voltage = 4300000,
+	.recharge_voltage = 4200000,
 #endif
 
 #if defined(CONFIG_TARGET_LOCALE_KOR) || defined(CONFIG_MACH_M0_CTC) || \
@@ -2196,6 +2141,7 @@ static struct platform_device *midas_devices[] __initdata = {
 #ifdef CONFIG_FB_S5P_MDNIE
 	&mdnie_device,
 #endif
+
 #ifdef CONFIG_HAVE_PWM
 	&s3c_device_timer[0],
 	&s3c_device_timer[1],
@@ -2440,19 +2386,19 @@ static struct platform_device *midas_devices[] __initdata = {
 /* below temperature base on the celcius degree */
 struct s5p_platform_tmu midas_tmu_data __initdata = {
 	.ts = {
-		.stop_1st_throttle  = 78,
-		.start_1st_throttle = 80,
-		.stop_2nd_throttle  = 87,
-		.start_2nd_throttle = 103,
+		.stop_1st_throttle  = 90,
+		.start_1st_throttle = 95,
+		.stop_2nd_throttle  = 100,
+		.start_2nd_throttle = 105,
 		.start_tripping	    = 110, /* temp to do tripping */
 		.start_emergency    = 120, /* To protect chip,forcely kernel panic */
-		.stop_mem_throttle  = 80,
-		.start_mem_throttle = 85,
+		.stop_mem_throttle  = 83,
+		.start_mem_throttle = 88,
 		.stop_tc  = 13,
 		.start_tc = 10,
 	},
 	.cpufreq = {
-		.limit_1st_throttle  = 800000, /* 800MHz in KHz order */
+		.limit_1st_throttle  = 1400000, /* 1.400MHz in KHz order */
 		.limit_2nd_throttle  = 200000, /* 200MHz in KHz order */
 	},
 	.temp_compensate = {
@@ -2628,30 +2574,14 @@ static void __init exynos4_reserve_mem(void)
 		{
 			.name = "fimc1",
 			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMC1 * SZ_1K,
-#if defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_GC2PD)
-			.start = 0x5e800000,
-#elif defined(CONFIG_MACH_GD2)
-			.start = 0x5d700000,
-#elif defined(CONFIG_MACH_WATCH)
+#if defined(CONFIG_MACH_GC1)
+			.start = 0x5ec00000,
 #else
 			.start = 0x65c00000,
 #endif
 		},
 #endif
 #endif
-
-#if (CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMC3 > 0)
-#ifndef CONFIG_USE_FIMC_CMA
-		{
-			.name = "fimc3",
-			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMC3 * SZ_1K,
-#if defined(CONFIG_MACH_GD2)
-			.start = 0x60500000,
-#endif
-		},
-#endif
-#endif
-
 #ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC1
 		{
 			.name = "mfc1",
@@ -2659,10 +2589,8 @@ static void __init exynos4_reserve_mem(void)
 			{
 				.alignment = 1 << 26,
 			},
-#if defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_GC2PD)
+#if defined(CONFIG_MACH_GC1)
 			.start = 0x5e000000,
-#elif defined(CONFIG_MACH_GD2)
-			.start = 0x5B000000,
 #else
 			.start = 0x64000000,
 #endif
@@ -2672,13 +2600,8 @@ static void __init exynos4_reserve_mem(void)
 		{
 			.name = "mfc-normal",
 			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_NORMAL * SZ_1K,
-#if defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_GC2PD)
+#if defined(CONFIG_MACH_GC1)
 			.start = 0x5e000000,
-#elif defined(CONFIG_MACH_GD2)
-			.start = 0x5B000000,
-#elif defined(CONFIG_MACH_ZEST)
-			.start = 0x60800000,
-#elif defined(CONFIG_MACH_WATCH)
 #else
 			.start = 0x64000000,
 #endif
@@ -2688,91 +2611,31 @@ static void __init exynos4_reserve_mem(void)
 			.size = 0
 		},
 	};
-
 #ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 	static struct cma_region regions_secure[] = {
-#if !defined(CONFIG_DMA_CMA)
+#ifndef CONFIG_DMA_CMA
 #ifdef CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE
 		{
 			.name	= "ion",
 			.size	= CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE * SZ_1K,
-#if defined(CONFIG_MACH_GD2)
-			.start	= 0x53200000,
-#endif
 		},
-#endif // ION
+#endif
 #ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE
 		{
 			.name = "mfc-secure",
 			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE * SZ_1K,
-#if defined(CONFIG_MACH_GD2)
-			.start = 0x50100000,
-#endif
 		},
-#endif // MFC_SECURE
+#endif
 		{
 			.name = "sectbl",
 			.size = SZ_1M,
 		},
-#else /*defined(CONFIG_DMA_CMA)*/
-#if defined(CONFIG_USE_MFC_CMA)
-#if defined(CONFIG_MACH_M0) || defined(CONFIG_MACH_ZEST) || defined(CONFIG_MACH_WATCH)
+#else
+#if defined(CONFIG_USE_MFC_CMA) && defined(CONFIG_MACH_M0)
 #ifdef CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE
 		{
 			.name = "ion",
 			.size = CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE * SZ_1K,
-#if defined(CONFIG_MACH_ZEST)
-			.start = 0x5B200000,
-#else
-			.start = 0x5F200000,
-#endif
-		},
-#endif // ION
-#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE
-		{
-			.name = "mfc-secure",
-			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE * SZ_1K,
-#if defined(CONFIG_MACH_ZEST)
-			.start = 0x58100000,
-#else
-			.start = 0x5C100000,
-#endif
-		},
-#endif // MEMSIZE_MFC_SECURE
-		{
-			.name = "sectbl",
-			.size = SZ_1M,
-#if defined(CONFIG_MACH_ZEST)
-			.start = 0x58000000,
-#else
-			.start = 0x5C000000,
-#endif
-		},
-#elif defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_GC2PD) // M0 || ZEST || WATCH
-#ifdef CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE
-		{
-			.name = "ion",
-			.size = CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE * SZ_1K,
-			.start = 0x53300000,
-		},
-#endif // ION
-#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE
-		{
-			.name = "mfc-secure",
-			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE * SZ_1K,
-			.start = 0x50200000,
-		},
-#endif // MFC_SECURE
-		{
-			.name = "sectbl",
-			.size = SZ_1M,
-			.start = 0x50000000,
-		},
-#else // M0 || ZEST || WATCH
-#ifdef CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE
-		{
-			.name   = "ion",
-			.size   = CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE * SZ_1K,
 			.start = 0x5F200000,
 		},
 #endif
@@ -2780,7 +2643,6 @@ static void __init exynos4_reserve_mem(void)
 		{
 			.name = "mfc-secure",
 			.size = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC_SECURE * SZ_1K,
-			// mfc-secure must be below mfc-normal
 			.start = 0x5C100000,
 		},
 #endif
@@ -2789,8 +2651,7 @@ static void __init exynos4_reserve_mem(void)
 			.size = SZ_1M,
 			.start = 0x5C000000,
 		},
-#endif // M0 || ZEST || WATCH
-#else // MFC_CMA
+#else
 #ifdef CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE
 		{
 			.name   = "ion",
@@ -2855,27 +2716,7 @@ static void __init exynos4_reserve_mem(void)
 
 	s5p_cma_region_reserve(regions, regions_secure, 0, map);
 
-	pr_err("[CMA] %s: regions\n", __func__);
-	for (i = 0; i < ARRAY_SIZE(regions); i++) {
-		if (regions[i].size == 0)
-			break;
-		pr_err("[CMA] %s: regions[%d] 0x%08X + 0x%07X (%s)\n",
-			__func__, i, regions[i].start, regions[i].size,
-			regions[i].name);
-	}
-
-#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
-	pr_err("[CMA] %s: regions_secure\n", __func__);
-	for (i = 0; i < ARRAY_SIZE(regions_secure); i++) {
-		if (regions_secure[i].size == 0)
-			break;
-		pr_err("[CMA] %s: regions_secure[%d] 0x%08X + 0x%07X (%s)\n",
-			__func__, i, regions_secure[i].start,
-			regions_secure[i].size, regions_secure[i].name);
-	}
-#endif
-
-	if (!fbmem_start || !fbmem_size)
+	if (!(fbmem_start && fbmem_size))
 		return;
 
 	for (i = 0; i < ARRAY_SIZE(regions); i++) {
@@ -3204,8 +3045,7 @@ static void __init midas_machine_init(void)
 	defined(CONFIG_MACH_M0) || \
 	defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_T0) ||\
 	defined(CONFIG_MACH_BAFFIN)
-// Special VIB_ON GPIO needed for t0ltekor
-#if defined(CONFIG_MACH_T0_LTE)
+#if defined(CONFIG_MACH_T0) && defined(CONFIG_TARGET_LOCALE_KOR)
 	if (system_rev >= 9)
 		max77693_haptic_pdata.motor_en = motor_en;
 #endif

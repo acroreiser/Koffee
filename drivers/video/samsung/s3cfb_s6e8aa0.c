@@ -1321,7 +1321,7 @@ static DEVICE_ATTR(siop_enable, 0664, siop_enable_show, siop_enable_store);
 static ssize_t lcd_type_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	char temp[16];
+	char temp[15];
 #if defined(CONFIG_S6E8AA0_AMS529HA01)
 	sprintf(temp, "SMD_AMS529HA01\n");
 #else

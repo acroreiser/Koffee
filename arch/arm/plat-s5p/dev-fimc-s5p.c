@@ -18,11 +18,9 @@
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <plat/fimc.h>
-#ifdef CONFIG_USE_FIMC_CMA
 #include <linux/dma-mapping.h>
 
 static u64 s3c_fimc_dmamask = DMA_BIT_MASK(32);
-#endif
 
 static struct resource s3c_fimc0_resource[] = {
 	[0] = {

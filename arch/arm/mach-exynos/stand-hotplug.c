@@ -28,8 +28,6 @@
 #include <linux/reboot.h>
 #include <linux/gpio.h>
 #include <linux/cpufreq.h>
-#include <linux/device.h>       //for second_core by tegrak
-#include <linux/miscdevice.h>   //for second_core by tegrak
 
 #include <plat/map-base.h>
 #include <plat/gpio-cfg.h>
@@ -168,11 +166,6 @@ bool hotplug_out_chk(unsigned int nr_online_cpu, unsigned int threshold_up,
 #endif
 }
 
-/* Second core values by tegrak */
-#define SECOND_CORE_VERSION (1)
-int second_core_on = 1;
-int hotplug_on = 1;
-
 static inline enum flag
 standalone_hotplug(unsigned int load, unsigned long nr_rq_min, unsigned int cpu_rq_min)
 {
@@ -247,13 +240,6 @@ static void hotplug_timer(struct work_struct *work)
 		goto off_hotplug;
 	}
 
-	// exit if we turned off dynamic hotplug by tegrak
-	// cancel the timer
-	if (!hotplug_on) {
-		if (!second_core_on && cpu_online(1) == 1)
-			cpu_down(1);
-		goto off_hotplug;
-	}
 
 	if (user_lock == 1)
 		goto no_hotplug;
@@ -267,12 +253,10 @@ static void hotplug_timer(struct work_struct *work)
 
 		cur_idle_time = get_cpu_idle_time_us(i, &cur_wall_time);
 
-		idle_time = (unsigned int)cputime64_sub(cur_idle_time,
-							tmp_info->prev_cpu_idle);
+		idle_time = (unsigned int)(cur_idle_time - tmp_info->prev_cpu_idle);
 		tmp_info->prev_cpu_idle = cur_idle_time;
 
-		wall_time = (unsigned int)cputime64_sub(cur_wall_time,
-							tmp_info->prev_cpu_wall);
+		wall_time = (unsigned int)(cur_wall_time - tmp_info->prev_cpu_wall);
 		tmp_info->prev_cpu_wall = cur_wall_time;
 
 		if (wall_time < idle_time)
@@ -320,7 +304,6 @@ static void hotplug_timer(struct work_struct *work)
 	} 
 
 no_hotplug:
-	//printk("hotplug_timer done.\n");
 
 	queue_delayed_work_on(0, hotplug_wq, &hotplug_work, hotpluging_rate);
 off_hotplug:
@@ -415,125 +398,8 @@ static struct notifier_block pm_hotplug_cpufreq_policy_notifier = {
 	.notifier_call = pm_hotplug_cpufreq_policy_notifier_call,
 };
 
-/****************************************
- * DEVICE ATTRIBUTES FUNCTION by tegrak
-****************************************/
-#define declare_show(filename) \
-	static ssize_t show_##filename(struct device *dev, struct device_attribute *attr, char *buf)
-
-#define declare_store(filename) \
-	static ssize_t store_##filename(\
-		struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
-
-/****************************************
- * second_core attributes function by tegrak
- ****************************************/
-declare_show(version) {
-	return sprintf(buf, "%u\n", SECOND_CORE_VERSION);
-}
-
-declare_show(author) {
-	return sprintf(buf, "Tegrak\n");
-}
-
-declare_show(hotplug_on) {
-	return sprintf(buf, "%s\n", (hotplug_on) ? ("on") : ("off"));
-}
-
-declare_store(hotplug_on) {	
-	mutex_lock(&hotplug_lock);
-	
-	if (user_lock) {
-		goto finish;
-	}
-	
-	if (!hotplug_on && strcmp(buf, "on\n") == 0) {
-		hotplug_on = 1;
-		// restart worker thread.
-		hotpluging_rate = CHECK_DELAY;
-		queue_delayed_work_on(0, hotplug_wq, &hotplug_work, hotpluging_rate);
-		printk("second_core: hotplug is on!\n");
-	}
-	else if (hotplug_on && strcmp(buf, "off\n") == 0) {
-		hotplug_on = 0;
-		second_core_on = 1;
-		if (cpu_online(1) == 0) {
-			cpu_up(1);
-		}
-		printk("second_core: hotplug is off!\n");
-	}
-	
-finish:
-	mutex_unlock(&hotplug_lock);
-	return size;
-}
-
-declare_show(second_core_on) {
-	return sprintf(buf, "%s\n", (second_core_on) ? ("on") : ("off"));
-}
-
-declare_store(second_core_on) {
-	mutex_lock(&hotplug_lock);
-	
-	if (hotplug_on || user_lock) {
-		goto finish;
-	}
-	
-	if (!second_core_on && strcmp(buf, "on\n") == 0) {
-		second_core_on = 1;
-		if (cpu_online(1) == 0) {
-			cpu_up(1);
-		}
-		printk("second_core: 2nd core is always on!\n");
-	}
-	else if (second_core_on && strcmp(buf, "off\n") == 0) {
-		second_core_on = 0;
-		if (cpu_online(1) == 1) {
-			cpu_down(1);
-		}
-		printk("second_core: 2nd core is always off!\n");
-	}
-	
-finish:
-	mutex_unlock(&hotplug_lock);
-	return size;
-}
-
-/****************************************
- * DEVICE ATTRIBUTE by tegrak
- ****************************************/
-#define declare_attr_rw(filename, perm) \
-	static DEVICE_ATTR(filename, perm, show_##filename, store_##filename)
-#define declare_attr_ro(filename, perm) \
-	static DEVICE_ATTR(filename, perm, show_##filename, NULL)
-#define declare_attr_wo(filename, perm) \
-	static DEVICE_ATTR(filename, perm, NULL, store_##filename)
-
-declare_attr_ro(version, 0444);
-declare_attr_ro(author, 0444);
-declare_attr_rw(hotplug_on, 0666);
-declare_attr_rw(second_core_on, 0666);
-
-static struct attribute *second_core_attributes[] = {
-	&dev_attr_hotplug_on.attr, 
-	&dev_attr_second_core_on.attr,
-	&dev_attr_version.attr,
-	&dev_attr_author.attr,
-	NULL
-};
-
-static struct attribute_group second_core_group = {
-		.attrs  = second_core_attributes,
-};
-
-static struct miscdevice second_core_device = {
-		.minor = MISC_DYNAMIC_MINOR,
-		.name = "second_core",
-};
-
 static int __init exynos4_pm_hotplug_init(void)
 {
-	int ret;
 	unsigned int i;
 	unsigned int freq;
 	unsigned int freq_max = 0;
@@ -569,20 +435,6 @@ static int __init exynos4_pm_hotplug_init(void)
 #endif
 	register_pm_notifier(&exynos4_pm_hotplug_notifier);
 	register_reboot_notifier(&hotplug_reboot_notifier);
-	
-	// register second_core device by tegrak
-	ret = misc_register(&second_core_device);
-	if (ret) {
-		printk(KERN_ERR "failed at(%d)\n", __LINE__);
-		return ret;
-	}
-	
-	ret = sysfs_create_group(&second_core_device.this_device->kobj, &second_core_group);
-	if (ret)
-	{
-		printk(KERN_ERR "failed at(%d)\n", __LINE__);
-		return ret;
-	}
 
 	cpufreq_register_notifier(&pm_hotplug_cpufreq_policy_notifier,
 						CPUFREQ_POLICY_NOTIFIER);
