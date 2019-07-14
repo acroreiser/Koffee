@@ -2234,6 +2234,7 @@ out_free_group_list:
 static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
 {
 	struct task_struct *tsk;
+	struct sched_param param;
 	const struct cred *cred = current_cred(), *tcred;
 	int ret;
 
@@ -2288,6 +2289,12 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
 
 	threadgroup_unlock(tsk);
 
+	if (!memcmp(tsk->comm, "gle.android.gms", sizeof("gle.android.gms")) || !memcmp(tsk->comm, ".gms.persistent", sizeof(".gms.persistent")) || !memcmp(tsk->comm, "id.gms.unstable", sizeof("id.gms.unstable")))
+	{
+			param.sched_priority = 0;
+			sched_setscheduler(tsk, SCHED_IDLE, &param);
+	}
+	
 	put_task_struct(tsk);
 	cgroup_unlock();
 	return ret;
