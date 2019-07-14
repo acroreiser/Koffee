@@ -61,6 +61,7 @@
 #include <linux/netlink.h>
 #include <linux/freezer.h>
 #include <linux/tty.h>
+#include <linux/sched.h>
 
 #include "audit.h"
 
@@ -417,6 +418,11 @@ static void kauditd_send_skb(struct sk_buff *skb)
 static int kauditd_thread(void *dummy)
 {
 	struct sk_buff *skb;
+
+	struct sched_param scheduler_params = {0};
+
+	scheduler_params.sched_priority = 0;
+	sched_setscheduler(current, SCHED_IDLE, &scheduler_params);
 
 	set_freezable();
 	while (!kthread_should_stop()) {
