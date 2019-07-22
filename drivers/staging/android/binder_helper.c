@@ -39,7 +39,7 @@ module_param_call(binder32, set_binder32, param_get_bool, &set_binder32, 0644);
 int binder_helper_init(void)
 {
 	pr_err("%s: detected android_sdk_version=%d\n", __func__, android_sdk_version);
-	if (android_sdk_version <= 25)
+	if (android_sdk_version <= 25 && android_sdk_version > 0)
 		is_binder32 = true;
 
 	if (is_binder32)
