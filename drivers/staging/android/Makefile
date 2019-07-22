@@ -1,7 +1,7 @@
 ccflags-y += -I$(src)			# needed for trace events
 
 
-obj-$(CONFIG_ANDROID_BINDER_IPC)	+= binder.o binder32.o binder_helper.o
+obj-$(CONFIG_ANDROID_BINDER_IPC)	+= binder.o binder32.o binder_helper.o sysprop_helper.o
 CFLAGS_binder32.o := -DBINDER_IPC_32BIT
 obj-$(CONFIG_ANDROID_RAM_CONSOLE)	+= ram_console.o
 obj-$(CONFIG_ANDROID_TIMED_OUTPUT)	+= timed_output.o
