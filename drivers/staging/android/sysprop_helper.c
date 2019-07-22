@@ -68,11 +68,15 @@ static int __get_android_sdk_version_from_file(char *filename) {
 		return -ENOMEM;
 
 	f = filp_open(filename, O_RDONLY, 0);
-	if (IS_ERR(f))
-		return -PTR_ERR(f);
+	if (IS_ERR(f)) {
+		sdk = -PTR_ERR(f);
+		goto fail;
+	}
 
-	if (!f)
-		return -EFAULT;
+	if (!f) {
+		sdk = -EFAULT;
+		goto fail;
+	}
 
 	// Get current segment descriptor
 	fs = get_fs();
@@ -86,6 +90,7 @@ static int __get_android_sdk_version_from_file(char *filename) {
 	sdk = __get_android_sdk_version_from_buf(buf);
 
 	filp_close(f, NULL);
+fail:
 	kfree(buf);
 	return sdk;
 }
