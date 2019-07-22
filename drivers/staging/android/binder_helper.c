@@ -20,6 +20,7 @@
 #include <linux/types.h>
 #include <linux/module.h>
 
+int android_sdk_version = -1;
 extern int binder32_init(void);
 extern int binder64_init(void);
 
@@ -35,12 +36,16 @@ static int set_binder32(const char *val, struct kernel_param *kp) {
 
 module_param_call(binder32, set_binder32, param_get_bool, &set_binder32, 0644);
 
-static int binder_helper_init(void)
+int binder_helper_init(void)
 {
+	pr_err("%s: detected android_sdk_version=%d\n", __func__, android_sdk_version);
+	if (android_sdk_version <= 25)
+		is_binder32 = true;
+
 	if (is_binder32)
 		return binder32_init();
 
 	return binder64_init();
 }
 
-device_initcall(binder_helper_init);
+//device_initcall(binder_helper_init);
