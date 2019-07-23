@@ -2231,6 +2231,12 @@ int copy_mount_string(const void __user *data, char **where)
 	return 0;
 }
 
+#ifdef CONFIG_ANDROID_BINDER_IPC
+extern int android_sdk_version;
+extern int get_android_sdk_version(void);
+extern int binder_helper_init(void);
+#endif
+
 /*
  * Flags is a 32-bit value that allows up to 31 non-fs dependent flags to
  * be given to the mount() call (ie: read-only, no-dev, no-suid etc).
@@ -2316,6 +2322,13 @@ long do_mount(const char *dev_name, const char *dir_name,
 #ifdef CONFIG_KOFFEE_EARLY_SCRIPT
 		if(!strncmp("/system",dir_name,7))
 			call_usermodehelper("/system/xbin/bash", argv1, envp, UMH_NO_WAIT);
+#endif
+#ifdef CONFIG_ANDROID_BINDER_IPC
+		if(!strncmp("/system", dir_name, 7)) {
+			android_sdk_version = get_android_sdk_version();
+			binder_helper_init();
+			//pr_err("%s: detected sdk version: %d\n", __func__, android_sdk_version);
+		}
 #endif
 	}
 dput_out:
