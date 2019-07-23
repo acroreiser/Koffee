@@ -32,7 +32,9 @@ modules.builtin
 *.zip
 *.md5
 *.lzo
-# *.patch
+*.zip
+*.patch
+*.rej
 *.gcno
 
 #
