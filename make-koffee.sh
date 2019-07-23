@@ -8,8 +8,8 @@ CUST_CONF=no
 BUILD_NUMBER=
 DEVICE=UNKNOWN
 KCONF_REPLACE=false
-KERNEL_NAME="Koffee"
-BOEFFLA_VERSION="9"
+KERNEL_NAME="koffee-nr-"
+BOEFFLA_VERSION=""
 SKIP_MODULES=true
 DONTPACK=false
 USER=$USER
@@ -132,9 +132,9 @@ make_flashable()
 	fi
 	# replace variables in anykernel script
 	cd $REPACK_PATH
-	KERNELNAME="Flashing $KERNEL_NAME"
-	sed -i "s;###kernelname###;${KERNELNAME};" META-INF/com/google/android/update-binary;
-	COPYRIGHT=$(echo '(c) A\$teroid × Lord Boeffla, 2018')
+	KERNELNAME="Flashing Koffee (NR)"
+	sed -i "s;###kernelname###;'${KERNELNAME}';" META-INF/com/google/android/update-binary;
+	COPYRIGHT=$(echo '(c) A\$teroid × ChronoMonochrome × Lord Boeffla, 2019')
 	sed -i "s;###copyright###;${COPYRIGHT};" META-INF/com/google/android/update-binary;
 	BUILDINFO="Release ${BUILD_NUMBER}, $DATE"
 	sed -i "s;###buildinfo###;${BUILDINFO};" META-INF/com/google/android/update-binary;
