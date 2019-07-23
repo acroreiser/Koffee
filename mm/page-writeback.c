@@ -66,7 +66,7 @@ static long ratelimit_pages = 32;
  * Start background writeback (via writeback threads) at this percentage
  */
 #ifdef CONFIG_DECREASE_DIRTY_RATIO
-int dirty_background_ratio = 2;
+int dirty_background_ratio = 1;
 #else
 int dirty_background_ratio = 10;
 #endif
@@ -81,13 +81,13 @@ unsigned long dirty_background_bytes;
  * free highmem will not be subtracted from the total free memory
  * for calculating free ratios if vm_highmem_is_dirtyable is true
  */
-int vm_highmem_is_dirtyable;
+int vm_highmem_is_dirtyable = 1;
 
 /*
  * The generator of dirty data starts writeback at this percentage
  */
 #ifdef CONFIG_DECREASE_DIRTY_RATIO
-int vm_dirty_ratio = 4;
+int vm_dirty_ratio = 2;
 #else
 int vm_dirty_ratio = 20;
 #endif
