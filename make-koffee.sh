@@ -1,21 +1,20 @@
 #!/bin/bash
 
 VERSION=0.5
-DEFCONFIG=lineageos_i9300_defconfig
-TOOLCHAIN=/home/chrono/kernel/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
+DEFCONFIG=
+TOOLCHAIN=
 KCONFIG=false
 CUST_CONF=no
+BUILD_NUMBER=
 DEVICE=UNKNOWN
 KCONF_REPLACE=false
-KERNEL_NAME="chrono_kernel"
-KERNEL_VERSION="r1.0"
+KERNEL_NAME="Koffee"
+BOEFFLA_VERSION="9"
 SKIP_MODULES=true
 DONTPACK=false
 USER=$USER
 DATE=`date`
-SOURCE_PATH=`pwd`
-BUILD_PATH=$SOURCE_PATH/../obj/
-BUILD_NUMBER=
+BUILD_PATH=`pwd`
 CLEAN=false
 
 
@@ -44,51 +43,33 @@ usage() {
 	echo "	-N <release_number> 			set release number"
 	echo "	-v 			show build script version"
 	echo "	-h 			show this help"
-
+	
 }
 
-get_revision()
-{
-	git rev-parse --short HEAD
-}
-
-get_tag()
-{
-	cur_tag=""
-	for t in `git tag | sort --version-sort --reverse | grep "r[0-9]\."`; do
-		git merge-base --is-ancestor $t HEAD;
-		if [ $? -eq 0 ] ; then cur_tag=$t; break; fi;
-	done
-
-	echo $cur_tag
-}
-
-prepare()
+prepare() 
 {
  	make -j4 clean
 }
 
-make_config()
+make_config() 
 {
-	mkdir -p $BUILD_PATH
 	if [ "$CUST_CONF" != "no" ]; then
 		cp $CUST_CONF `pwd`/.config
 		echo "Using custom configuration from $CUST_CONF"
 		DEFCONFIG=custom
 	else
 		if [ ! -f "`pwd`/.config" ] || [ "$KCONF_REPLACE" = true ]; then
-			make O=$BUILD_PATH ARCH=arm $JOBS $DEFCONFIG &>/dev/null
+			make ARCH=arm $JOBS $DEFCONFIG &>/dev/null
 		fi
 	fi
 	if [ "$KCONFIG" = "true" ]; then
-		make $BUILD_PATH ARCH=arm $JOBS menuconfig
+		make ARCH=arm $JOBS menuconfig
 	fi
 }
 
 build_kernel()
 {
-	mkdir -p $BUILD_PATH
-	make O=$BUILD_PATH ARCH=arm KBUILD_BUILD_VERSION=$BUILD_KERNEL $JOBS KBUILD_BUILD_USER=$USER CROSS_COMPILE=$TOOLCHAIN zImage
+	make ARCH=arm KBUILD_BUILD_VERSION=$BUILD_NUMBER $JOBS KBUILD_BUILD_USER=$USER CROSS_COMPILE=$TOOLCHAIN zImage
 	if [ $? -eq 0 ]; then
 		return 0
 	else
@@ -98,8 +79,7 @@ build_kernel()
 
 build_modules()
 {
-	mkdir -p $BUILD_PATH
-	make O=$BUILD_PATH ARCH=arm KBUILD_BUILD_VERSION=$BUILD_NUMBER $JOBS KBUILD_BUILD_USER=$USER CROSS_COMPILE=$TOOLCHAIN modules
+	make ARCH=arm KBUILD_BUILD_VERSION=$BUILD_NUMBER $JOBS KBUILD_BUILD_USER=$USER CROSS_COMPILE=$TOOLCHAIN modules
 	if [ $? -eq 0 ]; then
 		return 0
 	else
@@ -113,13 +93,13 @@ make_flashable()
 	mkdir -p $REPACK_PATH
 	# copy anykernel template over
 	if [ "$DEVICE" == "m0" ]; then
-		cp -R $SOURCE_PATH/anykernel_boeffla-i9300/* $REPACK_PATH
+		cp -R $BUILD_PATH/anykernel_boeffla-i9300/* $REPACK_PATH
 	else
 		if [ "$DEVICE" == "t03g" ]; then
-			cp -R $SOURCE_PATH/anykernel_boeffla-n7100/* $REPACK_PATH
+			cp -R $BUILD_PATH/anykernel_boeffla-n7100/* $REPACK_PATH
 		else
 			echo "Attempt to create zip for unknown device. Aborting..."
-			return 0
+			exit 0
 		fi
 	fi
 
@@ -148,53 +128,47 @@ make_flashable()
 		${TOOLCHAIN}strip --strip-unneeded $MODULES_PATH/*
 
 	} 2>/dev/null
-
+	
 	fi
-	REVISION=`get_revision`
-	KERNEL_VERSION=`get_tag`
-	BUILD_NUMBER=$(cat $BUILD_PATH/.version)
 	# replace variables in anykernel script
 	cd $REPACK_PATH
-	KERNELNAME="Flashing Chrono kernel ${KERNEL_VERSION}"
+	KERNELNAME="Flashing $KERNEL_NAME"
 	sed -i "s;###kernelname###;${KERNELNAME};" META-INF/com/google/android/update-binary;
-	COPYRIGHT_SCRIPT=$(echo '(c) A\$teroid × Lord Boeffla, 2018')
-	sed -i "s;###copyright_script###;${COPYRIGHT_SCRIPT};" META-INF/com/google/android/update-binary;
-	COPYRIGHT=$(echo '(c) Chrono, 2019')
+	COPYRIGHT=$(echo '(c) A\$teroid × Lord Boeffla, 2018')
 	sed -i "s;###copyright###;${COPYRIGHT};" META-INF/com/google/android/update-binary;
-	BUILDINFO="Build #${BUILD_NUMBER}, $DATE (revision $REVISION)"
+	BUILDINFO="Release ${BUILD_NUMBER}, $DATE"
 	sed -i "s;###buildinfo###;${BUILDINFO};" META-INF/com/google/android/update-binary;
-	SOURCECODE="Source code: https://github.com/ChronoMonochrome/android_kernel_samsung_smdk4412"
+	SOURCECODE="Official source code:  https://github.com/acroreiser/Koffee"
 	sed -i "s;###sourcecode###;${SOURCECODE};" META-INF/com/google/android/update-binary;
 
 
 	# create zip file
-	zip -r9 ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip * -x ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip
+	zip -r9 ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip * -x ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip
 
 	# sign recovery zip if there are keys available
-	if [ -f "$SOURCE_PATH/tools_boeffla/testkey.x509.pem" ]; then
-		java -jar $SOURCE_PATH/tools_boeffla/signapk.jar -w $SOURCE_PATH/tools_boeffla/testkey.x509.pem $SOURCE_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-signed.zip
-		cp ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-signed.zip $BUILD_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}-signed.zip
-		md5sum $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}-signed.zip > $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}-signed.zip.md5
+	if [ -f "$BUILD_PATH/tools_boeffla/testkey.x509.pem" ]; then
+		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-signed.zip
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip.md5
 	else
-		cp ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}.zip $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}.zip
-		md5sum $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}.zip > $SOURCE_PATH/${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE}.zip.md5
+		cp ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip.md5
 	fi
 
 
 
-	cd $SOURCE_PATH
+	cd $BUILD_PATH
 	rm -fr .tmpzip
 	return 0
 }
 
 # Pre
 
-_exit=-1
 while getopts "hvO:j:Kd:kB:S:N:CU:t:" opt
 do
-	case $opt in
-	h) usage; _exit=0; break;;
-	v) echo $VERSION; _exit=0; break;;
+case $opt in
+	h) usage; exit 0;;
+	v) echo $VERSION; exit 0;;
 	t) TOOLCHAIN=$OPTARG;;
 	j) THREADS=$OPTARG;;
 	O) CUST_CONF=$OPTARG; DEFCONFIG=custom; KCONF_REPLACE=true;;
@@ -205,73 +179,115 @@ do
 	k) DONTPACK=true;;
 	d) DEFCONFIG="$OPTARG"; KCONF_REPLACE=true;;
 	U) USER=$OPTARG;;
-	*) usage; _exit=0; break;;
+	*) usage; exit 0;;
 esac
 done
 
-main() {
-	if [ -z $THREADS ]; then
-		JOBS="-j1"
-		THREADS=1
-	else
-		JOBS="-j$THREADS"
-	fi
+if [ -z $THREADS ]; then
+	JOBS="-j1"
+	THREADS=1
+else
+	JOBS="-j$THREADS"
+fi
 
-	if [ -d "`pwd`/.tmpzip" ]; then
-		rm -fr "`pwd`/.tmpzip"
-	fi
-	REPACK_PATH=`pwd`/.tmpzip
+if [ -d "`pwd`/.tmpzip" ]; then
+	rm -fr "`pwd`/.tmpzip"
+fi
+REPACK_PATH=`pwd`/.tmpzip
 
-	# ENTRY POINT
-	echo "Koffee build script v$VERSION"
-	echo $DATE
+# ENTRY POINT
+echo "Koffee build script v$VERSION"
+echo $DATE
 
-	if [ "$DEFCONFIG" == "" ];
-	then
-		if [ ! -f "$BUILD_PATH/.config" ]; then
-			echo "FATAL: No config specified!"
-			echo "*** BUILD FAILED ***"
-			return 1
-		fi
-		DEFCONFIG=".config"
-	fi
-
-	if [ "$DEFCONFIG" == "lineageos_i9300_defconfig" ]; then
-		DEVICE="m0"
-	fi
-
-	if [ "$DEFCONFIG" == "lineageos_n7100_defconfig" ]; then
-		DEVICE="t03g"
-	fi
-
-	if [ -z $TOOLCHAIN ]; then
-		echo "FATAL: No toolchain prefix specified!"
+if [ "$DEFCONFIG" == "" ];
+then
+	if [ ! -f "$BUILD_PATH/.config" ]; then
+		echo "FATAL: No config specified!" 
 		echo "*** BUILD FAILED ***"
-		return 1
+		exit 1 
 	fi
+	DEFCONFIG=".config"
+fi
 
-	if [ "$CLEAN" = "true" ]; then
-		prepare &>/dev/null
-	fi
-	if [ "$DEFCONFIG" != ".config" ] || [ "$KCONFIG" == "true" ]; then
-		make_config
-	fi
-	TVERSION=$(${TOOLCHAIN}gcc --version | grep gcc)
+if [ "$DEFCONFIG" == "lineageos_i9300_defconfig" ]; then
+	DEVICE="m0"
+fi
+ 
+if [ "$DEFCONFIG" == "lineageos_n7100_defconfig" ]; then
+	DEVICE="t03g"
+fi
 
-	if [ -z $BUILD_NUMBER ]; then 
-		if [ -f "`pwd`/.version" ]; then
-			BVERN=$(cat `pwd`/.version)
-		else
-			BVERN=1
-		fi
+if [ -z $TOOLCHAIN ]; then
+	echo "FATAL: No toolchain prefix specified!" 
+	echo "*** BUILD FAILED ***"
+	exit 1
+fi
+
+if [ "$CLEAN" = "true" ]; then
+	prepare &>/dev/null
+fi 
+if [ "$DEFCONFIG" != ".config" ] || [ "$KCONFIG" == "true" ]; then
+	make_config
+fi
+TVERSION=$(${TOOLCHAIN}gcc --version | grep gcc)
+
+if [ -z $BUILD_NUMBER ]; then 
+	if [ -f "`pwd`/.version" ]; then
+		BVERN=$(cat `pwd`/.version)
 	else
-		BVERN=$BUILD_NUMBER
+		BVERN=1
 	fi
+else
+	BVERN=$BUILD_NUMBER
+fi
 
+if [ $? -eq 0 ]; then
+	echo "--------------------------------------"
+	echo "| Build  date:	$DATE"
+	echo "| Version:	$BOEFFLA_VERSION"
+	echo "| Configuration file:	$DEFCONFIG"
+	echo "| Release:	$BVERN"
+	echo "| Building for:	$DEVICE"
+	echo "| Build  user:	$USER"
+	echo "| Build  host:	`hostname`"
+	echo "| Build  toolchain:	$TVERSION"
+	echo "| Number of threads:	$THREADS"
+	echo "--------------------------------------"
+else
+	echo "*** CONFIGURATION FAILED ***"
+	exit 1
+fi
+echo "*** NOW WE GO! ***"
+echo "---- Stage 1: Building the kernel ----"
+build_kernel
+if [ $? -eq 0 ]; then
+	echo "*** Kernel is ready! ***"
+else
+	echo "*** zImage BUILD FAILED ***"
+	exit 1
+fi
+
+if [ "$SKIP_MODULES" = "false" ]; then
+	echo "---- Stage 2: Building modules ----"
+	build_modules
+	if [ $? -eq 0 ]; then
+		echo "*** Modules is ready! ***"
+	else
+		echo "*** MODULE BUILD FAILED ***"
+		exit 1
+	fi
+else
+	echo "---- Stage 2(skipped): Building modules ----"
+fi
+
+if [ "$DONTPACK" = "false" ]; then
+	echo "---- Stage 3: Packing all stuff ----"
+	make_flashable
 	if [ $? -eq 0 ]; then
 		echo "--------------------------------------"
+		echo "--------------------------------------"
 		echo "| Build  date:	$DATE"
-		echo "| Version:	$KERNEL_VERSION"
+		echo "| Version:	$BOEFFLA_VERSION"
 		echo "| Configuration file:	$DEFCONFIG"
 		echo "| Release:	$BVERN"
 		echo "| Building for:	$DEVICE"
@@ -279,76 +295,28 @@ main() {
 		echo "| Build  host:	`hostname`"
 		echo "| Build  toolchain:	$TVERSION"
 		echo "| Number of threads:	$THREADS"
-		echo "--------------------------------------"
-	else
-		echo "*** CONFIGURATION FAILED ***"
-		return 1
-	fi
-	echo "*** NOW WE GO! ***"
-	echo "---- Stage 1: Building the kernel ----"
-	build_kernel
-	if [ $? -eq 0 ]; then
-		echo "*** Kernel is ready! ***"
-	else
-		echo "*** zImage BUILD FAILED ***"
-		return 1
-	fi
-
-	if [ "$SKIP_MODULES" = "false" ]; then
-		echo "---- Stage 2: Building modules ----"
-		build_modules
-		if [ $? -eq 0 ]; then
-			echo "*** Modules is ready! ***"
-		else
-			echo "*** MODULE BUILD FAILED ***"
-			return 1
-		fi
-	else
-		echo "---- Stage 2(skipped): Building modules ----"
-	fi
-
-	if [ "$DONTPACK" = "false" ]; then
-		echo "---- Stage 3: Packing all stuff ----"
-		make_flashable
-		if [ $? -eq 0 ]; then
-			echo "--------------------------------------"
-			echo "--------------------------------------"
-			echo "| Build  date:	$DATE"
-			echo "| Version:	$KERNEL_VERSION"
-			echo "| Configuration file:	$DEFCONFIG"
-			echo "| Release:	$BVERN"
-			echo "| Building for:	$DEVICE"
-			echo "| Build  user:	$USER"
-			echo "| Build  host:	`hostname`"
-			echo "| Build  toolchain:	$TVERSION"
-			echo "| Number of threads:	$THREADS"
-			echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE} | grep .zip | head -n 1)"
-			echo "> MD5sum: $(ls | grep ${KERNEL_NAME}_${KERNEL_VERSION}-${BUILD_NUMBER}-${REVISION}-${DEVICE} | grep .md5)"
-			echo "--------------------------------------"
-			echo "*** Koffee is ready! ***"
-		else
-			echo "*** KOFFEE ZIP BUILD FAILED ***"
-			return 1
-		fi
-	else
-		echo "---- Stage 3(skipped): Packing all stuff ----"
-		echo "--------------------------------------"
-		echo "--------------------------------------"
-		echo "| Build  date:	$DATE"
-		echo "| Version:	$KERNEL_VERSION"
-		echo "| Configuration file:	$DEFCONFIG"
-		echo "| Release:	$BVERN"
-		echo "| Building for:	$DEVICE"
-		echo "| Build  user:	$USER"
-		echo "| Build  host:	`hostname`"
-		echo "| Build  toolchain:	$TVERSION"
-		echo "| Number of threads:	$THREADS"
-		echo "> zImage: arch/arm/boot/zImage"
+		echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE} | grep .zip | head -n 1)"
+		echo "> MD5sum: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE} | grep .md5)"
 		echo "--------------------------------------"
 		echo "*** Koffee is ready! ***"
+	else
+		echo "*** KOFFEE ZIP BUILD FAILED ***"
+		exit 1
 	fi
-}
-
-if [ ! $_exit -ge 0 ] ; then
-	main
+else
+	echo "---- Stage 3(skipped): Packing all stuff ----"
+	echo "--------------------------------------"
+	echo "--------------------------------------"
+	echo "| Build  date:	$DATE"
+	echo "| Version:	$BOEFFLA_VERSION"
+	echo "| Configuration file:	$DEFCONFIG"
+	echo "| Release:	$BVERN"
+	echo "| Building for:	$DEVICE"
+	echo "| Build  user:	$USER"
+	echo "| Build  host:	`hostname`"
+	echo "| Build  toolchain:	$TVERSION"
+	echo "| Number of threads:	$THREADS"
+	echo "> zImage: arch/arm/boot/zImage"
+	echo "--------------------------------------"
+	echo "*** Koffee is ready! ***"
 fi

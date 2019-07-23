@@ -84,5 +84,6 @@ GSYMS
 GTAGS
 
 *.orig
+*.md5
 *~
 \#*#
