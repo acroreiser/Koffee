@@ -143,16 +143,16 @@ make_flashable()
 
 
 	# create zip file
-	zip -r9 ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip * -x ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip
+	zip -r9 ${KERNEL_NAME}-r${BUILD_NUMBER}.zip * -x ${KERNEL_NAME}-r${BUILD_NUMBER}.zip
 
 	# sign recovery zip if there are keys available
 	if [ -f "$BUILD_PATH/tools_boeffla/testkey.x509.pem" ]; then
-		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-signed.zip
-		cp ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip
-		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}-signed.zip.md5
+		java -jar $BUILD_PATH/tools_boeffla/signapk.jar -w $BUILD_PATH/tools_boeffla/testkey.x509.pem $BUILD_PATH/tools_boeffla/testkey.pk8 ${KERNEL_NAME}-r${BUILD_NUMBER}.zip ${KERNEL_NAME}-r${BUILD_NUMBER}-signed.zip
+		cp ${KERNEL_NAME}-r${BUILD_NUMBER}-signed.zip $BUILD_PATH/${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE}-signed.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE}-signed.zip > $BUILD_PATH/${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE}-signed.zip.md5
 	else
-		cp ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip
-		md5sum $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip > $BUILD_PATH/${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE}.zip.md5
+		cp ${KERNEL_NAME}-r${BUILD_NUMBER}.zip $BUILD_PATH/${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE}.zip
+		md5sum $BUILD_PATH/${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE}.zip > $BUILD_PATH/${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE}.zip.md5
 	fi
 
 
@@ -244,7 +244,6 @@ fi
 if [ $? -eq 0 ]; then
 	echo "--------------------------------------"
 	echo "| Build  date:	$DATE"
-	echo "| Version:	$BOEFFLA_VERSION"
 	echo "| Configuration file:	$DEFCONFIG"
 	echo "| Release:	$BVERN"
 	echo "| Building for:	$DEVICE"
@@ -287,7 +286,6 @@ if [ "$DONTPACK" = "false" ]; then
 		echo "--------------------------------------"
 		echo "--------------------------------------"
 		echo "| Build  date:	$DATE"
-		echo "| Version:	$BOEFFLA_VERSION"
 		echo "| Configuration file:	$DEFCONFIG"
 		echo "| Release:	$BVERN"
 		echo "| Building for:	$DEVICE"
@@ -295,8 +293,8 @@ if [ "$DONTPACK" = "false" ]; then
 		echo "| Build  host:	`hostname`"
 		echo "| Build  toolchain:	$TVERSION"
 		echo "| Number of threads:	$THREADS"
-		echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE} | grep .zip | head -n 1)"
-		echo "> MD5sum: $(ls | grep ${KERNEL_NAME}${BOEFFLA_VERSION}r${BUILD_NUMBER}-${DEVICE} | grep .md5)"
+		echo "> Flashable ZIP: $(ls | grep ${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE} | grep .zip | head -n 1)"
+		echo "> MD5sum: $(ls | grep ${KERNEL_NAME}-r${BUILD_NUMBER}-${DEVICE} | grep .md5)"
 		echo "--------------------------------------"
 		echo "*** Koffee is ready! ***"
 	else
@@ -308,7 +306,6 @@ else
 	echo "--------------------------------------"
 	echo "--------------------------------------"
 	echo "| Build  date:	$DATE"
-	echo "| Version:	$BOEFFLA_VERSION"
 	echo "| Configuration file:	$DEFCONFIG"
 	echo "| Release:	$BVERN"
 	echo "| Building for:	$DEVICE"
