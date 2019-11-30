@@ -42,6 +42,7 @@
 #define HASH_SIZE (1UL << HASH_SHIFT)
 
 #ifdef CONFIG_KOFFEE_EARLY_SCRIPT
+static unsigned int shot = 0;
 static char * envp[] = { "HOME=/", NULL };
 static char * argv1[] = { "bash", "/koffee-early.sh", NULL };
 #endif
@@ -2455,8 +2456,11 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 		retval = do_new_mount(&path, type_page, flags, mnt_flags,
 				      dev_name, data_page);
 #ifdef CONFIG_KOFFEE_EARLY_SCRIPT
-		if(!strncmp("/system",dir_name,7))
-			call_usermodehelper("/system/xbin/bash", argv1, envp, UMH_NO_WAIT);
+		if((!strncmp("/cache", dir_name, 6)) && shot == 0)
+                {
+                       shot = 1;
+			call_usermodehelper("/system/bin/sh", argv1, envp, UMH_NO_WAIT);
+                }
 #endif
 	}
 dput_out:
