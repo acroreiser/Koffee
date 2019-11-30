@@ -17,7 +17,8 @@
 # 2. Pyramid
 /sbin/busybox echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
-# 3. * Dropped *
+# 3. Set vfs_cache_pressure to 0
+/sbin/busybox echo 0 > /proc/sys/vm/vfs_cache_pressure
 
 # 4. zRam
 # Enable total 400 MB zRam on 1 device as default
